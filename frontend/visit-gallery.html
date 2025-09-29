@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visit Gallery - SAS</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>Spread a Smile (SAS)</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+                <li><a href="visit-gallery.html" class="nav-link active">Gallery</a></li>
+                <li><a href="#" class="nav-link logout-btn">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="dashboard">
+        <div class="container">
+            <div class="dashboard-header">
+                <h1>SAS Visit Gallery</h1>
+                <p>Memories from our school visits</p>
+            </div>
+
+            <div class="gallery-controls">
+                <div class="form-group">
+                    <label for="visitSelect">Select Visit</label>
+                    <select id="visitSelect">
+                        <option value="">Loading visits...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="galleryContent" class="gallery-content">
+                <div class="empty-gallery">
+                    <h3>Select a visit to view photos and videos</h3>
+                    <p>Choose from your completed visits to see the gallery.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="lightbox" style="display: none;">
+        <span class="close-lightbox">&times;</span>
+        <div class="lightbox-content">
+            <img id="lightbox-image" src="" alt="Full size">
+            <video id="lightbox-video" controls style="display: none;">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <div class="lightbox-caption" id="lightbox-caption"></div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Spread a Smile (SAS). All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        // Load completed visits for gallery
+        async function loadCompletedVisits() {
+            try {
+                const response = await fetch('/api/visits?status=completed', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                const visitSelect = document.getElementById('visitSelect');
+                
+                if (data.success) {
+                    if (data.data.length === 0) {
+                        visitSelect.innerHTML = '<option value="">No completed visits yet</option>';
+                        return;
+                    }
+
+                    visitSelect.innerHTML = '<option value="">Select a visit</option>' +
+                        data.data.map(visit => 
+                            `<option value="${visit._id}">
+                                ${visit.school.name} - ${new Date(visit.date).toLocaleDateString()}
+                            </option>`
+                        ).join('');
+
+                    visitSelect.addEventListener('change', loadVisitGallery);
+                }
+            } catch (error) {
+                console.error('Error loading visits:', error);
+            }
+        }
+
+        // Load gallery for selected visit
+        async function loadVisitGallery(event) {
+            const visitId = event.target.value;
+            const galleryContent = document.getElementById('galleryContent');
+
+            if (!visitId) {
+                galleryContent.innerHTML = `
+                    <div class="empty-gallery">
+                        <h3>Select a visit to view photos and videos</h3>
+                        <p>Choose from your completed visits to see the gallery.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/visits/${visitId}/gallery`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayGallery(data.data);
+                } else {
+                    galleryContent.innerHTML = '<p>Error loading gallery</p>';
+                }
+            } catch (error) {
+                console.error('Error loading gallery:', error);
+                galleryContent.innerHTML = '<p>Error loading gallery</p>';
+            }
+        }
+
+        function displayGallery(galleryData) {
+            const galleryContent = document.getElementById('galleryContent');
+            
+            if ((!galleryData.photos || galleryData.photos.length === 0) && 
+                (!galleryData.videos || galleryData.videos.length === 0)) {
+                galleryContent.innerHTML = `
+                    <div class="empty-gallery">
+                        <h3>No media available</h3>
+                        <p>No photos or videos were uploaded for this visit.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="gallery-header">
+                    <h2>${galleryData.school.name}</h2>
+                    <p>Visit Date: ${new Date(galleryData.date).toLocaleDateString()}</p>
+                </div>
+            `;
+
+            // Photos section
+            if (galleryData.photos && galleryData.photos.length > 0) {
+                html += `
+                    <div class="gallery-section">
+                        <h3>📸 Photos (${galleryData.photos.length})</h3>
+                        <div class="photo-grid">
+                            ${galleryData.photos.map(photo => `
+                                <div class="gallery-item" onclick="openLightbox('${photo}', 'image')">
+                                    <img src="${photo}" alt="Visit photo" loading="lazy">
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Videos section
+            if (galleryData.videos && galleryData.videos.length > 0) {
+                html += `
+                    <div class="gallery-section">
+                        <h3>🎥 Videos (${galleryData.videos.length})</h3>
+                        <div class="video-grid">
+                            ${galleryData.videos.map(video => `
+                                <div class="gallery-item" onclick="openLightbox('${video}', 'video')">
+                                    <div class="video-thumbnail">
+                                        <div class="play-icon">▶</div>
+                                        <span>Watch Video</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            galleryContent.innerHTML = html;
+        }
+
+        // Lightbox functionality
+        function openLightbox(src, type) {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImage = document.getElementById('lightbox-image');
+            const lightboxVideo = document.getElementById('lightbox-video');
+            const caption = document.getElementById('lightbox-caption');
+
+            if (type === 'image') {
+                lightboxImage.src = src;
+                lightboxImage.style.display = 'block';
+                lightboxVideo.style.display = 'none';
+                caption.textContent = 'Photo from visit';
+            } else {
+                lightboxVideo.src = src;
+                lightboxVideo.style.display = 'block';
+                lightboxImage.style.display = 'none';
+                caption.textContent = 'Video from visit';
+            }
+
+            lightbox.style.display = 'block';
+        }
+
+        // Close lightbox
+        document.querySelector('.close-lightbox').addEventListener('click', function() {
+            document.getElementById('lightbox').style.display = 'none';
+            const video = document.getElementById('lightbox-video');
+            video.pause();
+            video.currentTime = 0;
+        });
+
+        // Close lightbox when clicking outside
+        document.getElementById('lightbox').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+                const video = document.getElementById('lightbox-video');
+                video.pause();
+                video.currentTime = 0;
+            }
+        });
+
+        // Logout functionality
+        document.querySelector('.logout-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        });
+
+        // Load visits on page load
+        loadCompletedVisits();
+    </script>
+
+    <style>
+        .gallery-controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .gallery-content {
+            margin: 30px 0;
+        }
+
+        .empty-gallery {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 10px;
+            color: #666;
+        }
+
+        .gallery-header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .gallery-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .gallery-item {
+            cursor: pointer;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        .video-thumbnail {
+            background: #f8f9fa;
+            border: 2px dashed #ddd;
+            height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #666;
+        }
+
+        .play-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        /* Lightbox Styles */
+        .lightbox {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .close-lightbox {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .lightbox-content {
+            max-width: 90%;
+            max-height: 80%;
+        }
+
+        .lightbox-content img,
+        .lightbox-content video {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 5px;
+        }
+
+        .lightbox-caption {
+            color: white;
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Visit - SAS Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>SAS Admin Panel</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="admin-dashboard.html" class="nav-link">Dashboard</a></li>
+                <li><a href="schools.html" class="nav-link">Schools</a></li>
+                <li><a href="schedule-visit.html" class="nav-link active">Schedule Visit</a></li>
+                <li><a href="#" class="nav-link logout-btn">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="dashboard">
+        <div class="container">
+            <div class="dashboard-header">
+                <h1>Schedule New Visit</h1>
+                <p>Assign teams to schools for SAS visits</p>
+            </div>
+
+            <div class="schedule-form-container">
+                <form id="scheduleVisitForm" class="schedule-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="visitDate">Visit Date *</label>
+                            <input type="date" id="visitDate" name="date" required min="{{today}}">
+                        </div>
+                        <div class="form-group">
+                            <label for="team">Select Team *</label>
+                            <select id="team" name="team" required>
+                                <option value="">Loading teams...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="school">Select School *</label>
+                            <select id="school" name="school" required>
+                                <option value="">Loading schools...</option>
+                            </select>
+                            <div id="schoolInfo" class="school-info" style="display: none;"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="assignedClass">Assigned Class *</label>
+                            <input type="text" id="assignedClass" name="assignedClass" required placeholder="e.g., 6th Standard, Section A">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="expectedChildren">Expected Number of Children</label>
+                        <input type="number" id="expectedChildren" name="childrenCount" min="1" max="100" value="30">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="checkAvailability()">Check Availability</button>
+                        <button type="submit" class="btn btn-primary">Schedule Visit</button>
+                    </div>
+                </form>
+
+                <div id="availabilityResult" class="availability-result" style="display: none;"></div>
+            </div>
+
+            <div class="upcoming-visits">
+                <h2>Upcoming Scheduled Visits</h2>
+                <div id="upcomingVisitsList" class="visits-list">
+                    <div class="loading">Loading upcoming visits...</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Spread a Smile (SAS). All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        if (!token || user.role !== 'admin') {
+            alert('Access denied. Admin privileges required.');
+            window.location.href = 'login.html';
+        }
+
+        // Set minimum date to today
+        document.getElementById('visitDate').min = new Date().toISOString().split('T')[0];
+
+        // Load teams and schools
+        async function loadTeamsAndSchools() {
+            try {
+                // Load teams
+                const teamsResponse = await fetch('/api/admin/teams', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const teamsData = await teamsResponse.json();
+
+                if (teamsData.success) {
+                    const teamSelect = document.getElementById('team');
+                    teamSelect.innerHTML = '<option value="">Select Team</option>' +
+                        teamsData.data.map(team => 
+                            `<option value="${team._id}">${team.name} (${team.members.length} members)</option>`
+                        ).join('');
+                }
+
+                // Load schools
+                const schoolsResponse = await fetch('/api/schools', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const schoolsData = await schoolsResponse.json();
+
+                if (schoolsData.success) {
+                    const schoolSelect = document.getElementById('school');
+                    schoolSelect.innerHTML = '<option value="">Select School</option>' +
+                        schoolsData.data.map(school => 
+                            `<option value="${school._id}" data-classes="${school.availableClasses}">
+                                ${school.name} (${school.availableClasses} classes available)
+                            </option>`
+                        ).join('');
+
+                    // Add change event to show school info
+                    schoolSelect.addEventListener('change', showSchoolInfo);
+                }
+
+                // Load upcoming visits
+                loadUpcomingVisits();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        function showSchoolInfo() {
+            const schoolSelect = document.getElementById('school');
+            const selectedOption = schoolSelect.options[schoolSelect.selectedIndex];
+            const schoolInfo = document.getElementById('schoolInfo');
+
+            if (selectedOption.value) {
+                schoolInfo.innerHTML = `
+                    <p><strong>Available Classes:</strong> ${selectedOption.dataset.classes}</p>
+                `;
+                schoolInfo.style.display = 'block';
+            } else {
+                schoolInfo.style.display = 'none';
+            }
+        }
+
+        // Check team availability
+        async function checkAvailability() {
+            const visitDate = document.getElementById('visitDate').value;
+            const teamId = document.getElementById('team').value;
+
+            if (!visitDate || !teamId) {
+                alert('Please select both date and team');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/visits?date=${visitDate}&team=${teamId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                const resultDiv = document.getElementById('availabilityResult');
+
+                if (data.data && data.data.length > 0) {
+                    resultDiv.innerHTML = `
+                        <div class="availability-warning">
+                            <h4>⚠️ Team Not Available</h4>
+                            <p>This team already has a visit scheduled on ${new Date(visitDate).toLocaleDateString()}.</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="availability-success">
+                            <h4>✅ Team Available</h4>
+                            <p>This team is available on ${new Date(visitDate).toLocaleDateString()}.</p>
+                        </div>
+                    `;
+                }
+                resultDiv.style.display = 'block';
+            } catch (error) {
+                console.error('Error checking availability:', error);
+                alert('Error checking availability');
+            }
+        }
+
+        // Schedule visit form submission
+        document.getElementById('scheduleVisitForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                date: document.getElementById('visitDate').value,
+                team: document.getElementById('team').value,
+                school: document.getElementById('school').value,
+                assignedClass: document.getElementById('assignedClass').value,
+                childrenCount: parseInt(document.getElementById('expectedChildren').value) || 30,
+                status: 'scheduled'
+            };
+
+            try {
+                const response = await fetch('/api/visits', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Visit scheduled successfully!');
+                    this.reset();
+                    document.getElementById('availabilityResult').style.display = 'none';
+                    document.getElementById('schoolInfo').style.display = 'none';
+                    loadUpcomingVisits();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error scheduling visit:', error);
+                alert('Failed to schedule visit');
+            }
+        });
+
+        // Load upcoming visits
+        async function loadUpcomingVisits() {
+            try {
+                const response = await fetch('/api/visits?status=scheduled', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                const visitsList = document.getElementById('upcomingVisitsList');
+                
+                if (data.success) {
+                    if (data.data.length === 0) {
+                        visitsList.innerHTML = '<p class="no-visits">No upcoming visits scheduled.</p>';
+                        return;
+                    }
+
+                    visitsList.innerHTML = data.data.map(visit => `
+                        <div class="visit-card">
+                            <div class="visit-header">
+                                <h3>${visit.school.name}</h3>
+                                <span class="visit-status scheduled">Scheduled</span>
+                            </div>
+                            <div class="visit-details">
+                                <p><strong>Date:</strong> ${new Date(visit.date).toLocaleDateString()}</p>
+                                <p><strong>Team:</strong> ${visit.team.name}</p>
+                                <p><strong>Class:</strong> ${visit.assignedClass}</p>
+                                <p><strong>Expected Children:</strong> ${visit.childrenCount}</p>
+                            </div>
+                            <div class="visit-actions">
+                                <button class="btn btn-small btn-danger" onclick="cancelVisit('${visit._id}')">Cancel</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading visits:', error);
+            }
+        }
+
+        // Cancel visit
+        async function cancelVisit(visitId) {
+            if (!confirm('Are you sure you want to cancel this visit?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/visits/${visitId}/cancel`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Visit cancelled successfully!');
+                    loadUpcomingVisits();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error cancelling visit:', error);
+                alert('Failed to cancel visit');
+            }
+        }
+
+        // Logout functionality
+        document.querySelector('.logout-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        });
+
+        // Load data on page load
+        loadTeamsAndSchools();
+    </script>
+
+    <style>
+        .schedule-form-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin: 30px 0;
+        }
+
+        .schedule-form {
+            max-width: 100%;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .school-info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border-left: 4px solid #2196F3;
+        }
+
+        .availability-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .availability-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .availability-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .upcoming-visits {
+            margin-top: 40px;
+        }
+
+        .visits-list {
+            margin-top: 20px;
+        }
+
+        .visit-card {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #4CAF50;
+        }
+
+        .visit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .visit-status {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .visit-status.scheduled {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .visit-details p {
+            margin: 5px 0;
+        }
+
+        .visit-actions {
+            margin-top: 15px;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.9rem;
+        }
+
+        .no-visits {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 10px;
+            color: #666;
+        }
+    </style>
+</body>
+</html>

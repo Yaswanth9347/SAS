@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard - Spread a Smile</title>
+  <style>
+    /* Reset and Base Styles */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Arial', sans-serif;
+        line-height: 1.6;
+        color: #333;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    /* Navigation */
+    .navbar {
+        background: #fff;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        position: fixed;
+        width: 100%;
+        top: 0;
+        z-index: 1000;
+    }
+
+    .nav-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 70px;
+    }
+
+    .nav-logo h2 {
+        color: #4CAF50;
+    }
+
+    .nav-menu {
+        display: flex;
+        list-style: none;
+        gap: 30px;
+    }
+
+    .nav-link {
+        text-decoration: none;
+        color: #333;
+        font-weight: 500;
+        transition: color 0.3s;
+    }
+
+    .nav-link:hover, .nav-link.active {
+        color: #4CAF50;
+    }
+
+    .logout-btn {
+        background: #f44336;
+        color: white !important;
+        padding: 8px 20px;
+        border-radius: 5px;
+        transition: background 0.3s;
+    }
+
+    .logout-btn:hover {
+        background: #d32f2f;
+    }
+
+    /* Dashboard */
+    .dashboard {
+        padding: 100px 0 50px;
+    }
+
+    .dashboard-header {
+        margin-bottom: 40px;
+    }
+
+    .dashboard-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        color: #4CAF50;
+    }
+
+    .dashboard-header p {
+        font-size: 1.1rem;
+        color: #666;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+    }
+
+    .dashboard-card {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .dashboard-card h3 {
+        color: #4CAF50;
+        margin-bottom: 20px;
+        font-size: 1.3rem;
+    }
+
+    /* Stats Card */
+    .stats-card {
+        grid-column: 1 / -1;
+    }
+
+    .quick-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 20px;
+        text-align: center;
+    }
+
+    .stat-item {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 4px solid #4CAF50;
+    }
+
+    .stat-number {
+        display: block;
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #4CAF50;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Visit List */
+    .visit-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .visit-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #4CAF50;
+    }
+
+    .visit-item h4 {
+        color: #333;
+        margin-bottom: 5px;
+        font-size: 1.1rem;
+    }
+
+    .visit-item p {
+        color: #666;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 12px 30px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+        transition: all 0.3s;
+        display: inline-block;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        text-align: center;
+    }
+
+    .btn-primary {
+        background: #4CAF50;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #45a049;
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background: transparent;
+        color: #4CAF50;
+        border: 2px solid #4CAF50;
+    }
+
+    .btn-secondary:hover {
+        background: #4CAF50;
+        color: white;
+    }
+
+    .btn-small {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+
+    /* Status Badges */
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        display: inline-block;
+    }
+
+    .status-badge.upcoming {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-badge.completed {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-badge.info {
+        background: #cce7ff;
+        color: #004085;
+    }
+
+    /* Visit Report Items */
+    .visit-report-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border-left: 4px solid #2196F3;
+    }
+
+    .visit-report-item h4 {
+        color: #333;
+        margin-bottom: 8px;
+    }
+
+    .visit-report-item p {
+        color: #666;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+    }
+
+    /* Footer */
+    .footer {
+        background: #333;
+        color: white;
+        text-align: center;
+        padding: 30px 0;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .nav-menu {
+            display: none;
+        }
+        
+        .dashboard {
+            padding: 80px 0 30px;
+        }
+        
+        .dashboard-header h1 {
+            font-size: 2rem;
+        }
+        
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-card {
+            grid-column: 1;
+        }
+        
+        .quick-stats {
+            grid-template-columns: 1fr;
+        }
+        
+        .action-buttons .btn {
+            width: 100%;
+        }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <h2>Spread a Smile (SAS)</h2>
+      </div>
+      <ul class="nav-menu">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="dashboard.html" class="nav-link active">Dashboard</a></li>
+        <li><a href="#" class="nav-link logout-btn">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="dashboard">
+    <div class="container">
+      <div class="dashboard-header">
+        <h1>Welcome back, <span id="userName">User</span>!</h1>
+        <p id="userInfo">Loading your information...</p>
+      </div>
+
+      <div class="dashboard-grid">
+        <!-- Quick Stats -->
+        <div class="dashboard-card stats-card">
+          <h3>Your Activity Summary</h3>
+          <div class="quick-stats" id="quickStats">
+            <div class="stat-item">
+              <span class="stat-number">0</span>
+              <span class="stat-label">Total Visits</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">0</span>
+              <span class="stat-label">Upcoming</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">0</span>
+              <span class="stat-label">Completed</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming Visits -->
+        <div class="dashboard-card">
+          <h3>Upcoming Visits</h3>
+          <div class="visit-list" id="upcomingVisits">
+            <p>Loading visits...</p>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="dashboard-card">
+            <h3>Quick Actions</h3>
+            <div class="action-buttons">
+                <a href="visit-report.html" class="btn btn-primary">Submit Visit Report</a>
+                <a href="#" class="btn btn-secondary">View Schedule</a>
+                <a href="#" class="btn btn-secondary">Update Profile</a>
+            </div>
+        </div>
+
+        <!-- Visits Pending Report -->
+        <div class="dashboard-card">
+          <h3>Visits Pending Report</h3>
+          <div class="visit-list" id="visitsToReport">
+            <p>Loading visits for reporting...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2024 Spread a Smile (SAS). All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Check authentication
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    if (!token) {
+      window.location.href = 'login.html';
+    }
+
+    // Display user info
+    document.getElementById('userName').textContent = user.name || 'User';
+    document.getElementById('userInfo').textContent =
+      `Team: ${user.team || 'Not assigned'} | Department: ${user.department || 'N/A'} | Year: ${user.year || 'N/A'}`;
+
+    // Load dashboard data
+    async function loadDashboardData() {
+      try {
+        const response = await fetch('/api/visits/stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          document.querySelector('.stat-item:nth-child(1) .stat-number').textContent = data.data.totalVisits;
+          document.querySelector('.stat-item:nth-child(2) .stat-number').textContent = data.data.scheduledVisits;
+          document.querySelector('.stat-item:nth-child(3) .stat-number').textContent = data.data.completedVisits;
+        }
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      }
+
+      // Load upcoming visits
+      try {
+        const response = await fetch('/api/visits', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          const upcoming = data.data.filter(visit => visit.status === 'scheduled');
+          const visitsHtml = upcoming.length > 0
+            ? upcoming.map(visit => `
+                <div class="visit-item">
+                  <h4>📅 ${new Date(visit.date).toLocaleDateString()}</h4>
+                  <p>🏫 ${visit.school?.name || 'School'}</p>
+                  <p>👥 Class: ${visit.assignedClass}</p>
+                  <span class="status-badge upcoming">Scheduled</span>
+                </div>
+              `).join('')
+            : '<p>No upcoming visits scheduled.</p>';
+
+          document.getElementById('upcomingVisits').innerHTML = visitsHtml;
+        }
+      } catch (error) {
+        console.error('Error loading visits:', error);
+      }
+    }
+
+    // Load visits for reporting (separate section)
+    async function loadVisitsForReporting() {
+      try {
+        const response = await fetch('/api/visits?status=scheduled', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        const visitsContainer = document.getElementById('visitsToReport');
+
+        if (data.success) {
+          const scheduledVisits = data.data.filter(visit =>
+            visit.status === 'scheduled' &&
+            new Date(visit.date) <= new Date() // Only past or today's visits
+          );
+
+          if (scheduledVisits.length === 0) {
+            visitsContainer.innerHTML = '<p>No visits pending report submission.</p>';
+            return;
+          }
+
+          visitsContainer.innerHTML = scheduledVisits.map(visit => `
+            <div class="visit-report-item">
+              <h4>${visit.school?.name || 'School'}</h4>
+              <p>Date: ${new Date(visit.date).toLocaleDateString()}</p>
+              <p>Class: ${visit.assignedClass}</p>
+              <button class="btn btn-small btn-primary" onclick="openReportModal('${visit._id}')">
+                Submit Report
+              </button>
+            </div>
+          `).join('');
+        }
+      } catch (error) {
+        console.error('Error loading visits for reporting:', error);
+      }
+    }
+
+    // Logout functionality
+    document.querySelector('.logout-btn').addEventListener('click', function (e) {
+      e.preventDefault();
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = 'login.html';
+    });
+
+    // Open report modal function (placeholder)
+    function openReportModal(visitId) {
+      window.location.href = `visit-report.html?visitId=${visitId}`;
+    }
+
+    // initial data load
+    loadDashboardData();
+    loadVisitsForReporting();
+  </script>
+</body>
+</html>

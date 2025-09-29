@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Visit Report - SAS</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>Spread a Smile (SAS)</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+                <li><a href="visit-report.html" class="nav-link active">Submit Report</a></li>
+                <li><a href="#" class="nav-link logout-btn">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="dashboard">
+        <div class="container">
+            <div class="dashboard-header">
+                <h1>Submit Visit Report</h1>
+                <p>Share your experience and document the visit</p>
+            </div>
+
+            <div class="report-container">
+                <!-- Visit Selection -->
+                <div class="report-section">
+                    <h2>Select Visit</h2>
+                    <div class="form-group">
+                        <label for="visitSelect">Choose Visit to Report *</label>
+                        <select id="visitSelect" required>
+                            <option value="">Loading your visits...</option>
+                        </select>
+                    </div>
+                    <div id="visitDetails" class="visit-details" style="display: none;"></div>
+                </div>
+
+                <!-- Report Form -->
+                <form id="visitReportForm" style="display: none;">
+                    <!-- Basic Information -->
+                    <div class="report-section">
+                        <h2>Visit Details</h2>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="childrenCount">Number of Children *</label>
+                                <input type="number" id="childrenCount" name="childrenCount" required min="1" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="childrenResponse">Children's Response *</label>
+                                <select id="childrenResponse" name="childrenResponse" required>
+                                    <option value="">Select Response</option>
+                                    <option value="excellent">Excellent - Very engaged and enthusiastic</option>
+                                    <option value="good">Good - Participated well</option>
+                                    <option value="average">Average - Moderate participation</option>
+                                    <option value="poor">Poor - Limited engagement</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="topicsCovered">Topics Covered *</label>
+                            <input type="text" id="topicsCovered" name="topicsCovered" required 
+                                   placeholder="e.g., Basic Programming, Environmental Science, Art & Craft">
+                            <small>Separate topics with commas</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="teachingMethods">Teaching Methods Used *</label>
+                            <input type="text" id="teachingMethods" name="teachingMethods" required
+                                   placeholder="e.g., Interactive Games, Storytelling, Hands-on Activities">
+                            <small>Separate methods with commas</small>
+                        </div>
+                    </div>
+
+                    <!-- Challenges & Suggestions -->
+                    <div class="report-section">
+                        <h2>Feedback & Suggestions</h2>
+                        <div class="form-group">
+                            <label for="challengesFaced">Challenges Faced</label>
+                            <textarea id="challengesFaced" name="challengesFaced" rows="3" 
+                                      placeholder="Any difficulties encountered during the visit..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="suggestions">Suggestions for Improvement</label>
+                            <textarea id="suggestions" name="suggestions" rows="3"
+                                      placeholder="Ideas for better future visits..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Media Upload -->
+                    <div class="report-section">
+                        <h2>Photos & Videos</h2>
+                        <p class="section-description">Upload photos and videos from your visit (Max 8 photos, 2 videos)</p>
+                        
+                        <div class="upload-area">
+                            <div class="upload-section">
+                                <h4>📸 Photos</h4>
+                                <div class="file-upload">
+                                    <input type="file" id="photoUpload" multiple accept="image/*" class="file-input">
+                                    <label for="photoUpload" class="upload-label">
+                                        <span class="upload-icon">📁</span>
+                                        <span>Choose Photos</span>
+                                    </label>
+                                </div>
+                                <div id="photoPreview" class="preview-grid"></div>
+                            </div>
+
+                            <div class="upload-section">
+                                <h4>🎥 Videos</h4>
+                                <div class="file-upload">
+                                    <input type="file" id="videoUpload" multiple accept="video/*" class="file-input">
+                                    <label for="videoUpload" class="upload-label">
+                                        <span class="upload-icon">📁</span>
+                                        <span>Choose Videos</span>
+                                    </label>
+                                </div>
+                                <div id="videoPreview" class="preview-grid"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submission -->
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="clearForm()">Clear Form</button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            Submit Visit Report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Loading Modal -->
+    <div id="loadingModal" class="modal" style="display: none;">
+        <div class="modal-content" style="text-align: center; max-width: 400px;">
+            <h3>Submitting Report...</h3>
+            <div class="loading-spinner"></div>
+            <p>Please wait while we upload your files and submit the report.</p>
+            <p id="uploadProgress">Initializing...</p>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Spread a Smile (SAS). All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        let selectedVisitId = null;
+        const uploadedFiles = {
+            photos: [],
+            videos: []
+        };
+
+        // Load visits that need reporting
+        async function loadVisitsForReporting() {
+            try {
+                const response = await fetch('/api/visits?status=scheduled', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                const visitSelect = document.getElementById('visitSelect');
+                
+                if (data.success) {
+                    const reportableVisits = data.data.filter(visit => 
+                        visit.status === 'scheduled'
+                    );
+
+                    if (reportableVisits.length === 0) {
+                        visitSelect.innerHTML = '<option value="">No visits pending report</option>';
+                        return;
+                    }
+
+                    visitSelect.innerHTML = '<option value="">Select a visit to report</option>' +
+                        reportableVisits.map(visit => 
+                            `<option value="${visit._id}">
+                                ${visit.school.name} - ${new Date(visit.date).toLocaleDateString()} (${visit.assignedClass})
+                            </option>`
+                        ).join('');
+
+                    // Add change event
+                    visitSelect.addEventListener('change', handleVisitSelection);
+                }
+            } catch (error) {
+                console.error('Error loading visits:', error);
+            }
+        }
+
+        function handleVisitSelection(event) {
+            const visitId = event.target.value;
+            selectedVisitId = visitId;
+            const visitDetails = document.getElementById('visitDetails');
+            const reportForm = document.getElementById('visitReportForm');
+
+            if (visitId) {
+                // Show visit details
+                const selectedOption = event.target.options[event.target.selectedIndex];
+                visitDetails.innerHTML = `
+                    <div class="visit-info-card">
+                        <h4>Visit Details</h4>
+                        <p><strong>School:</strong> ${selectedOption.text.split(' - ')[0]}</p>
+                        <p><strong>Date:</strong> ${selectedOption.text.split(' - ')[1]}</p>
+                        <p><strong>Class:</strong> ${selectedOption.text.split('(')[1].replace(')', '')}</p>
+                    </div>
+                `;
+                visitDetails.style.display = 'block';
+                reportForm.style.display = 'block';
+            } else {
+                visitDetails.style.display = 'none';
+                reportForm.style.display = 'none';
+            }
+        }
+
+        // File upload handling
+        document.getElementById('photoUpload').addEventListener('change', handlePhotoUpload);
+        document.getElementById('videoUpload').addEventListener('change', handleVideoUpload);
+
+        function handlePhotoUpload(event) {
+            const files = Array.from(event.target.files);
+            const preview = document.getElementById('photoPreview');
+            
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const previewItem = document.createElement('div');
+                        previewItem.className = 'preview-item';
+                        previewItem.innerHTML = `
+                            <img src="${e.target.result}" alt="Preview">
+                            <button type="button" class="remove-btn" onclick="removePhoto('${file.name}')">×</button>
+                            <span class="file-name">${file.name}</span>
+                        `;
+                        preview.appendChild(previewItem);
+                        
+                        uploadedFiles.photos.push(file);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            event.target.value = '';
+        }
+
+        function handleVideoUpload(event) {
+            const files = Array.from(event.target.files);
+            const preview = document.getElementById('videoPreview');
+            
+            files.forEach(file => {
+                if (file.type.startsWith('video/')) {
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+                    previewItem.innerHTML = `
+                        <div class="video-icon">🎥</div>
+                        <button type="button" class="remove-btn" onclick="removeVideo('${file.name}')">×</button>
+                        <span class="file-name">${file.name}</span>
+                    `;
+                    preview.appendChild(previewItem);
+                    
+                    uploadedFiles.videos.push(file);
+                }
+            });
+            
+            event.target.value = '';
+        }
+
+        function removePhoto(fileName) {
+            uploadedFiles.photos = uploadedFiles.photos.filter(file => file.name !== fileName);
+            updatePhotoPreview();
+        }
+
+        function removeVideo(fileName) {
+            uploadedFiles.videos = uploadedFiles.videos.filter(file => file.name !== fileName);
+            updateVideoPreview();
+        }
+
+        function updatePhotoPreview() {
+            const preview = document.getElementById('photoPreview');
+            preview.innerHTML = '';
+            
+            uploadedFiles.photos.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+                    previewItem.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview">
+                        <button type="button" class="remove-btn" onclick="removePhoto('${file.name}')">×</button>
+                        <span class="file-name">${file.name}</span>
+                    `;
+                    preview.appendChild(previewItem);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function updateVideoPreview() {
+            const preview = document.getElementById('videoPreview');
+            preview.innerHTML = '';
+            
+            uploadedFiles.videos.forEach(file => {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'preview-item';
+                previewItem.innerHTML = `
+                    <div class="video-icon">🎥</div>
+                    <button type="button" class="remove-btn" onclick="removeVideo('${file.name}')">×</button>
+                    <span class="file-name">${file.name}</span>
+                `;
+                preview.appendChild(previewItem);
+            });
+        }
+
+        // Form submission
+        document.getElementById('visitReportForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!selectedVisitId) {
+                alert('Please select a visit first');
+                return;
+            }
+
+            // Show loading modal
+            const loadingModal = document.getElementById('loadingModal');
+            const uploadProgress = document.getElementById('uploadProgress');
+            loadingModal.style.display = 'block';
+
+            try {
+                // Upload files first
+                uploadProgress.textContent = 'Uploading files...';
+                const formData = new FormData();
+                
+                // Add photos
+                uploadedFiles.photos.forEach(photo => {
+                    formData.append('photos', photo);
+                });
+                
+                // Add videos
+                uploadedFiles.videos.forEach(video => {
+                    formData.append('videos', video);
+                });
+
+                let fileUrls = { photos: [], videos: [] };
+                
+                if (uploadedFiles.photos.length > 0 || uploadedFiles.videos.length > 0) {
+                    const uploadResponse = await fetch(`/api/visits/${selectedVisitId}/upload`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+                    
+                    const uploadData = await uploadResponse.json();
+                    
+                    if (uploadData.success) {
+                        fileUrls = uploadData.data;
+                    } else {
+                        throw new Error(uploadData.message);
+                    }
+                }
+
+                // Submit report data
+                uploadProgress.textContent = 'Submitting report...';
+                const reportData = {
+                    childrenCount: parseInt(document.getElementById('childrenCount').value),
+                    childrenResponse: document.getElementById('childrenResponse').value,
+                    topicsCovered: document.getElementById('topicsCovered').value,
+                    teachingMethods: document.getElementById('teachingMethods').value,
+                    challengesFaced: document.getElementById('challengesFaced').value,
+                    suggestions: document.getElementById('suggestions').value,
+                    photos: fileUrls.photos,
+                    videos: fileUrls.videos
+                };
+
+                const reportResponse = await fetch(`/api/visits/${selectedVisitId}/complete-report`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(reportData)
+                });
+
+                const reportResult = await reportResponse.json();
+
+                if (reportResult.success) {
+                    loadingModal.style.display = 'none';
+                    alert('Visit report submitted successfully!');
+                    clearForm();
+                    window.location.href = 'dashboard.html';
+                } else {
+                    throw new Error(reportResult.message);
+                }
+
+            } catch (error) {
+                loadingModal.style.display = 'none';
+                console.error('Error submitting report:', error);
+                alert('Failed to submit report: ' + error.message);
+            }
+        });
+
+        function clearForm() {
+            document.getElementById('visitReportForm').reset();
+            document.getElementById('visitSelect').value = '';
+            document.getElementById('visitDetails').style.display = 'none';
+            document.getElementById('visitReportForm').style.display = 'none';
+            document.getElementById('photoPreview').innerHTML = '';
+            document.getElementById('videoPreview').innerHTML = '';
+            uploadedFiles.photos = [];
+            uploadedFiles.videos = [];
+            selectedVisitId = null;
+        }
+
+        // Logout functionality
+        document.querySelector('.logout-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        });
+
+        // Load visits on page load
+        loadVisitsForReporting();
+    </script>
+
+    <style>
+        .report-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin: 30px 0;
+        }
+
+        .report-section {
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .report-section:last-child {
+            border-bottom: none;
+        }
+
+        .section-description {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .visit-details {
+            margin-top: 15px;
+        }
+
+        .visit-info-card {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
+        }
+
+        .upload-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .upload-area {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .file-upload {
+            margin: 15px 0;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-label {
+            display: inline-block;
+            padding: 12px 20px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .upload-label:hover {
+            background: #45a049;
+        }
+
+        .upload-icon {
+            margin-right: 8px;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .preview-item {
+            position: relative;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 3px;
+        }
+
+        .video-icon {
+            font-size: 2rem;
+            margin: 10px 0;
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .file-name {
+            display: block;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            word-break: break-all;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</body>
+</html>
