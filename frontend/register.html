@@ -5,6 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Spread a Smile</title>
     <link rel="stylesheet" href="css/style.css">
+
+    <!-- Inline CSS: checkbox layout + modal styles (move to css/style.css if you like) -->
+    <style>
+      /* Keep the agree checkbox inline before the text */
+      .agree-checkbox {
+        display: flex !important;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        user-select: none;
+        font-weight: 600;
+      }
+      .agree-checkbox input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        flex: 0 0 auto;
+      }
+      .agree-checkbox a {
+        text-decoration: underline;
+        font-weight: 700;
+      }
+
+      /* TERMS MODAL */
+      .terms-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .terms-modal[aria-hidden="false"] { display: block; }
+
+      /* Backdrop */
+      .terms-modal__backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+      }
+
+      /* Panel */
+      .terms-modal__content {
+        position: relative;
+        max-width: 800px;
+        margin: 6vh auto;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        padding: 22px;
+        overflow: auto;
+        max-height: 80vh;
+      }
+
+      .terms-modal__close {
+        position: absolute;
+        right: 14px;
+        top: 10px;
+        border: none;
+        background: transparent;
+        font-size: 28px;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .terms-modal__body h3 { margin-top: 12px; }
+      .terms-modal__body p { margin: 8px 0; font-size: 14px; color: #222; }
+
+      /* Make modal mobile-friendly */
+      @media (max-width: 520px) {
+        .terms-modal__content {
+          margin: 4vh 12px;
+          padding: 16px;
+        }
+      }
+    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -16,14 +91,14 @@
                 <li><a href="index.html" class="nav-link">Home</a></li>
                 <li><a href="about.html" class="nav-link">About</a></li>
                 <li><a href="contact.html" class="nav-link">Contact</a></li>
-                <li><a href="login.html" class="nav-link login-btn">Volunteer Login</a></li>
+                <li><a href="login.html" class="nav-link login-btn">Login</a></li>
             </ul>
         </div>
     </nav>
 
     <section class="page-header">
         <div class="container">
-            <h1>Become a Volunteer</h1>
+            <h1>Become a SAS Member</h1>
             <p>Join us in spreading smiles to government school children</p>
         </div>
     </section>
@@ -31,8 +106,8 @@
     <section class="register-section">
         <div class="container">
             <div class="register-card">
-                <h2>Volunteer Registration</h2>
-                <p>Fill out the form below to join SAS as a volunteer</p>
+                <h2>Registration</h2>
+                <p>Fill out the form below to join as a SAS Member</p>
                 
                 <form id="registerForm">
                     <div class="form-row">
@@ -99,14 +174,15 @@
                         <small>Separate skills with commas</small>
                     </div>
 
+                    <!-- Agree block: Terms opens modal -->
                     <div class="form-group">
-                        <label>
+                        <label class="agree-checkbox">
                             <input type="checkbox" id="agreeTerms" required>
-                            I agree to the <a href="#">Terms & Conditions</a> and commit to regular participation
+                            <span>I agree to the <a href="#" id="termsLink">Terms & Conditions</a> and commit to regular participation</span>
                         </label>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-full">Register as Volunteer</button>
+                    <button type="submit" class="btn btn-primary btn-full">Register</button>
                 </form>
 
                 <div class="login-link">
@@ -116,58 +192,138 @@
         </div>
     </section>
 
+    <!-- TERMS MODAL (inserted on the same page) -->
+    <div id="termsModal" class="terms-modal" aria-hidden="true" role="dialog" aria-labelledby="termsTitle">
+      <div class="terms-modal__backdrop" data-close></div>
+      <div class="terms-modal__content" role="document">
+        <button class="terms-modal__close" id="termsClose" aria-label="Close Terms & Conditions">&times;</button>
+        <h2 id="termsTitle">Spread a Smile — Terms & Conditions</h2>
+
+        <div class="terms-modal__body">
+          <h3>1. Introduction</h3>
+          <p>Welcome to Spread a Smile (SAS). By registering as a volunteer or member you agree to these Terms & Conditions. Please read them carefully.</p>
+
+          <h3>2. Eligibility</h3>
+          <p>Volunteers must be currently enrolled students or graduates and provide accurate information during registration.</p>
+
+          <h3>3. Volunteer Commitments</h3>
+          <p>Volunteers agree to attend scheduled events, notify coordinators if unavailable, and act professionally during activities.</p>
+
+          <h3>4. Code of Conduct</h3>
+          <p>Respect students, staff and property. Harassment, discrimination or inappropriate behaviour will result in removal.</p>
+
+          <h3>5. Data & Privacy</h3>
+          <p>We collect basic personal information (name, email, phone, college ID, department, skills) to manage volunteering activities. We do not sell your data.</p>
+
+          <h3>6. Intellectual Property</h3>
+          <p>Any training materials or resources provided by SAS remain SAS property. Volunteers may not distribute copyrighted materials without permission.</p>
+
+          <h3>7. Liability</h3>
+          <p>SAS and its partners are not liable for personal injury or loss arising from normal volunteering activities except where required by law.</p>
+
+          <h3>8. Termination</h3>
+          <p>SAS may terminate a volunteer's membership for breaches of these terms or repeated non-participation.</p>
+
+          <h3>9. Contact</h3>
+          <p>Questions or concerns: <a href="mailto:contact@spreadasmile.org">contact@spreadasmile.org</a>.</p>
+
+          <p><small>By checking the box and submitting, you confirm acceptance of these Terms & Conditions.</small></p>
+        </div>
+      </div>
+    </div>
+    <!-- End TERMS MODAL -->
+
     <footer class="footer">
         <div class="container">
             <p>&copy; 2024 Spread a Smile (SAS). All rights reserved.</p>
         </div>
     </footer>
 
+    <!-- Modal script + existing submit handler -->
     <script>
-        document.getElementById('registerForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            // Validate passwords match
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            if (password !== confirmPassword) {
-                alert('Passwords do not match!');
-                return;
-            }
+      // ---------- Terms modal open/close ----------
+      (function() {
+        const link = document.getElementById('termsLink');
+        const modal = document.getElementById('termsModal');
+        const closeBtn = document.getElementById('termsClose');
+        const backdrop = modal ? modal.querySelector('.terms-modal__backdrop') : null;
 
-            const formData = {
-                name: document.getElementById('name').value,
-                email: document.getElementById('email').value,
-                password: password,
-                collegeId: document.getElementById('collegeId').value,
-                phone: document.getElementById('phone').value,
-                department: document.getElementById('department').value,
-                year: parseInt(document.getElementById('year').value),
-                skills: document.getElementById('skills').value.split(',').map(skill => skill.trim()).filter(skill => skill)
-            };
+        if (!link || !modal) return;
 
-            try {
-                const response = await fetch('/api/auth/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('Registration successful! You can now login.');
-                    window.location.href = 'login.html';
-                } else {
-                    alert('Registration failed: ' + data.message);
-                }
-            } catch (error) {
-                console.error('Registration error:', error);
-                alert('Registration failed. Please try again.');
-            }
+        function openModal() {
+          modal.setAttribute('aria-hidden', 'false');
+          document.body.style.overflow = 'hidden';
+          closeBtn && closeBtn.focus();
+        }
+
+        function closeModal() {
+          modal.setAttribute('aria-hidden', 'true');
+          document.body.style.overflow = '';
+          link.focus();
+        }
+
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          openModal();
         });
+
+        closeBtn && closeBtn.addEventListener('click', closeModal);
+        backdrop && backdrop.addEventListener('click', closeModal);
+
+        window.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && modal.getAttribute('aria-hidden') === 'false') {
+            closeModal();
+          }
+        });
+      })();
+
+      // ---------- Form submit handler (role removed) ----------
+      document.getElementById('registerForm').addEventListener('submit', async function(e) {
+          e.preventDefault();
+          
+          // Validate passwords match
+          const password = document.getElementById('password').value;
+          const confirmPassword = document.getElementById('confirmPassword').value;
+          
+          if (password !== confirmPassword) {
+              alert('Passwords do not match!');
+              return;
+          }
+
+          const formData = {
+              name: document.getElementById('name').value,
+              email: document.getElementById('email').value,
+              password: password,
+              collegeId: document.getElementById('collegeId').value,
+              phone: document.getElementById('phone').value,
+              department: document.getElementById('department').value,
+              year: parseInt(document.getElementById('year').value),
+              // role removed — all registrants are members
+              skills: document.getElementById('skills').value.split(',').map(skill => skill.trim()).filter(skill => skill)
+          };
+
+          try {
+              const response = await fetch('/api/auth/register', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(formData)
+              });
+              
+              const data = await response.json();
+              
+              if (data.success) {
+                  alert('Registration successful! You can now login.');
+                  window.location.href = 'login.html';
+              } else {
+                  alert('Registration failed: ' + data.message);
+              }
+          } catch (error) {
+              console.error('Registration error:', error);
+              alert('Registration failed. Please try again.');
+          }
+      });
     </script>
 </body>
 </html>
