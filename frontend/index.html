@@ -59,17 +59,29 @@
             color: #333;
             font-weight: 500;
             transition: color 0.3s;
+            display: inline-block;
+            line-height: 1;
+            padding: 6px 0;
         }
 
         .nav-link:hover, .nav-link.active {
             color: #4CAF50;
         }
 
-        .login-btn {
+        /* Login & Register buttons (same style) */
+        .login-btn,
+        .register-btn {
             background: #4CAF50;
             color: white !important;
             padding: 8px 20px;
             border-radius: 5px;
+            text-transform: capitalize;
+        }
+
+        .login-btn:hover,
+        .register-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
         }
 
         /* Hero Section */
@@ -217,7 +229,8 @@
                 <li><a href="index.html" class="nav-link active">Home</a></li>
                 <li><a href="about.html" class="nav-link">About</a></li>
                 <li><a href="contact.html" class="nav-link">Contact</a></li>
-                <li><a href="login.html" class="nav-link login-btn">Volunteer Login</a></li>
+                <li><a href="register.html" class="nav-link register-btn">Register</a></li>
+                <li><a href="login.html" class="nav-link login-btn">Login</a></li>
             </ul>
         </div>
     </nav>
@@ -228,7 +241,7 @@
             <h1>Creating Smiles Through Education</h1>
             <p>B.Tech students bringing joy and knowledge to government school children</p>
             <div class="hero-buttons">
-                <a href="login.html" class="btn btn-primary">Volunteer Login</a>
+                <a href="login.html" class="btn btn-primary">Login</a>
                 <a href="register.html" class="btn btn-secondary">Become a Volunteer</a>
                 <a href="about.html" class="btn btn-secondary">Learn More</a>
             </div>
