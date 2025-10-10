@@ -9,9 +9,12 @@ const {
     uploadVisitFiles,
     handleFileUpload,
     submitCompleteReport,
-    getVisitGallery
+    getVisitGallery,
+    updateVisit,
+    deleteVisit,
+    deleteMedia
 } = require('../controllers/visitController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -19,10 +22,13 @@ router.get('/', protect, getVisits);
 router.get('/stats', protect, getVisitStats);
 router.get('/:id', protect, getVisit);
 router.get('/:id/gallery', protect, getVisitGallery);
-router.post('/', protect, authorize('admin'), createVisit);
+router.post('/', protect, createVisit);
 router.post('/:id/upload', protect, uploadVisitFiles, handleFileUpload);
 router.put('/:id/submit', protect, submitVisitReport);
+router.put('/:id', protect, updateVisit);
+router.delete('/:id', protect, deleteVisit);
+router.delete('/:id/media', protect, deleteMedia);
 router.put('/:id/complete-report', protect, submitCompleteReport);
-router.put('/:id/cancel', protect, authorize('admin'), cancelVisit);
+router.put('/:id/cancel', protect, cancelVisit);
 
 module.exports = router;

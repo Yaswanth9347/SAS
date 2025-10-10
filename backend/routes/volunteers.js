@@ -5,13 +5,13 @@ const {
     updateProfile, 
     createTeams 
 } = require('../controllers/volunteerController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/', protect, authorize('admin'), getVolunteers);
+router.get('/', protect, getVolunteers);
 router.get('/profile', protect, getProfile);
 router.put('/profile', protect, updateProfile);
-router.post('/create-teams', protect, authorize('admin'), createTeams);
+router.post('/create-teams', protect, createTeams);
 
 module.exports = router;

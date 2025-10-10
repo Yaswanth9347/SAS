@@ -30,11 +30,17 @@ const storage = multer.diskStorage({
 
 // File filter
 const fileFilter = (req, file, cb) => {
-    // Check file type
-    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+    // Allow images, videos and common document types
+    if (
+        file.mimetype.startsWith('image/') ||
+        file.mimetype.startsWith('video/') ||
+        file.mimetype === 'application/pdf' ||
+        file.mimetype === 'application/msword' ||
+        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
         cb(null, true);
     } else {
-        cb(new Error('Only image and video files are allowed!'), false);
+        cb(new Error('Only image, video and document files are allowed!'), false);
     }
 };
 
@@ -51,7 +57,8 @@ const upload = multer({
 // Middleware for handling multiple files
 const uploadVisitFiles = upload.fields([
     { name: 'photos', maxCount: 8 },
-    { name: 'videos', maxCount: 2 }
+    { name: 'videos', maxCount: 4 },
+    { name: 'docs', maxCount: 6 }
 ]);
 
 module.exports = { uploadVisitFiles };

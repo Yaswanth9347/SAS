@@ -235,21 +235,283 @@
   </footer>
 
   <script>
-    // Example: Add visit button functionality
-    function addVisit() {
-      const visitName = prompt("Enter Visit Name:", "Visit X");
-      const visitDate = prompt("Enter Visit Date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
-      if (visitName && visitDate) {
-        const visitsList = document.getElementById('visitsList');
-        const visitRow = document.createElement('div');
-        visitRow.className = 'visit-row';
-        visitRow.innerHTML = `<span class="visit-name">${visitName}</span><span class="visit-date">${visitDate}</span>`;
-        visitsList.appendChild(visitRow); // Added at bottom of flex-reverse → top visually
-      }
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = 'login.html';
     }
 
-    // Optional: Load visits from API (similar to dashboard)
-    // fetch('/api/visits').then(...);
+    // Utility
+    function escapeHtml(str){ if(!str) return ''; return String(str).replace(/[&<>"]+/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s])); }
+
+    // Load all visits and render list
+    async function loadVisits(){
+      try{
+        const res = await fetch('/api/visits', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        const list = document.getElementById('visitsList');
+        list.innerHTML = '';
+        if(!data.success || !Array.isArray(data.data) || data.data.length===0){
+          list.innerHTML = '<div class="no-visits">No visits found.</div>';
+          return;
+        }
+
+        data.data.forEach(visit => {
+          const row = document.createElement('div');
+          row.className = 'visit-row';
+
+          // main content
+          const left = document.createElement('div');
+          left.style.display = 'flex';
+          left.style.flexDirection = 'column';
+          left.style.gap = '6px';
+          left.innerHTML = `
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="visit-name">${escapeHtml(visit.name || (visit.school && visit.school.name) || 'Visit')}</div>
+              <div class="visit-date">${new Date(visit.date).toLocaleDateString()}</div>
+              <div style="font-size:0.9rem;color:#777;margin-left:8px">${escapeHtml(visit.team && visit.team.name || '')}</div>
+            </div>
+          `;
+
+          // actions
+          const actions = document.createElement('div');
+          actions.className = 'school-actions';
+          actions.style.gap = '8px';
+          actions.innerHTML = `
+            <button class="btn btn-edit">View / Edit</button>
+            <button class="btn btn-delete">Delete</button>
+          `;
+
+          row.appendChild(left);
+          row.appendChild(actions);
+
+          // details element (hidden)
+          const details = document.createElement('div');
+          details.style.display = 'none';
+          details.style.marginTop = '10px';
+          details.style.padding = '12px';
+          details.style.background = '#fafafa';
+          details.style.borderRadius = '8px';
+          details.innerHTML = renderVisitDetailsHtml(visit);
+
+          // Event: view/edit
+          actions.querySelector('.btn-edit').addEventListener('click', (e)=>{
+            e.stopPropagation();
+            openVisitModal(visit);
+          });
+
+          // Event: delete
+          actions.querySelector('.btn-delete').addEventListener('click', async (e)=>{
+            e.stopPropagation();
+            if(!confirm('Delete this visit?')) return;
+            try{
+              const r = await fetch(`/api/visits/${visit._id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+              const j = await r.json();
+              if(j.success){ loadVisits(); } else alert('Error: '+(j.message||'delete failed'));
+            }catch(err){ console.error(err); alert('Failed to delete visit'); }
+          });
+
+          // Toggle details on row click
+          row.addEventListener('click', ()=>{
+            details.style.display = details.style.display === 'none' ? 'block' : 'none';
+          });
+
+          // Append
+          const wrapper = document.createElement('div');
+          wrapper.appendChild(row);
+          wrapper.appendChild(details);
+          list.appendChild(wrapper);
+        });
+
+        // Attach media action handlers (delegate)
+        attachDetailsHandlers();
+
+      }catch(err){ console.error('Failed to load visits', err); document.getElementById('visitsList').innerHTML = '<p>Error loading visits</p>'; }
+    }
+
+    function renderVisitDetailsHtml(visit){
+      const membersHtml = (visit.members && visit.members.length)? `<p><strong>Members:</strong> ${escapeHtml(visit.members.join(', '))}</p>` : '';
+      const classesHtml = `<p><strong>Classes:</strong> ${visit.classesVisited || 0} visited of ${visit.totalClasses || 0}</p>`;
+      const assignedClass = visit.assignedClass? `<p><strong>Assigned Class:</strong> ${escapeHtml(visit.assignedClass)}</p>` : '';
+      const children = visit.childrenCount? `<p><strong>Children:</strong> ${visit.childrenCount}</p>` : '';
+
+      let mediaHtml = '';
+      if((visit.photos && visit.photos.length) || (visit.videos && visit.videos.length) || (visit.docs && visit.docs.length)){
+        mediaHtml += '<div style="display:flex;flex-direction:column;gap:8px">';
+  if(visit.photos && visit.photos.length){ mediaHtml += `<div><strong>Photos:</strong><div style="display:flex;gap:8px;margin-top:8px">${visit.photos.map(p=>`<div style="width:110px"><img src="${p}" onclick="openLightbox('${p}','image')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;"/></div>`).join('')}</div></div>` }
+  if(visit.videos && visit.videos.length){ mediaHtml += `<div><strong>Videos:</strong><div style="display:flex;gap:8px;margin-top:8px">${visit.videos.map(v=>`<div style="width:140px;padding:8px;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;border:1px solid #eee;cursor:pointer;" onclick="openLightbox('${v}','video')">▶ Watch</div>`).join('')}</div></div>` }
+        if(visit.docs && visit.docs.length){ mediaHtml += `<div><strong>Docs:</strong><ul>${visit.docs.map(d=>`<li><a href="${d}" target="_blank">${escapeHtml(d.split('/').pop())}</a></li>`).join('')}</ul></div>` }
+        mediaHtml += '</div>';
+      } else {
+        mediaHtml = '<p style="color:#666">No media uploaded for this visit.</p>';
+      }
+
+      // include upload input and delete media helper buttons
+      const uploadControls = `
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <input type="file" data-visit-id="${visit._id}" class="media-input" multiple />
+          <button class="btn btn-save upload-btn" data-visit-id="${visit._id}">Upload</button>
+        </div>
+      `;
+
+      return `
+        <div>
+          <p><strong>School:</strong> ${escapeHtml(visit.school && visit.school.name || '')}</p>
+          <p><strong>Team:</strong> ${escapeHtml(visit.team && visit.team.name || '')}</p>
+          ${assignedClass}
+          ${membersHtml}
+          ${children}
+          ${classesHtml}
+          <p><strong>Status:</strong> ${escapeHtml(visit.status||'')}</p>
+          <div style="margin-top:10px">${mediaHtml}</div>
+          ${uploadControls}
+        </div>
+      `;
+    }
+
+    // Attach handlers for upload buttons (delegated)
+    function attachDetailsHandlers(){
+      document.querySelectorAll('.upload-btn').forEach(btn=>{
+        btn.removeEventListener('click', onUploadClick);
+        btn.addEventListener('click', onUploadClick);
+      });
+    }
+
+    async function onUploadClick(e){
+      const visitId = e.currentTarget.dataset.visitId;
+      const input = document.querySelector(`input.media-input[data-visit-id="${visitId}"]`);
+      if(!input || !input.files || input.files.length===0){ alert('Select files to upload'); return; }
+
+      const form = new FormData();
+      // split files by type
+      for(const file of input.files){
+        if(file.type.startsWith('image/')) form.append('photos', file);
+        else if(file.type.startsWith('video/')) form.append('videos', file);
+        else form.append('docs', file);
+      }
+
+      try{
+        const res = await fetch(`/api/visits/${visitId}/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: form });
+        const j = await res.json();
+        if(j.success){ alert('Upload successful'); loadVisits(); } else { alert('Upload failed: '+(j.message||'')); }
+      }catch(err){ console.error(err); alert('Upload error'); }
+    }
+
+    // open modal for creating or editing a visit
+    async function openVisitModal(visit=null){
+      // fetch schools and teams for selects
+      const overlay = document.createElement('div'); overlay.className='modal-overlay';
+      overlay.innerHTML = `<div class="modal">
+        <h2>${visit ? 'Edit Visit' : 'Add Visit'}</h2>
+        <label>Visit Name</label><input id="v_name" type="text" value="${visit?escapeHtml(visit.name):''}">
+        <label>Date</label><input id="v_date" type="date" value="${visit?new Date(visit.date).toISOString().split('T')[0]:new Date().toISOString().split('T')[0]}">
+  <label>Team</label><select id="v_team"><option value="">Loading teams...</option></select>
+  <label>School</label><select id="v_school"><option value="">Loading schools...</option></select>
+        <label>Assigned Class</label><input id="v_assigned" type="text" value="${visit?escapeHtml(visit.assignedClass||'') : ''}">
+        <label>Members (comma separated)</label><input id="v_members" type="text" value="${visit && visit.members?escapeHtml(visit.members.join(', ')):''}">
+        <label>Total Classes</label><input id="v_total" type="number" min="0" value="${visit?visit.totalClasses||0:0}">
+        <label>Classes Visited</label><input id="v_visited" type="number" min="0" value="${visit?visit.classesVisited||0:0}">
+        <label>Expected Children</label><input id="v_children" type="number" min="0" value="${visit?visit.childrenCount||0:30}">
+        <div class="modal-actions"><button class="btn-cancel">Cancel</button><button class="btn-save">Save</button></div>
+      </div>`;
+      document.body.appendChild(overlay);
+
+      // populate teams and schools
+      try{
+        const [teamsRes, schoolsRes] = await Promise.all([
+          fetch('/api/admin/teams', { headers: { 'Authorization': `Bearer ${token}` } }).catch(()=>({ ok:false })),
+          fetch('/api/schools', { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+        const teamSelect = overlay.querySelector('#v_team');
+        if(teamsRes && teamsRes.ok){ const tjson = await teamsRes.json(); if(tjson.success){ teamSelect.innerHTML = '<option value="">Select team</option>' + tjson.data.map(t=>`<option value="${t._id}">${escapeHtml(t.name)}</option>`).join(''); } }
+        const schoolsJson = await schoolsRes.json(); const schoolSelect = overlay.querySelector('#v_school');
+        if(schoolsJson.success){ schoolSelect.innerHTML = '<option value="">Select school</option>' + schoolsJson.data.map(s=>`<option value="${s._id}">${escapeHtml(s.name)}</option>`).join(''); }
+
+        // set selected
+        if(visit){ if(visit.team) teamSelect.value = visit.team._id || visit.team; if(visit.school) schoolSelect.value = visit.school._id || visit.school; }
+      }catch(err){ console.warn('Failed to load teams/schools',err); }
+
+      overlay.querySelector('.btn-cancel').onclick = ()=>overlay.remove();
+      overlay.querySelector('.btn-save').onclick = async ()=>{
+        const payload = {
+          name: document.getElementById('v_name').value.trim(),
+          date: document.getElementById('v_date').value,
+          team: overlay.querySelector('#v_team').value,
+          school: overlay.querySelector('#v_school').value,
+          assignedClass: document.getElementById('v_assigned').value.trim(),
+          members: (document.getElementById('v_members').value||'').split(',').map(s=>s.trim()).filter(Boolean),
+          totalClasses: parseInt(document.getElementById('v_total').value,10)||0,
+          classesVisited: parseInt(document.getElementById('v_visited').value,10)||0,
+          childrenCount: parseInt(document.getElementById('v_children').value,10)||0,
+          status: 'scheduled'
+        };
+
+        // Basic validation
+        if (!payload.date) { alert('Please select a date'); return; }
+        if (!payload.team) { alert('Please select a team'); return; }
+        if (!payload.school) { alert('Please select a school'); return; }
+
+        try{
+          let res, j;
+          if(visit && visit._id){ res = await fetch(`/api/visits/${visit._id}`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify(payload) }); j = await res.json(); }
+          else { res = await fetch('/api/visits', { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify(payload) }); j = await res.json(); }
+          if(j.success){ overlay.remove(); loadVisits(); } else { alert('Error: '+(j.message||'save failed')); }
+        }catch(err){ console.error(err); alert('Save failed'); }
+      };
+    }
+
+    // Add Visit button
+    document.querySelector('.add-visit-btn').addEventListener('click', ()=>openVisitModal());
+
+    // Delete media helper
+    async function deleteMedia(visitId, url){
+      if(!confirm('Delete this media?')) return;
+      try{
+        const res = await fetch(`/api/visits/${visitId}/media`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify({ url }) });
+        const j = await res.json(); if(j.success){ alert('Removed'); loadVisits(); } else alert('Error: '+(j.message||''));
+      }catch(err){ console.error(err); alert('Failed to remove media'); }
+    }
+
+    // Logout handler
+    (function attachLogout(){ const logoutBtn = document.querySelector('.logout-btn'); if(logoutBtn){ logoutBtn.addEventListener('click', function(e){ e.preventDefault(); localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='login.html'; }); }})();
+
+    // initial load
+    loadVisits();
+  </script>
+  
+  <!-- Lightbox Modal -->
+  <div id="vg_lightbox" class="lightbox" style="display:none;">
+    <span class="close-lightbox" id="vg_close">&times;</span>
+    <div class="lightbox-content">
+      <img id="vg_lightbox_image" src="" alt="Full size" style="display:none;" />
+      <video id="vg_lightbox_video" controls style="display:none; max-width:90%; max-height:80%;">Your browser does not support the video tag.</video>
+    </div>
+    <div class="lightbox-caption" id="vg_lightbox_caption"></div>
+  </div>
+
+  <script>
+    function openLightbox(src, type){
+      const lb = document.getElementById('vg_lightbox');
+      const img = document.getElementById('vg_lightbox_image');
+      const vid = document.getElementById('vg_lightbox_video');
+      const cap = document.getElementById('vg_lightbox_caption');
+      if(type === 'image'){
+        img.src = src; img.style.display = 'block'; vid.style.display = 'none'; cap.textContent = 'Photo from visit';
+      } else {
+        vid.src = src; vid.style.display = 'block'; img.style.display = 'none'; cap.textContent = 'Video from visit';
+      }
+      lb.style.display = 'flex';
+    }
+
+    function closeLightbox(){
+      const lb = document.getElementById('vg_lightbox');
+      const vid = document.getElementById('vg_lightbox_video');
+      if(vid){ vid.pause(); vid.currentTime = 0; vid.src = ''; }
+      const img = document.getElementById('vg_lightbox_image'); if(img) img.src = '';
+      lb.style.display = 'none';
+    }
+
+    document.getElementById('vg_close').addEventListener('click', closeLightbox);
+    document.getElementById('vg_lightbox').addEventListener('click', function(e){ if(e.target === this) closeLightbox(); });
   </script>
 </body>
 </html>

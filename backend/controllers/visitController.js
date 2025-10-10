@@ -79,8 +79,24 @@ exports.getVisit = async (req, res, next) => {
 // @desc    Create new visit
 // @route   POST /api/visits
 // @access  Private/Admin
+const mongoose = require('mongoose');
+
 exports.createVisit = async (req, res, next) => {
     try {
+        // Validate team and school IDs
+        if (!req.body.team || !mongoose.Types.ObjectId.isValid(req.body.team)) {
+            return res.status(400).json({ success: false, message: 'Invalid or missing team id' });
+        }
+        if (!req.body.school || !mongoose.Types.ObjectId.isValid(req.body.school)) {
+            return res.status(400).json({ success: false, message: 'Invalid or missing school id' });
+        }
+
+        // ensure referenced team and school exist
+        const teamExists = await Team.findById(req.body.team).select('_id');
+        if (!teamExists) return res.status(404).json({ success: false, message: 'Team not found' });
+        const schoolExists = await School.findById(req.body.school).select('_id');
+        if (!schoolExists) return res.status(404).json({ success: false, message: 'School not found' });
+
         // Check if team is available on that date
         const existingVisit = await Visit.findOne({
             team: req.body.team,
@@ -309,21 +325,29 @@ exports.handleFileUpload = async (req, res, next) => {
 
         const fileUrls = {
             photos: [],
-            videos: []
+            videos: [],
+            docs: []
         };
 
         // Process uploaded files
         if (req.files) {
             if (req.files.photos) {
-                fileUrls.photos = req.files.photos.map(file => 
-                    `/uploads/${visit._id}/${path.basename(file.filename)}`
-                );
+                const urls = req.files.photos.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
+                fileUrls.photos = urls;
+                visit.photos = (visit.photos || []).concat(urls);
             }
             if (req.files.videos) {
-                fileUrls.videos = req.files.videos.map(file => 
-                    `/uploads/${visit._id}/${path.basename(file.filename)}`
-                );
+                const urls = req.files.videos.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
+                fileUrls.videos = urls;
+                visit.videos = (visit.videos || []).concat(urls);
             }
+            if (req.files.docs) {
+                const urls = req.files.docs.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
+                fileUrls.docs = urls;
+                visit.docs = (visit.docs || []).concat(urls);
+            }
+            // persist visit with new media
+            await visit.save();
         }
 
         res.status(200).json({
@@ -430,5 +454,111 @@ exports.getVisitGallery = async (req, res, next) => {
             success: false,
             message: error.message
         });
+    }
+};
+
+// @desc    Update visit
+// @route   PUT /api/visits/:id
+// @access  Private
+exports.updateVisit = async (req, res, next) => {
+    try {
+        const visit = await Visit.findById(req.params.id);
+        if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
+
+        // basic auth: volunteers can only update their team visits
+        if (req.user.role === 'volunteer' && !req.user.team.equals(visit.team)) {
+            return res.status(403).json({ success: false, message: 'Not authorized to update this visit' });
+        }
+
+        // If team or school are provided in update, validate them
+        if (req.body.team && !mongoose.Types.ObjectId.isValid(req.body.team)) {
+            return res.status(400).json({ success: false, message: 'Invalid team id' });
+        }
+        if (req.body.school && !mongoose.Types.ObjectId.isValid(req.body.school)) {
+            return res.status(400).json({ success: false, message: 'Invalid school id' });
+        }
+        if (req.body.team) {
+            const teamExists = await Team.findById(req.body.team).select('_id');
+            if (!teamExists) return res.status(404).json({ success: false, message: 'Team not found' });
+        }
+        if (req.body.school) {
+            const schoolExists = await School.findById(req.body.school).select('_id');
+            if (!schoolExists) return res.status(404).json({ success: false, message: 'School not found' });
+        }
+
+        const updated = await Visit.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
+            .populate('school')
+            .populate('team')
+            .populate('submittedBy', 'name');
+
+        res.status(200).json({ success: true, data: updated });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Delete visit
+// @route   DELETE /api/visits/:id
+// @access  Private
+exports.deleteVisit = async (req, res, next) => {
+    try {
+        const visit = await Visit.findById(req.params.id);
+        if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
+
+        // basic auth: volunteers only allowed to delete their own team's visits
+        if (req.user.role === 'volunteer' && !req.user.team.equals(visit.team)) {
+            return res.status(403).json({ success: false, message: 'Not authorized to delete this visit' });
+        }
+
+        // delete upload directory if exists
+        const uploadDir = path.join(__dirname, '../uploads', String(visit._id));
+        if (fs.existsSync(uploadDir)) {
+            fs.rmSync(uploadDir, { recursive: true, force: true });
+        }
+
+        await Visit.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({ success: true, message: 'Visit deleted' });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Delete a media URL from visit (photos/videos/docs)
+// @route   DELETE /api/visits/:id/media
+// @access  Private
+exports.deleteMedia = async (req, res, next) => {
+    try {
+        const { url } = req.body;
+        if (!url) return res.status(400).json({ success: false, message: 'Media url required' });
+        const visit = await Visit.findById(req.params.id);
+        if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
+
+        // auth check
+        if (req.user.role === 'volunteer' && !req.user.team.equals(visit.team)) {
+            return res.status(403).json({ success: false, message: 'Not authorized to delete media for this visit' });
+        }
+
+        const removeFrom = (arr) => {
+            if (!arr) return false;
+            const idx = arr.indexOf(url);
+            if (idx === -1) return false;
+            arr.splice(idx, 1);
+            return true;
+        };
+
+        let removed = removeFrom(visit.photos) || removeFrom(visit.videos) || removeFrom(visit.docs);
+        if (!removed) return res.status(404).json({ success: false, message: 'Media not found on visit' });
+
+        // delete file on disk
+        const filename = path.basename(url);
+        const filePath = path.join(__dirname, '../uploads', String(visit._id), filename);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+        await visit.save();
+
+        res.status(200).json({ success: true, message: 'Media removed' });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
     }
 };

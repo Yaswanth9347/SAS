@@ -1,197 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Schools - Spread a Smile</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Schools - Spread a Smile</title>
+<style>
+  /* Reset & Base */
+  * {margin:0;padding:0;box-sizing:border-box;}
+  body {font-family:"Poppins",sans-serif;background:#f4f6f8;color:#333;line-height:1.6;}
+  .container {max-width:1200px;margin:0 auto;padding:0 20px;}
 
-  <style>
-    /* Reset & Base */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+  /* Navbar */
+  .navbar {background:linear-gradient(90deg,#4caf50,#2e7d32);color:#fff;position:fixed;width:100%;top:0;left:0;z-index:1000;box-shadow:0 4px 15px rgba(0,0,0,0.1);}
+  .nav-container {max-width:1200px;margin:0 auto;padding:0 20px;display:flex;justify-content:space-between;align-items:center;height:70px;}
+  .nav-logo h2 {font-weight:600;font-size:1.5rem;letter-spacing:0.5px;color:#fff;}
+  .nav-menu {display:flex;list-style:none;gap:25px;}
+  .nav-link {text-decoration:none;color:#fff;font-weight:500;transition:all 0.3s ease;}
+  .nav-link:hover,.nav-link.active {color:#c8e6c9;}
+  .logout-btn {background:#f44336;color:white;padding:8px 18px;border-radius:6px;font-weight:500;transition:all 0.3s ease;}
+  .logout-btn:hover {background:#d32f2f;transform:translateY(-2px);}
 
-    body {
-      font-family: "Poppins", sans-serif;
-      background: #f4f6f8;
-      color: #333;
-      line-height: 1.6;
-    }
+  /* Page Header */
+  .page-header {display:flex;justify-content:space-between;align-items:center;margin:120px 0 30px;}
+  .page-header h1 {font-size:2rem;color:#2e7d32;font-weight:600;}
+  .add-school-btn {background:#4caf50;color:white;font-weight:600;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:1rem;transition:all 0.3s ease;}
+  .add-school-btn:hover {background:#388e3c;transform:translateY(-2px);}
 
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 20px;
-    }
+  /* Schools List */
+  .schools-list {display:flex;flex-direction:column-reverse;gap:15px;}
+  .school-row {display:grid;grid-template-columns:1fr auto;align-items:center;background:#fff;padding:15px 20px;border-radius:12px;box-shadow:0 5px 15px rgba(0,0,0,0.05);transition:all 0.3s ease;}
+  .school-row:hover {transform:translateY(-3px);box-shadow:0 10px 20px rgba(0,0,0,0.08);}
+  .school-info {display:flex;flex-direction:column;gap:4px;}
+  .school-name {font-size:1.1rem;font-weight:600;color:#333;}
+  .headmaster-name {font-size:0.95rem;color:#666;}
+  .school-address {font-size:0.85rem;color:#999;}
 
-    /* Navbar */
-    .navbar {
-      background: linear-gradient(90deg, #4caf50, #2e7d32);
-      color: #fff;
-      position: fixed;
-      width: 100%;
-      top: 0;
-      left: 0;
-      z-index: 1000;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
+  /* Action Buttons */
+  .school-actions {display:flex;gap:8px;}
+  .btn {padding:6px 12px;border:none;border-radius:6px;cursor:pointer;font-weight:500;transition:all 0.3s;}
+  .btn-edit {background:#4caf50;color:#fff;}
+  .btn-edit:hover {background:#388e3c;transform:translateY(-2px);}
+  .btn-delete {background:#f44336;color:#fff;}
+  .btn-delete:hover {background:#d32f2f;transform:translateY(-2px);}
 
-    .nav-container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      height: 70px;
-    }
+  /* Modal */
+  .modal-overlay {position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;}
+  .modal {background:#fff;padding:25px;border-radius:12px;max-width:700px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.15);}
+  .modal h2 {margin-bottom:15px;color:#2e7d32;}
+  .modal label {display:block;font-size:0.9rem;margin-bottom:4px;font-weight:500;color:#333;}
+  .modal input {width:100%;padding:8px 10px;margin-bottom:12px;border:1px solid #ccc;border-radius:6px;font-size:0.95rem;}
+  .modal-actions {display:flex;justify-content:flex-end;gap:10px;margin-top:10px;}
+  .modal-actions button {padding:8px 14px;border-radius:6px;font-weight:500;cursor:pointer;}
+  .btn-cancel {background:#ddd;color:#333;}
+  .btn-save {background:#4caf50;color:#fff;border:none;}
+  .btn-save:hover {background:#388e3c;transform:translateY(-2px);}
 
-    .nav-logo h2 {
-      font-weight: 600;
-      font-size: 1.5rem;
-      letter-spacing: 0.5px;
-    }
+  /* Footer */
+  .footer {background:#2e7d32;color:white;text-align:center;padding:25px 0;margin-top:60px;border-top-left-radius:50px;border-top-right-radius:50px;}
+  .footer p {font-size:0.9rem;opacity:0.9;}
 
-    .nav-menu {
-      display: flex;
-      list-style: none;
-      gap: 25px;
-    }
-
-    .nav-link {
-      text-decoration: none;
-      color: #fff;
-      font-weight: 500;
-      transition: all 0.3s ease;
-    }
-
-    .nav-link:hover,
-    .nav-link.active {
-      color: #c8e6c9;
-    }
-
-    .logout-btn {
-      background: #f44336;
-      color: white !important;
-      padding: 8px 18px;
-      border-radius: 6px;
-      transition: all 0.3s ease;
-      font-weight: 500;
-    }
-
-    .logout-btn:hover {
-      background: #d32f2f;
-      transform: translateY(-2px);
-    }
-
-    /* Page Header */
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 120px 0 30px;
-    }
-
-    .page-header h1 {
-      font-size: 2rem;
-      color: #2e7d32;
-      font-weight: 600;
-    }
-
-    .add-school-btn {
-      background: #4caf50;
-      color: white;
-      font-weight: 600;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1rem;
-      transition: all 0.3s ease;
-    }
-
-    .add-school-btn:hover {
-      background: #388e3c;
-      transform: translateY(-2px);
-    }
-
-    /* Schools List */
-    .schools-list {
-      display: flex;
-      flex-direction: column-reverse; /* Bottom to top */
-      gap: 15px;
-    }
-
-    .school-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #fff;
-      padding: 15px 20px;
-      border-radius: 12px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-      transition: all 0.3s ease;
-    }
-
-    .school-row:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-    }
-
-    .school-name {
-      font-size: 1.1rem;
-      font-weight: 500;
-      color: #333;
-    }
-
-    .headmaster-name {
-      font-size: 0.95rem;
-      color: #666;
-    }
-
-    /* Footer */
-    .footer {
-      background: #2e7d32;
-      color: white;
-      text-align: center;
-      padding: 25px 0;
-      border-top-left-radius: 50px;
-      border-top-right-radius: 50px;
-      margin-top: 60px;
-    }
-
-    .footer p {
-      font-size: 0.9rem;
-      opacity: 0.9;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .page-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-      }
-      .page-header h1 {
-        font-size: 1.6rem;
-      }
-      .add-school-btn {
-        width: 100%;
-        text-align: center;
-      }
-    }
-  </style>
+  @media(max-width:768px){
+    .page-header{flex-direction:column;align-items:flex-start;gap:15px;}
+    .page-header h1{font-size:1.6rem;}
+    .add-school-btn{width:100%;text-align:center;}
+  }
+</style>
 </head>
-
 <body>
   <!-- Navbar -->
   <nav class="navbar">
     <div class="nav-container">
-      <div class="nav-logo">
-        <h2>Spread a Smile (SAS)</h2>
-      </div>
+      <div class="nav-logo"><h2>Spread a Smile (SAS)</h2></div>
       <ul class="nav-menu">
         <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
         <li><a href="visits.html" class="nav-link">Visits</a></li>
@@ -205,26 +84,16 @@
   <div class="container">
     <div class="page-header">
       <h1>Schools</h1>
-      <button class="add-school-btn" onclick="addSchool()">+ Add School</button>
+      <button class="add-school-btn" onclick="openSchoolModal()">+ Add School</button>
     </div>
 
     <!-- Schools List -->
     <div class="schools-list" id="schoolsList">
-      <div class="school-row">
-        <span class="school-name">Government High School</span>
-        <span class="headmaster-name">Mr. Ramesh</span>
-      </div>
-      <div class="school-row">
-        <span class="school-name">Municipal Middle School</span>
-        <span class="headmaster-name">Mrs. Anita</span>
-      </div>
-      <div class="school-row">
-        <span class="school-name">Central Primary School</span>
-        <span class="headmaster-name">Mr. Sharma</span>
-      </div>
+      <!-- populated dynamically -->
     </div>
   </div>
 
+  <!-- Footer -->
   <footer class="footer">
     <div class="container">
       <p>&copy; 2025 Spread a Smile (SAS). All rights reserved.</p>
@@ -232,17 +101,108 @@
   </footer>
 
   <script>
-    function addSchool() {
-      const schoolName = prompt("Enter School Name:", "New School");
-      const headmasterName = prompt("Enter Headmaster Name:", "Mr./Mrs.");
-      if (schoolName && headmasterName) {
-        const schoolsList = document.getElementById('schoolsList');
-        const schoolRow = document.createElement('div');
-        schoolRow.className = 'school-row';
-        schoolRow.innerHTML = `<span class="school-name">${schoolName}</span><span class="headmaster-name">${headmasterName}</span>`;
-        schoolsList.appendChild(schoolRow); // bottom-up display
-      }
+    // escape html
+    function escapeHtml(str){if(!str) return '';return String(str).replace(/[&<>"'`]/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;",'`':'&#96;'}[s]));}
+
+    // open modal
+    function openSchoolModal(school=null){
+      const overlay = document.createElement('div');
+      overlay.className='modal-overlay';
+      overlay.innerHTML=`<div class="modal">
+        <h2>${school?'Edit School':'Add School'}</h2>
+        <label>School Name</label><input id="s_name" type="text" value="${school?escapeHtml(school.name):''}">
+        <label>Headmaster Name</label><input id="s_head" type="text" value="${school && school.contactPerson?escapeHtml(school.contactPerson.name):''}">
+        <label>Contact Number 1</label><input id="s_phone1" type="tel" value="${school && school.contactPerson?escapeHtml(school.contactPerson.phone||''):''}">
+        <label>Contact Number 2</label><input id="s_phone2" type="tel" value="${school && school.contactPerson?escapeHtml(school.contactPerson.phone2||''):''}">
+        <label>Address (street, city, state, pincode)</label><input id="s_address" type="text" value="${school && school.address?escapeHtml([school.address.street,school.address.city,school.address.state,school.address.pincode].filter(Boolean).join(', ')) : ''}">
+        <label>Total Classes</label><input id="s_total" type="number" min="1" value="${school?school.totalClasses:''}">
+        <label>Available Classes</label><input id="s_available" type="number" min="0" value="${school?school.availableClasses:''}">
+        <div class="modal-actions">
+          <button class="btn-cancel">Cancel</button>
+          <button class="btn-save">Save</button>
+        </div>
+      </div>`;
+      document.body.appendChild(overlay);
+      overlay.querySelector('.btn-cancel').onclick=()=>overlay.remove();
+      overlay.querySelector('.btn-save').onclick=async ()=>{
+        const payload={name:document.getElementById('s_name').value.trim(),
+          address:parseAddress(document.getElementById('s_address').value.trim()),
+          contactPerson:{name:document.getElementById('s_head').value.trim(),
+          phone:document.getElementById('s_phone1').value.trim(),
+          phone2:document.getElementById('s_phone2').value.trim()},
+          totalClasses:parseInt(document.getElementById('s_total').value,10)||0,
+          availableClasses:parseInt(document.getElementById('s_available').value,10)||0
+        };
+        try{
+          const token=localStorage.getItem('token');
+          const headers={'Content-Type':'application/json'};
+          if(token) headers['Authorization']=`Bearer ${token}`;
+          let res;
+          if(school && school._id) res=await fetch(`/api/schools/${school._id}`,{method:'PUT',headers,body:JSON.stringify(payload)});
+          else res=await fetch('/api/schools',{method:'POST',headers,body:JSON.stringify(payload)});
+          const data=await res.json();
+          if(data.success){overlay.remove();loadSchools();}else alert('Error: '+(data.message||'Unable to save school'));
+        }catch(err){console.error(err);alert('Failed to save school');}
+      };
     }
+
+    function parseAddress(input){const parts=input.split(',').map(p=>p.trim());return {street:parts[0]||'',city:parts[1]||'',state:parts[2]||'',pincode:parts[3]||''};}
+
+    async function loadSchools(){
+      try{
+        const token=localStorage.getItem('token');
+        const headers={};if(token) headers['Authorization']=`Bearer ${token}`;
+        const res=await fetch('/api/schools',{headers});
+        const data=await res.json();
+        const list=document.getElementById('schoolsList');
+        list.innerHTML='';
+        if(data.success && Array.isArray(data.data)){
+          data.data.forEach(s=>{
+            const row=document.createElement('div');
+            row.className='school-row';
+            row.innerHTML=`
+              <div class="school-info">
+                <div class="school-name">${escapeHtml(s.name)}</div>
+                <div class="headmaster-name">${escapeHtml(s.contactPerson?.name||'')}</div>
+                <div class="school-address">${escapeHtml([s.address?.street,s.address?.city].filter(Boolean).join(', '))}</div>
+              </div>
+              <div class="school-actions">
+                <button class="btn btn-edit" onclick='openSchoolModal(${JSON.stringify(s)})'>Edit</button>
+                <button class="btn btn-delete" onclick='deleteSchool("${s._id}")'>Delete</button>
+              </div>`;
+            list.appendChild(row);
+          });
+        } else list.innerHTML='<p>No schools found.</p>';
+      }catch(err){console.error('Failed to load schools',err);document.getElementById('schoolsList').innerHTML='<p>Error loading schools</p>';}
+    }
+
+    async function deleteSchool(id){
+      if(!confirm('Delete this school?')) return;
+      try{
+        const token=localStorage.getItem('token');
+        const headers={'Content-Type':'application/json'};
+        if(token) headers['Authorization']=`Bearer ${token}`;
+        const res=await fetch(`/api/schools/${id}`,{method:'DELETE',headers});
+        const data=await res.json();
+        if(data.success) loadSchools();
+        else alert('Failed to delete: '+(data.message||'error'));
+      }catch(err){console.error(err);alert('Failed to delete school');}
+    }
+
+    loadSchools();
+
+    // Logout handler: clear auth and redirect to login
+    (function attachLogout() {
+      const logoutBtns = document.querySelectorAll('.logout-btn');
+      logoutBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = 'login.html';
+        });
+      });
+    })();
   </script>
 </body>
 </html>
