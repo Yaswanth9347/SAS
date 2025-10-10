@@ -17,16 +17,17 @@ exports.protect = async (req, res, next) => {
     }
 
     try {
-        // Verify token
+        // Verify token and attach decoded user info (including role) to req.user
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
-        req.user = await User.findById(decoded.id);
+        req.user = decoded;  // decoded contains user id and role
+
         next();
-    } catch (error) {
-        return res.status(401).json({
-            success: false,
-            message: 'Not authorized to access this route'
-        });
+    } catch (err) {
+        // Handle token expiry specifically
+        if (err.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: 'Token expired. Please log in again.' });
+        }
+        return res.status(401).json({ message: 'Unauthorized: Invalid token.' });
     }
 };
 

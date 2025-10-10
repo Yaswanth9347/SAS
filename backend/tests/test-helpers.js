@@ -29,6 +29,7 @@ async function createTestAdmin() {
     // Create admin user directly
     const adminUser = await User.create({
         name: 'Test Admin',
+        username: 'admin',
         email: 'admin@sas.org',
         password: 'admin123',
         collegeId: 'ADMIN001',
@@ -42,7 +43,7 @@ async function createTestAdmin() {
     const loginResponse = await request(app)
         .post('/api/auth/login')
         .send({
-            email: 'admin@sas.org',
+            username: 'admin',
             password: 'admin123'
         });
 
@@ -58,6 +59,7 @@ async function createTestVolunteer() {
         .post('/api/auth/register')
         .send({
             name: 'Test Volunteer',
+            username: 'volunteer',
             email: 'volunteer@college.edu',
             password: '123456',
             collegeId: 'VOL001',

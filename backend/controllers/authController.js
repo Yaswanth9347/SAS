@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 // Generate JWT Token
 const sendTokenResponse = (user, statusCode, res) => {
     // Create token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRE,
     });
 
@@ -14,6 +14,7 @@ const sendTokenResponse = (user, statusCode, res) => {
         user: {
             id: user._id,
             name: user.name,
+            username: user.username,
             email: user.email,
             role: user.role,
             department: user.department,
@@ -28,11 +29,12 @@ const sendTokenResponse = (user, statusCode, res) => {
 // @access  Public
 exports.register = async (req, res, next) => {
     try {
-        const { name, email, password, collegeId, department, year, phone, skills } = req.body;
+        const { name, username, email, password, collegeId, department, year, phone, skills } = req.body;
 
         // Create user
         const user = await User.create({
             name,
+            username,
             email,
             password,
             collegeId,
@@ -56,18 +58,18 @@ exports.register = async (req, res, next) => {
 // @access  Public
 exports.login = async (req, res, next) => {
     try {
-        const { email, password } = req.body;
+        const { username, password } = req.body;
 
-        // Validate email & password
-        if (!email || !password) {
+        // Validate username & password
+        if (!username || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide an email and password'
+                message: 'Please provide a username and password'
             });
         }
 
-        // Check for user
-        const user = await User.findOne({ email }).select('+password').populate('team');
+        // Check for user by username
+        const user = await User.findOne({ username }).select('+password').populate('team');
 
         if (!user || !(await user.matchPassword(password))) {
             return res.status(401).json({

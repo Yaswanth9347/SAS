@@ -68,14 +68,14 @@ describe('Frontend Functional Tests', () => {
             const loginDom = new JSDOM(loginHtml);
             const loginDocument = loginDom.window.document;
             
-            const emailInput = loginDocument.getElementById('email');
+            const usernameInput = loginDocument.getElementById('username');
             const passwordInput = loginDocument.getElementById('password');
             const loginButton = loginDocument.querySelector('button[type="submit"]');
             
-            expect(emailInput).toBeTruthy();
+            expect(usernameInput).toBeTruthy();
             expect(passwordInput).toBeTruthy();
             expect(loginButton).toBeTruthy();
-            expect(emailInput.hasAttribute('required')).toBe(true);
+            expect(usernameInput.hasAttribute('required')).toBe(true);
             expect(passwordInput.hasAttribute('required')).toBe(true);
         });
 
@@ -85,11 +85,13 @@ describe('Frontend Functional Tests', () => {
             const registerDocument = registerDom.window.document;
             
             const nameInput = registerDocument.getElementById('name');
+            const usernameInput = registerDocument.getElementById('username');
             const emailInput = registerDocument.getElementById('email');
             const passwordInput = registerDocument.getElementById('password');
             const departmentSelect = registerDocument.getElementById('department');
             
             expect(nameInput.hasAttribute('required')).toBe(true);
+            expect(usernameInput.hasAttribute('required')).toBe(true);
             expect(emailInput.hasAttribute('required')).toBe(true);
             expect(passwordInput.hasAttribute('required')).toBe(true);
             expect(passwordInput.getAttribute('minlength')).toBe('6');
@@ -104,6 +106,7 @@ describe('Frontend Functional Tests', () => {
                 if (key === 'token') return 'mock-jwt-token';
                 if (key === 'user') return JSON.stringify({
                     name: 'Test User',
+                    username: 'testuser',
                     email: 'test@college.edu',
                     role: 'volunteer',
                     department: 'CSE',
@@ -166,13 +169,12 @@ describe('Frontend Functional Tests', () => {
             const loginDom = new JSDOM(loginHtml);
             const loginDocument = loginDom.window.document;
             
-            const emailInput = loginDocument.getElementById('email');
-            emailInput.value = 'invalid-email';
-            
-            expect(emailInput.checkValidity()).toBe(false);
-            
-            emailInput.value = 'valid@email.com';
-            expect(emailInput.checkValidity()).toBe(true);
+            const usernameInput = loginDocument.getElementById('username');
+            // Username has no built-in email validation; ensure required attribute
+            usernameInput.value = '';
+            expect(usernameInput.checkValidity()).toBe(false);
+            usernameInput.value = 'validusername';
+            expect(usernameInput.checkValidity()).toBe(true);
         });
 
         test('Should validate password length', () => {

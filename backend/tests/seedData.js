@@ -18,6 +18,7 @@ const seedTestData = async () => {
         // Create test admin user
         const adminUser = await User.create({
             name: 'Test Admin',
+            username: 'admin',
             email: 'admin@sas.org',
             password: 'admin123',
             collegeId: 'ADMIN001',
@@ -30,6 +31,7 @@ const seedTestData = async () => {
         // Create test volunteer user
         const volunteerUser = await User.create({
             name: 'Test Volunteer',
+            username: 'volunteer',
             email: 'volunteer@college.edu',
             password: '123456',
             collegeId: 'VOL001',
@@ -83,8 +85,8 @@ const seedTestData = async () => {
         console.log(`🏫 Schools created: ${schools.length}`);
         console.log('');
         console.log('🔑 Test Credentials:');
-        console.log('   Admin: admin@sas.org / admin123');
-        console.log('   Volunteer: volunteer@college.edu / 123456');
+    console.log('   Admin: username=admin / admin123');
+    console.log('   Volunteer: username=volunteer / 123456');
         
         process.exit(0);
     } catch (error) {

@@ -1,234 +1,222 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Us - Spread a Smile</title>
-    <style>
-        /* Reset and Base Styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About Us - Spread a Smile</title>
 
-        body {
-            font-family: 'Arial', sans-serif;
-            line-height: 1.6;
-            color: #333;
-        }
+  <style>
+    /* Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
+    body {
+      font-family: "Poppins", sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+    }
 
-        /* Navigation */
-        .navbar {
-            background: #fff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-        }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
 
-        .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 70px;
-        }
+    /* Header Section */
+    .page-header {
+      background: linear-gradient(135deg, #4caf50, #2e7d32);
+      color: #fff;
+      text-align: center;
+      padding: 100px 20px 80px;
+      border-bottom-left-radius: 100px;
+      border-bottom-right-radius: 100px;
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+    }
 
-        .nav-logo h2 {
-            color: #4CAF50;
-        }
+    .page-header h1 {
+      font-size: 2.8rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
 
-        .nav-menu {
-            display: flex;
-            list-style: none;
-            gap: 30px;
-        }
+    .page-header p {
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
 
-        .nav-link {
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-            transition: color 0.3s;
-        }
+    /* About Section */
+    .about-content {
+      padding: 80px 0;
+    }
 
-        .nav-link:hover, .nav-link.active {
-            color: #4CAF50;
-        }
+    .about-section {
+      background: #fff;
+      border-radius: 15px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      padding: 40px;
+      margin-bottom: 50px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
 
-        .login-btn {
-            background: #4CAF50;
-            color: white !important;
-            padding: 8px 20px;
-            border-radius: 5px;
-        }
+    .about-section:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
 
-        /* Page Header */
-        .page-header {
-            background: #f8f9fa;
-            padding: 120px 0 60px;
-            text-align: center;
-        }
+    .about-section h2 {
+      color: #388e3c;
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+      position: relative;
+    }
 
-        .page-header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
+    .about-section h2::after {
+      content: "";
+      width: 60px;
+      height: 4px;
+      background: #4caf50;
+      display: block;
+      margin-top: 8px;
+      border-radius: 2px;
+    }
 
-        /* About Content */
-        .about-content {
-            padding: 80px 0;
-        }
+    .about-section p {
+      font-size: 1.05rem;
+      color: #555;
+      margin-bottom: 15px;
+    }
 
-        .about-section {
-            margin-bottom: 60px;
-        }
+    /* Steps Section */
+    .operation-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 25px;
+      margin-top: 20px;
+    }
 
-        .about-section h2 {
-            color: #4CAF50;
-            margin-bottom: 20px;
-            font-size: 2rem;
-        }
+    .step {
+      background: linear-gradient(135deg, #ffffff, #f9f9f9);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      border-left: 5px solid #4caf50;
+      transition: all 0.3s ease;
+    }
 
-        .about-section p {
-            font-size: 1.1rem;
-            margin-bottom: 15px;
-        }
+    .step:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
 
-        /* Operation Steps */
-        .operation-steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            margin-top: 30px;
-        }
+    .step h3 {
+      color: #2e7d32;
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
 
-        .step {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            border-left: 4px solid #4CAF50;
-        }
+    .step p {
+      color: #666;
+      font-size: 0.98rem;
+    }
 
-        .step h3 {
-            color: #4CAF50;
-            margin-bottom: 10px;
-            font-size: 1.2rem;
-        }
+    /* Footer */
+    .footer {
+      background: #2e7d32;
+      color: #fff;
+      text-align: center;
+      padding: 25px 0;
+      border-top-left-radius: 60px;
+      border-top-right-radius: 60px;
+      margin-top: 60px;
+    }
 
-        .step p {
-            font-size: 1rem;
-            color: #666;
-        }
+    .footer p {
+      font-size: 0.95rem;
+      letter-spacing: 0.5px;
+    }
 
-        /* Footer */
-        .footer {
-            background: #333;
-            color: white;
-            text-align: center;
-            padding: 30px 0;
-        }
+    /* Responsive */
+    @media (max-width: 768px) {
+      .page-header {
+        padding: 80px 20px 60px;
+      }
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .nav-menu {
-                display: none;
-            }
-            
-            .page-header {
-                padding: 100px 0 40px;
-            }
-            
-            .page-header h1 {
-                font-size: 2rem;
-            }
-            
-            .operation-steps {
-                grid-template-columns: 1fr;
-            }
-            
-            .about-content {
-                padding: 60px 0;
-            }
-        }
-    </style>
+      .page-header h1 {
+        font-size: 2.2rem;
+      }
+
+      .about-section {
+        padding: 30px 25px;
+      }
+
+      .step {
+        padding: 25px;
+      }
+    }
+  </style>
 </head>
+
 <body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-logo">
-                <h2>Spread a Smile (SAS)</h2>
-            </div>
-            <ul class="nav-menu">
-                <li><a href="index.html" class="nav-link">Home</a></li>
-                <li><a href="about.html" class="nav-link active">About</a></li>
-                <li><a href="contact.html" class="nav-link">Contact</a></li>
-                <li><a href="login.html" class="nav-link login-btn">Volunteer Login</a></li>
-            </ul>
+  <section class="page-header">
+    <div class="container">
+      <h1>About Spread a Smile</h1>
+      <p>Transforming education through student-led initiatives</p>
+    </div>
+  </section>
+
+  <section class="about-content">
+    <div class="container">
+      <div class="about-section">
+        <h2>Our Mission</h2>
+        <p>
+          Spread a Smile (SAS) is a community service initiative where B.Tech college students visit nearby government schools to interact with children and teach innovative concepts using their unique styles and perspectives.
+        </p>
+      </div>
+
+      <div class="about-section">
+        <h2>How We Operate</h2>
+        <div class="operation-steps">
+          <div class="step">
+            <h3>1. Volunteer Registration</h3>
+            <p>B.Tech students from all years and departments register as volunteers.</p>
+          </div>
+          <div class="step">
+            <h3>2. Team Formation</h3>
+            <p>Volunteers are divided into balanced teams based on year and department.</p>
+          </div>
+          <div class="step">
+            <h3>3. School Coordination</h3>
+            <p>Teams are assigned to different classes in partner government schools.</p>
+          </div>
+          <div class="step">
+            <h3>4. Regular Visits</h3>
+            <p>Scheduled visits where students conduct interactive learning sessions.</p>
+          </div>
+          <div class="step">
+            <h3>5. Documentation</h3>
+            <p>Each visit is documented with reports, photos, and videos.</p>
+          </div>
         </div>
-    </nav>
+      </div>
 
-    <section class="page-header">
-        <div class="container">
-            <h1>About Spread a Smile</h1>
-            <p>Transforming education through student-led initiatives</p>
-        </div>
-    </section>
+      <div class="about-section">
+        <h2>Our Vision</h2>
+        <p>
+          To create a sustainable, long-term community activity that bridges the gap between college students and underprivileged children, fostering mutual learning and growth while bringing smiles through education.
+        </p>
+      </div>
+    </div>
+  </section>
 
-    <section class="about-content">
-        <div class="container">
-            <div class="about-section">
-                <h2>Our Mission</h2>
-                <p>Spread a Smile (SAS) is a community service initiative where B.Tech college students visit nearby government schools to interact with children and teach innovative concepts using their unique styles and perspectives.</p>
-            </div>
-
-            <div class="about-section">
-                <h2>How We Operate</h2>
-                <div class="operation-steps">
-                    <div class="step">
-                        <h3>1. Volunteer Registration</h3>
-                        <p>B.Tech students from all years and departments register as volunteers</p>
-                    </div>
-                    <div class="step">
-                        <h3>2. Team Formation</h3>
-                        <p>Volunteers are divided into balanced teams based on year and department</p>
-                    </div>
-                    <div class="step">
-                        <h3>3. School Coordination</h3>
-                        <p>Teams are assigned to different classes in partner government schools</p>
-                    </div>
-                    <div class="step">
-                        <h3>4. Regular Visits</h3>
-                        <p>Scheduled visits where students conduct interactive learning sessions</p>
-                    </div>
-                    <div class="step">
-                        <h3>5. Documentation</h3>
-                        <p>Each visit is documented with reports, photos, and videos</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="about-section">
-                <h2>Our Vision</h2>
-                <p>To create a sustainable, long-term community activity that bridges the gap between college students and underprivileged children, fostering mutual learning and growth while bringing smiles through education.</p>
-            </div>
-        </div>
-    </section>
-
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2024 Spread a Smile (SAS). All rights reserved.</p>
-        </div>
-    </footer>
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2025 Spread a Smile (SAS). All rights reserved.</p>
+    </div>
+  </footer>
 </body>
 </html>

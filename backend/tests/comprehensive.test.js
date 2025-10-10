@@ -25,6 +25,7 @@ describe('SAS Comprehensive Tests', () => {
         // Create admin user directly in database (more reliable)
         const adminUser = await User.create({
             name: 'Test Admin',
+            username: 'admin',
             email: 'admin@sas.org',
             password: 'admin123',
             collegeId: 'ADMIN001',
@@ -38,7 +39,7 @@ describe('SAS Comprehensive Tests', () => {
         const adminLoginResponse = await request(app)
             .post('/api/auth/login')
             .send({
-                email: 'admin@sas.org',
+                username: 'admin',
                 password: 'admin123'
             });
         
@@ -61,6 +62,7 @@ describe('SAS Comprehensive Tests', () => {
             .post('/api/auth/register')
             .send({
                 name: 'Test Volunteer',
+                username: 'volunteer',
                 email: 'volunteer@college.edu',
                 password: '123456',
                 collegeId: 'VOL001',
@@ -78,6 +80,7 @@ describe('SAS Comprehensive Tests', () => {
     test('Volunteer registration and login', async () => {
         const userData = {
             name: 'New Volunteer',
+            username: 'newvolunteer',
             email: 'newvolunteer@college.edu',
             password: '123456',
             collegeId: 'NEWVOL001',
@@ -97,7 +100,7 @@ describe('SAS Comprehensive Tests', () => {
         const loginResponse = await request(app)
             .post('/api/auth/login')
             .send({
-                email: userData.email,
+                username: userData.username,
                 password: userData.password
             })
             .expect(200);

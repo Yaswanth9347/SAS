@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Schools - Spread a Smile</title>
+  <title>Visits - Spread a Smile</title>
 
   <style>
     /* Reset & Base */
@@ -26,7 +26,7 @@
       padding: 0 20px;
     }
 
-    /* Navbar */
+    /* Navbar (same as Dashboard) */
     .navbar {
       background: linear-gradient(90deg, #4caf50, #2e7d32);
       color: #fff;
@@ -100,7 +100,7 @@
       font-weight: 600;
     }
 
-    .add-school-btn {
+    .add-visit-btn {
       background: #4caf50;
       color: white;
       font-weight: 600;
@@ -112,19 +112,19 @@
       transition: all 0.3s ease;
     }
 
-    .add-school-btn:hover {
+    .add-visit-btn:hover {
       background: #388e3c;
       transform: translateY(-2px);
     }
 
-    /* Schools List */
-    .schools-list {
+    /* Visits List */
+    .visits-list {
       display: flex;
       flex-direction: column-reverse; /* Bottom to top */
       gap: 15px;
     }
 
-    .school-row {
+    .visit-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -135,18 +135,18 @@
       transition: all 0.3s ease;
     }
 
-    .school-row:hover {
+    .visit-row:hover {
       transform: translateY(-3px);
       box-shadow: 0 10px 20px rgba(0,0,0,0.08);
     }
 
-    .school-name {
+    .visit-name {
       font-size: 1.1rem;
       font-weight: 500;
       color: #333;
     }
 
-    .headmaster-name {
+    .visit-date {
       font-size: 0.95rem;
       color: #666;
     }
@@ -177,7 +177,7 @@
       .page-header h1 {
         font-size: 1.6rem;
       }
-      .add-school-btn {
+      .add-visit-btn {
         width: 100%;
         text-align: center;
       }
@@ -194,33 +194,36 @@
       </div>
       <ul class="nav-menu">
         <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
-        <li><a href="visits.html" class="nav-link">Visits</a></li>
-        <li><a href="schools.html" class="nav-link active">Schools</a></li>
+        <li><a href="visits.html" class="nav-link active">Visits</a></li>
+        <li><a href="schools.html" class="nav-link">Schools</a></li>
         <li><a href="#" class="nav-link logout-btn">Logout</a></li>
       </ul>
     </div>
   </nav>
 
+
+
   <!-- Page Header -->
   <div class="container">
     <div class="page-header">
-      <h1>Schools</h1>
-      <button class="add-school-btn" onclick="addSchool()">+ Add School</button>
+      <h1>Visits</h1>
+      <button class="add-visit-btn" onclick="addVisit()">+ Add Visit</button>
     </div>
 
-    <!-- Schools List -->
-    <div class="schools-list" id="schoolsList">
-      <div class="school-row">
-        <span class="school-name">Government High School</span>
-        <span class="headmaster-name">Mr. Ramesh</span>
+    <!-- Visits List -->
+    <div class="visits-list" id="visitsList">
+      <!-- Visits will be injected here -->
+      <div class="visit-row">
+        <span class="visit-name">Visit 3</span>
+        <span class="visit-date">2025-10-10</span>
       </div>
-      <div class="school-row">
-        <span class="school-name">Municipal Middle School</span>
-        <span class="headmaster-name">Mrs. Anita</span>
+      <div class="visit-row">
+        <span class="visit-name">Visit 2</span>
+        <span class="visit-date">2025-10-05</span>
       </div>
-      <div class="school-row">
-        <span class="school-name">Central Primary School</span>
-        <span class="headmaster-name">Mr. Sharma</span>
+      <div class="visit-row">
+        <span class="visit-name">Visit 1</span>
+        <span class="visit-date">2025-10-01</span>
       </div>
     </div>
   </div>
@@ -232,17 +235,21 @@
   </footer>
 
   <script>
-    function addSchool() {
-      const schoolName = prompt("Enter School Name:", "New School");
-      const headmasterName = prompt("Enter Headmaster Name:", "Mr./Mrs.");
-      if (schoolName && headmasterName) {
-        const schoolsList = document.getElementById('schoolsList');
-        const schoolRow = document.createElement('div');
-        schoolRow.className = 'school-row';
-        schoolRow.innerHTML = `<span class="school-name">${schoolName}</span><span class="headmaster-name">${headmasterName}</span>`;
-        schoolsList.appendChild(schoolRow); // bottom-up display
+    // Example: Add visit button functionality
+    function addVisit() {
+      const visitName = prompt("Enter Visit Name:", "Visit X");
+      const visitDate = prompt("Enter Visit Date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+      if (visitName && visitDate) {
+        const visitsList = document.getElementById('visitsList');
+        const visitRow = document.createElement('div');
+        visitRow.className = 'visit-row';
+        visitRow.innerHTML = `<span class="visit-name">${visitName}</span><span class="visit-date">${visitDate}</span>`;
+        visitsList.appendChild(visitRow); // Added at bottom of flex-reverse → top visually
       }
     }
+
+    // Optional: Load visits from API (similar to dashboard)
+    // fetch('/api/visits').then(...);
   </script>
 </body>
 </html>
