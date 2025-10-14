@@ -112,8 +112,9 @@
         <h2>${school?'Edit School':'Add School'}</h2>
         <label>School Name</label><input id="s_name" type="text" value="${school?escapeHtml(school.name):''}">
         <label>Headmaster Name</label><input id="s_head" type="text" value="${school && school.contactPerson?escapeHtml(school.contactPerson.name):''}">
-        <label>Contact Number 1</label><input id="s_phone1" type="tel" value="${school && school.contactPerson?escapeHtml(school.contactPerson.phone||''):''}">
-        <label>Contact Number 2</label><input id="s_phone2" type="tel" value="${school && school.contactPerson?escapeHtml(school.contactPerson.phone2||''):''}">
+        <!-- added maxlength to avoid exceeding 10 digits; this doesn't change styling -->
+        <label>Contact Number 1</label><input id="s_phone1" type="tel" maxlength="10" value="${school && school.contactPerson?escapeHtml(school.contactPerson.phone||''):''}">
+        <label>Contact Number 2</label><input id="s_phone2" type="tel" maxlength="10" value="${school && school.contactPerson?escapeHtml(school.contactPerson.phone2||''):''}">
         <label>Address (street, city, state, pincode)</label><input id="s_address" type="text" value="${school && school.address?escapeHtml([school.address.street,school.address.city,school.address.state,school.address.pincode].filter(Boolean).join(', ')) : ''}">
         <label>Total Classes</label><input id="s_total" type="number" min="1" value="${school?school.totalClasses:''}">
         <label>Available Classes</label><input id="s_available" type="number" min="0" value="${school?school.availableClasses:''}">
@@ -125,11 +126,30 @@
       document.body.appendChild(overlay);
       overlay.querySelector('.btn-cancel').onclick=()=>overlay.remove();
       overlay.querySelector('.btn-save').onclick=async ()=>{
+        // read raw values first
+        const rawPhone1 = document.getElementById('s_phone1').value.trim();
+        const rawPhone2 = document.getElementById('s_phone2').value.trim();
+
+        // clean to digits only
+        const cleanPhone1 = rawPhone1.replace(/\D/g,'');
+        const cleanPhone2 = rawPhone2.replace(/\D/g,'');
+
+        // validation: not more than 10 digits
+        if(cleanPhone1.length > 10){
+          alert('Contact Number 1 must not exceed 10 digits');
+          return;
+        }
+        if(cleanPhone2.length > 10){
+          alert('Contact Number 2 must not exceed 10 digits');
+          return;
+        }
+
         const payload={name:document.getElementById('s_name').value.trim(),
           address:parseAddress(document.getElementById('s_address').value.trim()),
           contactPerson:{name:document.getElementById('s_head').value.trim(),
-          phone:document.getElementById('s_phone1').value.trim(),
-          phone2:document.getElementById('s_phone2').value.trim()},
+          // save cleaned digits (or empty string)
+          phone: cleanPhone1 || '',
+          phone2: cleanPhone2 || ''},
           totalClasses:parseInt(document.getElementById('s_total').value,10)||0,
           availableClasses:parseInt(document.getElementById('s_available').value,10)||0
         };
