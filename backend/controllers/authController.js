@@ -105,3 +105,20 @@ exports.getMe = async (req, res, next) => {
         });
     }
 };
+
+// @desc    Check username availability
+// @route   GET /api/auth/check-username?username=...
+// @access  Public
+exports.checkUsername = async (req, res, next) => {
+    try {
+        const { username } = req.query;
+        if (!username || typeof username !== 'string') {
+            return res.status(400).json({ success: false, message: 'Username query parameter is required' });
+        }
+
+        const existing = await User.findOne({ username: username.toLowerCase() });
+        return res.status(200).json({ success: true, available: !existing });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};

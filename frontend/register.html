@@ -6,261 +6,129 @@
   <title>Register - Spread a Smile</title>
   <style>
     /* Base Reset */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: "Poppins", sans-serif;
-      background: linear-gradient(135deg, #4caf50, #81c784);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      color: #333;
-    }
-
-    /* Register Card */
-    .register-card {
-      background: #fff;
-      width: 100%;
-      max-width: 750px;
-      border-radius: 15px;
-      padding: 40px 35px;
-      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
-      animation: fadeInUp 0.8s ease forwards;
-    }
-
-    .register-card h2 {
-      text-align: center;
-      color: #4caf50;
-      font-size: 2rem;
-      margin-bottom: 10px;
-    }
-
-    .register-card p {
-      text-align: center;
-      color: #666;
-      margin-bottom: 25px;
-      font-size: 0.95rem;
-    }
-
-    /* Form Layout */
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-
-    .form-row {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-
-    .form-group {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    label {
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: #444;
-    }
-
-    input,
-    select,
-    textarea {
-      padding: 12px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 16px;
-      transition: border-color 0.3s ease;
-    }
-
-    input:focus,
-    select:focus,
-    textarea:focus {
-      border-color: #4caf50;
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 80px;
-    }
-
-    small {
-      font-size: 12px;
-      color: #777;
-      margin-top: 4px;
-    }
-
-    /* Agree checkbox */
-    .agree-checkbox {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .agree-checkbox input {
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0;
-    }
-
-    .agree-checkbox a {
-      color: #4caf50;
-      font-weight: 700;
-      text-decoration: underline;
-    }
-
-    /* Button */
-    .btn {
-      background: #4caf50;
-      border: none;
-      color: #fff;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .btn:hover {
-      background: #45a049;
-      transform: translateY(-2px);
-    }
-
-    /* Login link */
-    .login-link {
-      text-align: center;
-      margin-top: 15px;
-    }
-
-    .login-link a {
-      color: #4caf50;
-      font-weight: 600;
-      text-decoration: none;
-    }
-
-    .login-link a:hover {
-      text-decoration: underline;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: "Poppins", sans-serif; background: linear-gradient(135deg,#4caf50,#81c784); min-height:100vh; display:flex; justify-content:center; align-items:center; padding:20px; color:#333; }
+    .register-card { background:#fff; width:100%; max-width:750px; border-radius:15px; padding:40px 35px; box-shadow:0 10px 35px rgba(0,0,0,0.15); animation:fadeInUp .8s ease forwards; }
+    .register-card h2 { text-align:center; color:#4caf50; font-size:2rem; margin-bottom:10px; }
+    .register-card p { text-align:center; color:#666; margin-bottom:25px; font-size:.95rem; }
+    form { display:flex; flex-direction:column; gap:18px; }
+    .form-row { display:flex; gap:20px; flex-wrap:wrap; }
+    .form-group { flex:1; display:flex; flex-direction:column; }
+    label { font-weight:600; margin-bottom:8px; color:#444; }
+    input, select, textarea { padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; transition:border-color .3s ease; }
+    input:focus, select:focus, textarea:focus { border-color:#4caf50; outline:none; box-shadow:0 0 0 3px rgba(76,175,80,.1); }
+    textarea { resize:vertical; min-height:80px; }
+    small { font-size:12px; color:#777; margin-top:4px; }
+    .agree-checkbox { display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:600; }
+    .agree-checkbox input { width:18px; height:18px; flex-shrink:0; }
+    .agree-checkbox a { color:#4caf50; font-weight:700; text-decoration:underline; }
+    .btn { background:#4caf50; border:none; color:#fff; padding:12px; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; transition:all .3s ease; }
+    .btn:hover { background:#45a049; transform:translateY(-2px); }
+    .login-link { text-align:center; margin-top:15px; }
+    .login-link a { color:#4caf50; font-weight:600; text-decoration:none; }
+    .login-link a:hover { text-decoration:underline; }
 
     /* Modal Styles */
-    .terms-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 1000;
-    }
-
-    .terms-modal[aria-hidden="false"] {
-      display: block;
-    }
-
-    .terms-modal__backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.45);
-    }
-
-    .terms-modal__content {
-      background: #fff;
-      max-width: 700px;
-      margin: 8vh auto;
-      border-radius: 10px;
-      padding: 24px;
-      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.2);
-      overflow: auto;
-      max-height: 80vh;
-      position: relative;
-    }
-
-    .terms-modal__close {
-      position: absolute;
-      right: 14px;
-      top: 8px;
-      border: none;
-      background: transparent;
-      font-size: 26px;
-      cursor: pointer;
-    }
-
-    .terms-modal__body h3 {
-      margin-top: 12px;
-      color: #333;
-    }
-
-    .terms-modal__body p {
-      margin: 6px 0;
-      color: #444;
-      font-size: 14px;
-    }
+    .terms-modal { display:none; position:fixed; inset:0; z-index:1000; }
+    .terms-modal[aria-hidden="false"] { display:block; }
+    .terms-modal__backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.45); }
+    .terms-modal__content { background:#fff; max-width:700px; margin:8vh auto; border-radius:10px; padding:24px; box-shadow:0 10px 35px rgba(0,0,0,.2); overflow:auto; max-height:80vh; position:relative; }
+    .terms-modal__close { position:absolute; right:14px; top:8px; border:none; background:transparent; font-size:26px; cursor:pointer; }
+    .terms-modal__body h3 { margin-top:12px; color:#333; }
+    .terms-modal__body p { margin:6px 0; color:#444; font-size:14px; }
 
     /* Animation */
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(40px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(40px); } to { opacity:1; transform:translateY(0); } }
 
-    /* Responsive */
-    @media (max-width: 600px) {
-      .register-card {
-        padding: 25px 20px;
-      }
-      .form-row {
-        flex-direction: column;
-      }
-    }
+    /* Validation styling */
+    .field-error { color:#b00020; font-size:12px; margin-top:6px; display:none; }
+    .field-valid { color:#2e7d32; font-size:12px; margin-top:6px; display:none; }
+    input.invalid, select.invalid, textarea.invalid { border-color:#b00020; box-shadow:none; }
+    input.valid, select.valid, textarea.valid { border-color:#2e7d32; }
+  /* ensure inputs leave space for the toggle icon (match login page) */
+  input { padding: 12px 40px 12px 12px; }
+  .input-with-toggle { position: relative; display: block; }
+  .password-hints { font-size:12px; color:#555; margin-top:6px; list-style: disc; padding-left:18px; }
+  /* toggle inside input - center vertically using 50% + translate
+     this adapts to different input heights and matches login behaviour
+  */
+  .toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 18px;
+    color: #666;
+    background: transparent;
+    border: none;
+    padding: 0;
+    height: 24px;
+    line-height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .toggle-password:hover { color: #4caf50; }
+    .password-hints li { margin-bottom:4px; }
+    .loading { opacity:.6; pointer-events:none; }
+    @media (max-width:600px) { .register-card { padding:25px 20px; } .form-row { flex-direction:column; } }
   </style>
 </head>
 
 <body>
-  <div class="register-card">
+  <div class="register-card" id="card">
     <h2>Become a SAS Member</h2>
     <p>Join us in spreading smiles to government school children</p>
 
-    <form id="registerForm">
+    <form id="registerForm" novalidate>
       <div class="form-row">
         <div class="form-group">
           <label for="name">Full Name *</label>
           <input type="text" id="name" name="name" required />
+          <div id="nameError" class="field-error">Please enter your full name (min 2 characters).</div>
         </div>
+
         <div class="form-group">
           <label for="username">Username *</label>
-          <input type="text" id="username" name="username" required placeholder="choose a username" />
+          <div style="position:relative">
+            <input type="text" id="username" name="username" required placeholder="choose a username" />
+            <small id="usernameHint" style="position:absolute; right:8px; top:8px; font-weight:600; color:#777"></small>
+          </div>
+          <div id="usernameError" class="field-error">Choose a username (min 3 chars, no spaces).</div>
         </div>
+
         <div class="form-group">
           <label for="email">College Email *</label>
-          <input type="email" id="email" name="email" required placeholder="yourname@college.edu" />
+          <input type="email" id="email" name="email" required placeholder="yourname@college.edu" aria-describedby="emailError" />
+          <div id="emailError" class="field-error">Please enter a valid college email (example: you@college.edu).</div>
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label for="password">Password *</label>
-          <input type="password" id="password" name="password" required minlength="6" />
+          <div class="input-with-toggle">
+            <input type="password" id="password" name="password" required aria-describedby="passwordHints" />
+            <span id="togglePassword" class="toggle-password" aria-label="Toggle password visibility">👁️</span>
+          </div>
+          <ul id="passwordHints" class="password-hints" aria-live="polite">
+            <li id="h_len">At least 8 characters</li>
+            <li id="h_lower">At least one lowercase letter</li>
+            <li id="h_upper">At least one uppercase letter</li>
+            <li id="h_digit">At least one number</li>
+            <li id="h_special">At least one special character (e.g., !@#$%)</li>
+          </ul>
+          <div id="passwordError" class="field-error">Password must meet all rules above.</div>
         </div>
+
         <div class="form-group">
           <label for="confirmPassword">Confirm Password *</label>
-          <input type="password" id="confirmPassword" name="confirmPassword" required />
+          <div class="input-with-toggle">
+            <input type="password" id="confirmPassword" name="confirmPassword" required aria-describedby="confirmError" />
+            <span id="toggleConfirmPassword" class="toggle-password" aria-label="Toggle confirm password visibility">👁️</span>
+          </div>
+          <div id="confirmError" class="field-error">Passwords do not match.</div>
         </div>
       </div>
 
@@ -268,10 +136,13 @@
         <div class="form-group">
           <label for="collegeId">College ID *</label>
           <input type="text" id="collegeId" name="collegeId" required />
+          <div id="collegeError" class="field-error">Enter your college ID.</div>
         </div>
+
         <div class="form-group">
           <label for="phone">Phone Number *</label>
-          <input type="tel" id="phone" name="phone" required />
+          <input type="tel" id="phone" name="phone" required maxlength="10" inputmode="numeric" pattern="\d{10}" placeholder="10 digits only" aria-describedby="phoneError" />
+          <div id="phoneError" class="field-error">Phone must be exactly 10 digits (numbers only).</div>
         </div>
       </div>
 
@@ -287,7 +158,9 @@
             <option value="CIVIL">Civil Engineering</option>
             <option value="IT">Information Technology</option>
           </select>
+          <div id="deptError" class="field-error">Please select your department.</div>
         </div>
+
         <div class="form-group">
           <label for="year">Current Year *</label>
           <select id="year" name="year" required>
@@ -297,6 +170,7 @@
             <option value="3">3rd Year</option>
             <option value="4">4th Year</option>
           </select>
+          <div id="yearError" class="field-error">Please select your current year.</div>
         </div>
       </div>
 
@@ -313,12 +187,10 @@
         </label>
       </div>
 
-      <button type="submit" class="btn">Register</button>
+      <button type="submit" id="submitBtn" class="btn">Register</button>
     </form>
 
-    <div class="login-link">
-      <p>Already have an account? <a href="login.html">Login here</a></p>
-    </div>
+    <div class="login-link"><p>Already have an account? <a href="login.html">Login here</a></p></div>
   </div>
 
   <!-- Terms Modal -->
@@ -340,81 +212,7 @@
     </div>
   </div>
 
-  <script>
-    // Modal open/close
-    (function() {
-      const link = document.getElementById("termsLink");
-      const modal = document.getElementById("termsModal");
-      const closeBtn = document.getElementById("termsClose");
-      const backdrop = modal.querySelector(".terms-modal__backdrop");
-
-      function openModal() {
-        modal.setAttribute("aria-hidden", "false");
-        document.body.style.overflow = "hidden";
-      }
-
-      function closeModal() {
-        modal.setAttribute("aria-hidden", "true");
-        document.body.style.overflow = "";
-      }
-
-      link.addEventListener("click", (e) => {
-        e.preventDefault();
-        openModal();
-      });
-      closeBtn.addEventListener("click", closeModal);
-      backdrop.addEventListener("click", closeModal);
-      window.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeModal();
-      });
-    })();
-
-    // Register handler
-    document.getElementById("registerForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const password = document.getElementById("password").value;
-      const confirmPassword = document.getElementById("confirmPassword").value;
-
-      if (password !== confirmPassword) {
-        alert("Passwords do not match!");
-        return;
-      }
-
-      const formData = {
-        name: document.getElementById("name").value,
-        username: document.getElementById("username").value,
-        email: document.getElementById("email").value,
-        password,
-        collegeId: document.getElementById("collegeId").value,
-        phone: document.getElementById("phone").value,
-        department: document.getElementById("department").value,
-        year: parseInt(document.getElementById("year").value),
-        skills: document
-          .getElementById("skills")
-          .value.split(",")
-          .map((s) => s.trim())
-          .filter((s) => s),
-      };
-
-      try {
-        const response = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
-        const data = await response.json();
-
-        if (data.success) {
-          alert("Registration successful! Please login.");
-          window.location.href = "login.html";
-        } else {
-          alert("Registration failed: " + data.message);
-        }
-      } catch (error) {
-        console.error("Error:", error);
-        alert("Something went wrong. Try again.");
-      }
-    });
-  </script>
+  <!-- Link to external JS file -->
+  <script src="js/register.js" defer></script>
 </body>
 </html>
