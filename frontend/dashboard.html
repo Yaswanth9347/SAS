@@ -295,10 +295,173 @@
       opacity: 0.9;
     }
 
+    /* Admin-specific styles */
+    .admin-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .stat-card {
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      border-left: 5px solid #4caf50;
+    }
+    
+    .stat-card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .admin-actions {
+      margin: 30px 0;
+      background: linear-gradient(135deg, #e8f5e9, #ffffff);
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+    }
+    
+    .admin-actions h3 {
+      color: #2e7d32;
+      margin-bottom: 20px;
+      font-size: 1.6rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .action-btn {
+      background: #ffffff;
+      border: 2px solid #4caf50;
+      padding: 25px;
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.3s ease;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .action-btn:hover {
+      background: #4caf50;
+      color: white;
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .action-btn h3 {
+      color: #2e7d32;
+      margin-bottom: 12px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      text-align: left;
+    }
+    
+    .action-btn p {
+      font-size: 0.95rem;
+      color: #666;
+      line-height: 1.5;
+    }
+    
+    .action-btn:hover h3,
+    .action-btn:hover p {
+      color: white;
+    }
+    
+    /* Teams Section */
+    .teams-section {
+      margin-top: 40px;
+      padding: 30px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+    }
+    
+    .teams-section h2 {
+      color: #2e7d32;
+      margin-bottom: 25px;
+      font-size: 1.8rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    
+    .teams-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 25px;
+    }
+    
+    .team-card {
+      background: white;
+      padding: 25px;
+      margin: 0;
+      border-radius: 10px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      border-left: 5px solid #4caf50;
+    }
+    
+    .team-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .team-card h3 {
+      color: #2e7d32;
+      margin-bottom: 15px;
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+    
+    .team-card p {
+      margin: 10px 0;
+      font-size: 1rem;
+      color: #555;
+    }
+    
+    .team-card strong {
+      color: #333;
+      font-weight: 600;
+    }
+    
+    .team-members {
+      margin-top: 15px;
+    }
+
+    .member-tag {
+      display: inline-block;
+      background: #e8f5e9;
+      padding: 5px 12px;
+      margin: 5px 5px 5px 0;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #2e7d32;
+      transition: all 0.2s ease;
+    }
+    
+    .member-tag:hover {
+      background: #4caf50;
+      color: white;
+      transform: translateY(-2px);
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
       .nav-menu {
-        gap: 12px;
+        gap: 10px;
       }
 
       .dashboard-header h1 {
@@ -312,6 +475,14 @@
       .dashboard-grid {
         grid-template-columns: 1fr;
       }
+      
+      .teams-list {
+        grid-template-columns: 1fr;
+      }
+      
+      .action-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -322,10 +493,11 @@
       <div class="nav-logo">
         <h2>Spread A Smile</h2>
       </div>
-      <ul class="nav-menu">
+      <ul class="nav-menu" id="navMenu">
         <li><a href="dashboard.html" class="nav-link active">Dashboard</a></li>
         <li><a href="visits.html" class="nav-link">Visits</a></li>
         <li><a href="schools.html" class="nav-link">Schools</a></li>
+        <!-- Admin-only navigation items will be added dynamically -->
         <li><span class="nav-link" id="navUser">Welcome, User</span></li>
         <li><a href="#" class="nav-link logout-btn" id="navLogout">Logout</a></li>
       </ul>
@@ -337,6 +509,26 @@
       <div class="dashboard-header">
         <h1>Welcome back, <span id="userName">User</span>!</h1>
         <p id="userInfo">Loading your information...</p>
+      </div>
+      
+      <!-- Admin Stats Section (visible only for admins) -->
+      <div class="admin-stats" id="adminStats" style="display: none;">
+        <div class="stat-card">
+          <h3>Total Volunteers</h3>
+          <div class="stat-number" id="totalVolunteers">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>Active Volunteers</h3>
+          <div class="stat-number" id="activeVolunteers">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>Total Teams</h3>
+          <div class="stat-number" id="totalTeams">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>Unassigned Volunteers</h3>
+          <div class="stat-number" id="unassignedVolunteers">0</div>
+        </div>
       </div>
 
       <div class="dashboard-grid">
@@ -370,10 +562,37 @@
         <!-- Quick Actions -->
         <div class="dashboard-card">
           <h3>Quick Actions</h3>
-          <div class="action-buttons">
+          <div class="action-buttons" id="regularActions">
             <a href="visit-report.html" class="btn btn-primary">Submit Visit Report</a>
             <a href="#" class="btn btn-secondary">View Schedule</a>
             <a href="#" class="btn btn-secondary">Update Profile</a>
+          </div>
+          
+          <!-- Admin Actions - Visible only for admins -->
+          <div class="admin-actions" id="adminActions" style="display: none;">
+            <h3>Admin Actions</h3>
+            <div class="action-grid">
+              <button class="action-btn" onclick="createTeams()">
+                <h3>🔄 Create Teams</h3>
+                <p>Automatically create teams from unassigned volunteers</p>
+              </button>
+              <button class="action-btn" onclick="location.href='teams.html'">
+                <h3>👥 View All Teams</h3>
+                <p>See team details and members</p>
+              </button>
+              <button class="action-btn" onclick="location.href='schools.html'">
+                <h3>🏫 Manage Schools</h3>
+                <p>Add or edit partner schools</p>
+              </button>
+              <button class="action-btn" onclick="location.href='schedule-visit.html'">
+                <h3>📅 Schedule Visits</h3>
+                <p>Assign teams to schools and dates</p>
+              </button>
+              <button class="action-btn" onclick="location.href='analytics.html'">
+                <h3>📊 View Analytics</h3>
+                <p>Track performance and impact metrics</p>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -384,6 +603,12 @@
             <p>Loading visits for reporting...</p>
           </div>
         </div>
+      </div>
+      
+      <!-- Teams Section - Visible only for admins -->
+      <div class="teams-section" id="teamsSection" style="display: none;">
+        <h2>All Teams</h2>
+        <div id="teamsList" class="teams-list"></div>
       </div>
     </div>
   </section>
@@ -397,19 +622,60 @@
   <script>
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const isAdmin = user.role === 'admin';
 
     if (!token) {
       window.location.href = 'login.html';
     }
-
-    // populate header and nav username
-    document.getElementById('userName').textContent = user.name || 'User';
-    document.getElementById('userInfo').textContent =
-      `Team: ${user.team || 'Not assigned'} | Department: ${user.department || 'N/A'} | Year: ${user.year || 'N/A'}`;
-
-    const navUser = document.getElementById('navUser');
-    if (navUser) {
-      navUser.textContent = `Welcome, ${user.name || 'User'}`;
+    
+    // Check if user is admin and update UI accordingly
+    function setupUserInterface() {
+      // Set up navigation based on user role
+      const navMenu = document.getElementById('navMenu');
+      
+      // Update the username display
+      document.getElementById('userName').textContent = user.name || 'User';
+      
+      if (isAdmin) {
+        // Admin-specific UI updates
+        document.getElementById('userInfo').textContent = `Administrator | Manage volunteers, teams, and school visits`;
+        
+        // Add admin-specific nav links (before the username)
+        const userNameLi = document.querySelector('#navUser').parentElement;
+        
+        // Create and insert Teams nav item
+        const teamsLi = document.createElement('li');
+        teamsLi.innerHTML = '<a href="teams.html" class="nav-link">Teams</a>';
+        navMenu.insertBefore(teamsLi, userNameLi);
+        
+        // Create and insert Schedule Visit nav item
+        const scheduleLi = document.createElement('li');
+        scheduleLi.innerHTML = '<a href="schedule-visit.html" class="nav-link">Schedule Visit</a>';
+        navMenu.insertBefore(scheduleLi, userNameLi);
+        
+        // Create and insert Analytics nav item
+        const analyticsLi = document.createElement('li');
+        analyticsLi.innerHTML = '<a href="analytics.html" class="nav-link">Analytics</a>';
+        navMenu.insertBefore(analyticsLi, userNameLi);
+        
+        // Create and insert Reports nav item
+        const reportsLi = document.createElement('li');
+        reportsLi.innerHTML = '<a href="reports.html" class="nav-link">Reports</a>';
+        navMenu.insertBefore(reportsLi, userNameLi);
+        
+        // Show admin-specific sections
+        document.getElementById('adminStats').style.display = 'grid';
+        document.getElementById('adminActions').style.display = 'block';
+      } else {
+        // Regular user UI updates
+        document.getElementById('userInfo').textContent =
+          `Team: ${user.team || 'Not assigned'} | Department: ${user.department || 'N/A'} | Year: ${user.year || 'N/A'}`;
+      }
+      
+      const navUser = document.getElementById('navUser');
+      if (navUser) {
+        navUser.textContent = `Welcome, ${user.name || 'User'}`;
+      }
     }
 
     const navLogout = document.getElementById('navLogout');
@@ -424,6 +690,20 @@
     }
 
     async function loadDashboardData() {
+      if (isAdmin) {
+        // Load admin-specific stats
+        await loadAdminStats();
+      } else {
+        // Load regular user stats
+        await loadUserStats();
+      }
+
+      // Load upcoming visits (for both admin and regular users)
+      await loadUpcomingVisits();
+    }
+    
+    // Regular user stats
+    async function loadUserStats() {
       try {
         const response = await fetch('/api/visits/stats', {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -436,10 +716,32 @@
           document.querySelector('.stat-item:nth-child(3) .stat-number').textContent = data.data.completedVisits;
         }
       } catch (error) {
-        console.error('Error loading stats:', error);
+        console.error('Error loading user stats:', error);
       }
+    }
+    
+    // Admin-specific stats
+    async function loadAdminStats() {
+      try {
+        const response = await fetch('/api/admin/stats', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          document.getElementById('totalVolunteers').textContent = data.data.totalVolunteers;
+          document.getElementById('activeVolunteers').textContent = data.data.activeVolunteers;
+          document.getElementById('totalTeams').textContent = data.data.totalTeams;
+          document.getElementById('unassignedVolunteers').textContent = data.data.volunteersWithoutTeam;
+        }
+      } catch (error) {
+        console.error('Error loading admin stats:', error);
+      }
+    }
 
-      // Load upcoming visits
+    // Upcoming visits (for both user types)
+    async function loadUpcomingVisits() {
       try {
         const response = await fetch('/api/visits', {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -510,7 +812,91 @@
     function openReportModal(visitId) {
       window.location.href = `visit-report.html?visitId=${visitId}`;
     }
+    
+    // Admin-specific functions
+    async function createTeams() {
+      if (!isAdmin) return;
+      
+      if (!confirm('Create teams automatically? This will assign all unassigned volunteers to teams.')) {
+        return;
+      }
 
+      try {
+        const response = await fetch('/api/admin/create-teams', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ teamSize: 4 })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert(data.message);
+          loadAdminStats();
+        } else {
+          alert('Error: ' + data.message);
+        }
+      } catch (error) {
+        console.error('Error creating teams:', error);
+        alert('Failed to create teams');
+      }
+    }
+
+    // View teams function for admins
+    async function viewTeams() {
+      if (!isAdmin) return;
+      
+      try {
+        const response = await fetch('/api/admin/teams', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          displayTeams(data.data);
+        }
+      } catch (error) {
+        console.error('Error loading teams:', error);
+      }
+    }
+
+    function displayTeams(teams) {
+      const teamsList = document.getElementById('teamsList');
+      const teamsSection = document.getElementById('teamsSection');
+      
+      teamsSection.style.display = 'block';
+      
+      if (teams.length === 0) {
+        teamsList.innerHTML = '<p>No teams created yet.</p>';
+        return;
+      }
+
+      teamsList.innerHTML = teams.map(team => `
+        <div class="team-card">
+          <h3>${team.name}</h3>
+          <p><strong>Team Leader:</strong> ${team.teamLeader?.name || 'Not assigned'}</p>
+          <p><strong>Members:</strong> ${team.members.length}</p>
+          <p><strong>Assigned School:</strong> ${team.assignedSchool?.name || 'Not assigned'}</p>
+          <div class="team-members">
+            ${team.members.map(member => 
+                `<span class="member-tag">${member.name} (${member.department} Y${member.year})</span>`
+            ).join('')}
+          </div>
+        </div>
+      `).join('');
+      
+      // Scroll to teams section
+      teamsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Initialize the dashboard
+    setupUserInterface();
     loadDashboardData();
     loadVisitsForReporting();
   </script>

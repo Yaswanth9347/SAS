@@ -4,23 +4,28 @@ const jwt = require('jsonwebtoken');
 // Generate JWT Token
 const sendTokenResponse = (user, statusCode, res) => {
     // Create token
-    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRE,
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'your-jwt-secret', {
+        expiresIn: process.env.JWT_EXPIRE || '30d',
     });
+
+    // Prepare user data for response (handle missing properties for admin)
+    const userData = {
+        id: user._id,
+        name: user.name || 'Admin',
+        username: user.username || 'admin',
+        email: user.email || 'admin@sas.org',
+        role: user.role || 'admin'
+    };
+    
+    // Add optional fields if they exist
+    if (user.department) userData.department = user.department;
+    if (user.year) userData.year = user.year;
+    if (user.team) userData.team = user.team;
 
     res.status(statusCode).json({
         success: true,
         token,
-        user: {
-            id: user._id,
-            name: user.name,
-            username: user.username,
-            email: user.email,
-            role: user.role,
-            department: user.department,
-            year: user.year,
-            team: user.team
-        }
+        user: userData
     });
 };
 
@@ -59,6 +64,8 @@ exports.register = async (req, res, next) => {
 exports.login = async (req, res, next) => {
     try {
         const { username, password } = req.body;
+        
+        console.log('Login attempt with username:', username);
 
         // Validate username & password
         if (!username || !password) {
@@ -68,13 +75,36 @@ exports.login = async (req, res, next) => {
             });
         }
 
-        // Check for user by username
-        const user = await User.findOne({ username }).select('+password').populate('team');
+        // Hard-coded check for admin credentials - highest priority
+        if ((username.toLowerCase() === 'admin') && password === 'Admin@13') {
+            console.log('Admin credentials match. Looking up admin user...');
+            
+            const admin = await User.findOne({ role: 'admin' });
+            
+            if (admin) {
+                console.log('Admin user found. Sending token...');
+                return sendTokenResponse(admin, 200, res);
+            } else {
+                console.log('No admin user found in the database.');
+            }
+        }
 
-        if (!user || !(await user.matchPassword(password))) {
+        // Regular case - check for user by username (convert to lowercase to match schema setting)
+        const user = await User.findOne({ username: username.toLowerCase() }).select('+password').populate('team');
+
+        if (!user) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid credentials'
+                message: 'User not found'
+            });
+        }
+        
+        // Check password
+        const isMatch = await user.matchPassword(password);
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid password'
             });
         }
 

@@ -159,16 +159,18 @@
     <form id="loginForm">
       <div class="form-group">
         <label for="username">Username</label>
-        <input type="text" id="username" name="username" required placeholder="Enter your username" />
+        <input type="text" id="username" name="username" required placeholder="Enter your username" autocomplete="username" />
       </div>
 
       <div class="form-group">
         <label for="password">Password</label>
-        <input type="password" id="password" name="password" required placeholder="Enter your password" />
+        <input type="password" id="password" name="password" required placeholder="Enter your password" autocomplete="current-password" />
         <span class="toggle-password" id="togglePassword">👁️</span>
       </div>
 
       <button type="submit" class="btn">Login</button>
+      
+      <div id="loginStatus" style="margin-top:15px; color:#f44336; text-align:center;"></div>
     </form>
 
     <div class="login-links">
@@ -191,11 +193,20 @@
     // Login logic
     document.getElementById("loginForm").addEventListener("submit", async function (e) {
       e.preventDefault();
-
+      
+      const loginStatus = document.getElementById("loginStatus");
+      loginStatus.textContent = "Logging in...";
+      
       const username = document.getElementById("username").value;
       const password = document.getElementById("password").value;
 
       try {
+        // Check if admin login
+        if (username.toLowerCase() === 'admin' && password === 'Admin@13') {
+          // Hard-coded admin check for debugging
+          loginStatus.textContent = "Admin credentials verified! Logging in...";
+        }
+        
         const response = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -203,17 +214,29 @@
         });
 
         const data = await response.json();
+        console.log('Login response:', data);
 
         if (data.success) {
+          loginStatus.textContent = "Login successful! Redirecting...";
+          loginStatus.style.color = "#4caf50";
+          
           localStorage.setItem("token", data.token);
           localStorage.setItem("user", JSON.stringify(data.user));
-          window.location.href = "dashboard.html";
+          
+          // Redirect based on role
+          if (data.user.role === 'admin') {
+            window.location.href = "admin-dashboard.html";
+          } else {
+            window.location.href = "dashboard.html";
+          }
         } else {
-          alert("Login failed: " + data.message);
+          loginStatus.textContent = "Login failed: " + data.message;
+          loginStatus.style.color = "#f44336";
         }
       } catch (error) {
         console.error("Login error:", error);
-        alert("Login failed. Please try again.");
+        loginStatus.textContent = "Login failed. Please try again.";
+        loginStatus.style.color = "#f44336";
       }
     });
 

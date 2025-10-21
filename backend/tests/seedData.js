@@ -17,10 +17,10 @@ const seedTestData = async () => {
 
         // Create test admin user
         const adminUser = await User.create({
-            name: 'Test Admin',
-            username: 'admin',
+            name: 'Admin',
+            username: 'Admin',
             email: 'admin@sas.org',
-            password: 'admin123',
+            password: 'Admin@13',
             collegeId: 'ADMIN001',
             department: 'ADMIN',
             year: 4,
