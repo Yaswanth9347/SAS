@@ -871,40 +871,69 @@
     // Load all visits and render list
     async function loadVisits(){
       try{
+        // Add loading indicator
+        const list = document.getElementById('visitsList');
+        list.innerHTML = '<div style="text-align:center;padding:20px;">Loading visits...</div>';
+        
         const res = await fetch('/api/visits', { headers: { 'Authorization': `Bearer ${token}` } });
         const data = await res.json();
-        const list = document.getElementById('visitsList');
         list.innerHTML = '';
+        
         if(!data.success || !Array.isArray(data.data) || data.data.length===0){
-          list.innerHTML = '<div class="no-visits">No visits found.</div>';
+          list.innerHTML = '<div class="no-visits" style="text-align:center;padding:20px;color:#777;">No visits found.</div>';
           return;
         }
+
+        // Get user info from localStorage to determine if current user is admin
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{"role":"volunteer"}');
+        const isAdmin = currentUser.role === 'admin';
 
         data.data.forEach(visit => {
           const row = document.createElement('div');
           row.className = 'visit-row';
 
+          // Status indicator (visual cue)
+          const statusClass = visit.status === 'completed' ? 'completed' : 
+                             visit.status === 'cancelled' ? 'cancelled' : 'scheduled';
+          
+          // Flag for visits created by admin (for volunteers to distinguish)
+          const createdByAdmin = visit.submittedBy && visit.submittedBy.role === 'admin';
+          
           // main content
           const left = document.createElement('div');
           left.style.display = 'flex';
           left.style.flexDirection = 'column';
           left.style.gap = '6px';
+          
+          // Enhanced display with more information and status indicator
           left.innerHTML = `
             <div style="display:flex;align-items:center;gap:12px;">
               <div class="visit-name">${escapeHtml(visit.name || (visit.school && visit.school.name) || 'Visit')}</div>
+              <div class="status-badge ${statusClass}">${escapeHtml(visit.status || 'scheduled')}</div>
               <div class="visit-date">${new Date(visit.date).toLocaleDateString()}</div>
               <div style="font-size:0.9rem;color:#777;margin-left:8px">${escapeHtml(visit.team && visit.team.name || '')}</div>
+              ${visit.submittedBy ? `<div style="font-size:0.8rem;color:#555;margin-left:auto;">Created by: ${escapeHtml(visit.submittedBy.name || 'Unknown')}</div>` : ''}
             </div>
           `;
 
-          // actions
+          // actions - show different options based on user role and visit status
           const actions = document.createElement('div');
           actions.className = 'school-actions';
           actions.style.gap = '8px';
-          actions.innerHTML = `
-            <button class="btn btn-edit">View / Edit</button>
-            <button class="btn btn-delete">Delete</button>
-          `;
+          
+          // Different action buttons based on status and user role
+          if (visit.status === 'cancelled') {
+            // Limited options for cancelled visits
+            actions.innerHTML = `<button class="btn btn-edit">View Details</button>`;
+            if (isAdmin) {
+              actions.innerHTML += `<button class="btn btn-delete">Delete</button>`;
+            }
+          } else {
+            actions.innerHTML = `<button class="btn btn-edit">View / Edit</button>`;
+            if (isAdmin || visit.status !== 'completed') {
+              actions.innerHTML += `<button class="btn btn-delete">Delete</button>`;
+            }
+          }
 
           row.appendChild(left);
           row.appendChild(actions);
@@ -922,15 +951,27 @@
           });
 
           // Event: delete
-          actions.querySelector('.btn-delete').addEventListener('click', async (e)=>{
-            e.stopPropagation();
-            if(!confirm('Delete this visit?')) return;
-            try{
-              const r = await fetch(`/api/visits/${visit._id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-              const j = await r.json();
-              if(j.success){ loadVisits(); } else alert('Error: '+(j.message||'delete failed'));
-            }catch(err){ console.error(err); alert('Failed to delete visit'); }
-          });
+          const deleteBtn = actions.querySelector('.btn-delete');
+          if (deleteBtn) {
+            deleteBtn.addEventListener('click', async (e)=>{
+              e.stopPropagation();
+              if(!confirm('Delete this visit?')) return;
+              try{
+                const r = await fetch(`/api/visits/${visit._id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                const j = await r.json();
+                if(j.success){ 
+                  // Show success notification
+                  showNotification('Visit successfully deleted', 'success');
+                  loadVisits(); 
+                } else {
+                  showNotification('Error: ' + (j.message || 'delete failed'), 'error');
+                }
+              }catch(err){ 
+                console.error(err); 
+                showNotification('Failed to delete visit', 'error');
+              }
+            });
+          }
 
           // Toggle details on row click
           row.addEventListener('click', ()=>{
@@ -947,7 +988,24 @@
         // Attach media action handlers (delegate)
         attachDetailsHandlers();
 
-      }catch(err){ console.error('Failed to load visits', err); document.getElementById('visitsList').innerHTML = '<p>Error loading visits</p>'; }
+      }catch(err){ 
+        console.error('Failed to load visits', err); 
+        document.getElementById('visitsList').innerHTML = '<p style="text-align:center;color:#f44336;padding:20px;">Error loading visits</p>'; 
+      }
+    }
+    
+    // Helper function to show notifications
+    function showNotification(message, type = 'success') {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.innerHTML = `<div>${message}</div>`;
+      document.body.appendChild(notification);
+      
+      // Remove the notification after 3 seconds
+      setTimeout(() => {
+        notification.classList.add('hide');
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
     }
 
     function renderVisitDetailsHtml(visit){
@@ -1226,7 +1284,16 @@
 
       // Save handler
       const saveBtn = drawer.querySelector('.btn-save');
-      saveBtn.onclick = async ()=>{
+      saveBtn.onclick = async () => {
+        // Create loading overlay
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.className = 'loading-overlay';
+        loadingOverlay.innerHTML = `
+          <div class="loading-spinner"></div>
+          <div class="loading-text">Saving visit...</div>
+        `;
+        document.body.appendChild(loadingOverlay);
+        
         const payload = {
           name: drawer.querySelector('#v_name').value.trim(),
           date: drawer.querySelector('#v_date').value,
@@ -1240,17 +1307,59 @@
           status: 'scheduled'
         };
 
-        // Basic validation
-        if (!payload.date) { alert('Please select a date'); return; }
-        if (!payload.team) { alert('Please select a team'); return; }
-        if (!payload.school) { alert('Please select a school'); return; }
+        // Enhanced validation with better UI feedback
+        const validationErrors = [];
+        if (!payload.date) validationErrors.push('Please select a date');
+        if (!payload.team) validationErrors.push('Please select a team');
+        if (!payload.school) validationErrors.push('Please select a school');
+        if (!payload.assignedClass) validationErrors.push('Please enter assigned class');
+        if (!payload.childrenCount) validationErrors.push('Please enter expected children count');
+        
+        if (validationErrors.length > 0) {
+          loadingOverlay.remove();
+          showNotification(validationErrors.join('<br>'), 'error');
+          return;
+        }
 
-        try{
+        try {
           let res, j;
-          if(visit && visit._id){ res = await fetch(`/api/visits/${visit._id}`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify(payload) }); j = await res.json(); }
-          else { res = await fetch('/api/visits', { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify(payload) }); j = await res.json(); }
-          if(j.success){ closeDrawer(); loadVisits(); } else { alert('Error: '+(j.message||'save failed')); }
-        }catch(err){ console.error(err); alert('Save failed'); }
+          if (visit && visit._id) {
+            res = await fetch(`/api/visits/${visit._id}`, { 
+              method: 'PUT', 
+              headers: { 
+                'Authorization': `Bearer ${token}`, 
+                'Content-Type': 'application/json' 
+              }, 
+              body: JSON.stringify(payload) 
+            });
+            j = await res.json();
+          } else {
+            res = await fetch('/api/visits', { 
+              method: 'POST', 
+              headers: { 
+                'Authorization': `Bearer ${token}`, 
+                'Content-Type': 'application/json' 
+              }, 
+              body: JSON.stringify(payload) 
+            });
+            j = await res.json();
+          }
+          
+          // Remove loading overlay
+          loadingOverlay.remove();
+          
+          if (j.success) {
+            closeDrawer();
+            showNotification(visit ? 'Visit updated successfully' : 'Visit created successfully', 'success');
+            loadVisits();
+          } else {
+            showNotification('Error: ' + (j.message || 'Operation failed'), 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          loadingOverlay.remove();
+          showNotification('Operation failed: Network or server error', 'error');
+        }
       };
     }
 

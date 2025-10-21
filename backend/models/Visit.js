@@ -37,7 +37,7 @@ const visitSchema = new mongoose.Schema({
     childrenResponse: {
         type: String,
         enum: ['excellent', 'good', 'average', 'poor'],
-        required: true
+        required: false
     },
     challengesFaced: String,
     suggestions: String,

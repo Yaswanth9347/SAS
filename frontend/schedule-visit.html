@@ -4,14 +4,96 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schedule Visit - SAS Admin</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+    /* ====== RESET ====== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Poppins", sans-serif;
+      background: #f4f6f8;
+      color: #333;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    
+    /* ====== NAVBAR ====== */
+    .navbar {
+      background: linear-gradient(90deg, #4caf50, #2e7d32);
+      color: #fff;
+      position: fixed;
+      width: 100%;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 70px;
+    }
+
+    .nav-logo h2 {
+      font-family: Georgia, 'Times New Roman', Times, serif;
+      font-weight: 700;
+      font-size: 1.75rem;
+      letter-spacing: 0.6px;
+      color: #fff;
+    }
+
+    .nav-menu {
+      display: flex;
+      list-style: none;
+      gap: 20px;
+      margin-left: auto; /* push to right */
+      align-items: center;
+    }
+
+    .nav-link {
+      text-decoration: none;
+      color: #fff;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      padding: 6px 8px;
+      border-radius: 6px;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: #c8e6c9;
+    }
+
+    .logout-btn {
+      background: #f44336;
+      color: white !important;
+      padding: 8px 18px;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .logout-btn:hover {
+      background: #d32f2f;
+      transform: translateY(-2px);
+    }
+    </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-logo">
-                <h2>Spread A Smile</h2>
-            </div>
+            <div class="nav-logo"><h2>Spread A Smile</h2></div>
             <ul class="nav-menu">
                 <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
                 <li><a href="visits.html" class="nav-link">Visits</a></li>
@@ -28,54 +110,55 @@
 
     <section class="dashboard">
         <div class="container">
-            <div class="dashboard-header animate-header">
+            <div class="dashboard-header">
                 <h1>Schedule New Visit</h1>
                 <p>Assign teams to schools for volunteer visits</p>
             </div>
 
             <div class="schedule-form-container">
+                <h2>Schedule a Visit</h2>
                 <form id="scheduleVisitForm" class="schedule-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="visitDate">Visit Date *</label>
+                    <div class="form-row" style="display: flex; gap: 20px; margin-bottom: 10px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="visitDate">Visit Date <span class="required">*</span></label>
                             <input type="date" id="visitDate" name="date" required min="{{today}}">
                         </div>
-                        <div class="form-group">
-                            <label for="team">Select Team *</label>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="team">Select Team <span class="required">*</span></label>
                             <select id="team" name="team" required>
                                 <option value="">Loading teams...</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="school">Select School *</label>
+                    <div class="form-row" style="display: flex; gap: 20px; margin-bottom: 10px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="school">Select School <span class="required">*</span></label>
                             <select id="school" name="school" required>
                                 <option value="">Loading schools...</option>
                             </select>
                             <div id="schoolInfo" class="school-info" style="display: none;"></div>
                         </div>
-                        <div class="form-group">
-                            <label for="assignedClass">Assigned Class *</label>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="assignedClass">Assigned Class <span class="required">*</span></label>
                             <input type="text" id="assignedClass" name="assignedClass" required placeholder="e.g., 6th Standard, Section A">
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
+                    <div class="form-row" style="display: flex; gap: 20px; margin-bottom: 10px;">
+                        <div class="form-group" style="flex: 1;">
                             <label for="expectedChildren">Expected Number of Children</label>
                             <input type="number" id="expectedChildren" name="childrenCount" min="1" max="100" value="30">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" style="flex: 1;">
                             <label for="visitTime">Visit Time</label>
                             <input type="time" id="visitTime" name="visitTime" value="09:00">
                         </div>
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="checkAvailability()">Check Availability</button>
-                        <button type="submit" class="btn btn-primary">Schedule Visit</button>
+                        <button type="button" class="btn btn-secondary" onclick="checkAvailability()"><i class="fas fa-calendar-check"></i> Check Availability</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-calendar-plus"></i> Schedule Visit</button>
                     </div>
                 </form>
 
@@ -102,8 +185,26 @@
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         
         if (!token || user.role !== 'admin') {
-            alert('Access denied. Admin privileges required.');
-            window.location.href = 'dashboard.html';
+            showNotification('Access denied. Admin privileges required.', 'error');
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 2000);
+        }
+        
+        // Function to show toast notification
+        function showNotification(message, type = 'info') {
+          const notification = document.createElement('div');
+          notification.className = `notification ${type}`;
+          notification.innerText = message;
+          document.body.appendChild(notification);
+          
+          setTimeout(() => {
+            notification.classList.add('show');
+            setTimeout(() => {
+              notification.classList.remove('show');
+              setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+          }, 100);
         }
         
         // Update navbar username
@@ -179,7 +280,7 @@
             const teamId = document.getElementById('team').value;
 
             if (!visitDate || !teamId) {
-                alert('Please select both date and team');
+                showNotification('Please select both date and team', 'error');
                 return;
             }
 
@@ -209,7 +310,7 @@
                 resultDiv.style.display = 'block';
             } catch (error) {
                 console.error('Error checking availability:', error);
-                alert('Error checking availability');
+                showNotification('Error checking availability', 'error');
             }
         }
 
@@ -240,17 +341,17 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert('Visit scheduled successfully!');
+                    showNotification('Visit scheduled successfully!', 'success');
                     this.reset();
                     document.getElementById('availabilityResult').style.display = 'none';
                     document.getElementById('schoolInfo').style.display = 'none';
                     loadUpcomingVisits();
                 } else {
-                    alert('Error: ' + data.message);
+                    showNotification('Error: ' + data.message, 'error');
                 }
             } catch (error) {
                 console.error('Error scheduling visit:', error);
-                alert('Failed to schedule visit');
+                showNotification('Failed to schedule visit', 'error');
             }
         });
 
@@ -277,13 +378,13 @@
                                 <span class="visit-status scheduled">Scheduled</span>
                             </div>
                             <div class="visit-details">
-                                <p><strong>Date:</strong> ${new Date(visit.date).toLocaleDateString()}</p>
-                                <p><strong>Team:</strong> ${visit.team.name}</p>
-                                <p><strong>Class:</strong> ${visit.assignedClass}</p>
-                                <p><strong>Expected Children:</strong> ${visit.childrenCount}</p>
+                                <p><i class="far fa-calendar-alt"></i> <strong>Date:</strong> ${new Date(visit.date).toLocaleDateString()}</p>
+                                <p><i class="fas fa-users"></i> <strong>Team:</strong> ${visit.team.name}</p>
+                                <p><i class="fas fa-chalkboard"></i> <strong>Class:</strong> ${visit.assignedClass}</p>
+                                <p><i class="fas fa-child"></i> <strong>Expected Children:</strong> ${visit.childrenCount}</p>
                             </div>
                             <div class="visit-actions">
-                                <button class="btn btn-small btn-danger" onclick="cancelVisit('${visit._id}')">Cancel</button>
+                                <button class="btn-small btn-danger" onclick="cancelVisit('${visit._id}')"><i class="fas fa-times-circle"></i> Cancel</button>
                             </div>
                         </div>
                     `).join('');
@@ -310,14 +411,14 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert('Visit cancelled successfully!');
+                    showNotification('Visit cancelled successfully!', 'success');
                     loadUpcomingVisits();
                 } else {
-                    alert('Error: ' + data.message);
+                    showNotification('Error: ' + data.message, 'error');
                 }
             } catch (error) {
                 console.error('Error cancelling visit:', error);
-                alert('Failed to cancel visit');
+                showNotification('Failed to cancel visit', 'error');
             }
         }
 
@@ -334,21 +435,96 @@
     </script>
 
     <style>
+    /* ====== DASHBOARD SECTION ====== */
+    .dashboard {
+      flex: 1;
+      padding: 120px 0 60px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .dashboard-header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .dashboard-header h1 {
+      font-size: 2.4rem;
+      color: #2e7d32;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .dashboard-header p {
+      font-size: 1.05rem;
+      color: #555;
+    }
+    
+    /* ====== NOTIFICATIONS ====== */
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+      transform: translateX(120%);
+      transition: transform 0.3s ease;
+      z-index: 2000;
+      font-weight: 500;
+    }
+
+    .notification.show {
+      transform: translateX(0);
+    }
+
+    .notification.success {
+      border-left: 5px solid #4caf50;
+      color: #2e7d32;
+      background-color: #e8f5e9;
+    }
+
+    .notification.error {
+      border-left: 5px solid #f44336;
+      color: #d32f2f;
+      background-color: #ffebee;
+    }
+
+    .notification.info {
+      border-left: 5px solid #2196f3;
+      color: #1565c0;
+      background-color: #e3f2fd;
+    }
+        
         .schedule-form-container {
             background: white;
-            padding: 35px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.12);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
             margin: 35px 0;
             transition: all 0.3s ease;
-            border-left: 5px solid #3f51b5;
+            border-left: 5px solid #4caf50;
             position: relative;
             overflow: hidden;
         }
         
+        .schedule-form-container h2 {
+            color: #2e7d32;
+            margin-bottom: 20px;
+            font-size: 1.6rem;
+            font-weight: 600;
+            border-bottom: 2px solid #e8f5e9;
+            padding-bottom: 10px;
+        }
+        
         .schedule-form-container:hover {
-            box-shadow: 0 8px 25px rgba(33, 150, 243, 0.18);
-            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transform: translateY(-6px);
         }
         
         .schedule-form-container::after {
@@ -358,7 +534,7 @@
             right: -20px;
             width: 120px;
             height: 120px;
-            background: radial-gradient(circle at top right, rgba(63, 81, 181, 0.08), transparent 70%);
+            background: radial-gradient(circle at top right, rgba(76, 175, 80, 0.08), transparent 70%);
             border-radius: 50%;
             z-index: 0;
         }
@@ -368,91 +544,96 @@
         }
         
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 20px;
         }
 
         .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+            font-weight: 600;
             color: #333;
-            font-size: 0.95rem;
+            display: block;
+            margin-bottom: 8px;
         }
 
         .form-group input,
         .form-group select {
             width: 100%;
-            padding: 10px;
+            padding: 12px 15px;
             border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            transition: all 0.3s ease;
+            border-radius: 8px;
+            background-color: #f9fafb;
+            font-size: 1rem;
+            transition: all 0.3s;
         }
         
         .form-group input:focus,
         .form-group select:focus {
-            border-color: #3f51b5;
+            border-color: #4caf50;
             outline: none;
-            box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.12);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.15);
         }
 
         .form-actions {
+            text-align: right;
+            margin-top: 25px;
             display: flex;
             gap: 15px;
-            margin-top: 25px;
             justify-content: flex-end;
         }
         
-        .form-actions .btn {
-            padding: 12px 24px;
-            border-radius: 8px;
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            border-radius: 6px;
+            text-decoration: none;
             font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
+            font-size: 0.95rem;
             transition: all 0.3s ease;
-        }
-        
-        .form-actions .btn-primary {
-            background: #3f51b5;
-            color: white;
+            cursor: pointer;
+            text-align: center;
             border: none;
-            box-shadow: 0 4px 8px rgba(63, 81, 181, 0.2);
         }
-        
-        .form-actions .btn-primary:hover {
-            background: #3949ab;
+
+        .btn-primary {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #388e3c;
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(63, 81, 181, 0.25);
         }
-        
-        .form-actions .btn-secondary {
-            background: white;
-            color: #3f51b5;
-            border: 2px solid #3f51b5;
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid #4caf50;
+            color: #4caf50;
         }
-        
-        .form-actions .btn-secondary:hover {
-            background: rgba(63, 81, 181, 0.05);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+
+        .btn-secondary:hover {
+            background: #4caf50;
+            color: white;
         }
 
         .school-info {
-            background: #e3f2fd;
-            padding: 10px;
-            border-radius: 5px;
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
             margin-top: 10px;
-            border-left: 4px solid #2196F3;
+            border-left: 4px solid #4caf50;
             font-size: 0.9rem;
-            color: #0d47a1;
+            color: #2e7d32;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
         .availability-result {
             margin-top: 20px;
-            padding: 15px;
-            border-radius: 5px;
+            padding: 20px;
+            border-radius: 10px;
             font-weight: 500;
             animation: fadeIn 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
         }
         
         @keyframes fadeIn {
@@ -465,6 +646,7 @@
             border: 1px solid #c8e6c9;
             color: #2e7d32;
             border-radius: 8px;
+            border-left: 5px solid #4caf50;
         }
 
         .availability-warning {
@@ -472,31 +654,39 @@
             border: 1px solid #ffecb3;
             color: #f57f17;
             border-radius: 8px;
+            border-left: 5px solid #ff9800;
+        }
+        
+        .required {
+            color: #f44336;
+            margin-left: 2px;
         }
 
         .upcoming-visits {
-            margin-top: 50px;
+            background: #fff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
             position: relative;
-            padding-bottom: 40px;
+            margin-top: 50px;
+            border-top: 6px solid #4caf50;
+        }
+
+        .upcoming-visits:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
         
         .upcoming-visits h2 {
-            color: #3f51b5;
+            color: #2e7d32;
+            margin-bottom: 20px;
             font-size: 1.6rem;
-            margin-bottom: 25px;
+            font-weight: 600;
+            border-bottom: 2px solid #e8f5e9;
+            padding-bottom: 10px;
             position: relative;
-            display: inline-block;
-        }
-        
-        .upcoming-visits h2::after {
-            content: "";
-            position: absolute;
-            bottom: -8px;
-            left: 0;
-            width: 60px;
-            height: 3px;
-            background: #3f51b5;
-            border-radius: 3px;
         }
 
         .visits-list {
@@ -505,19 +695,19 @@
 
         .visit-card {
             background: white;
-            padding: 20px;
-            margin: 18px 0;
+            padding: 25px;
+            margin: 25px 0;
             border-radius: 10px;
-            box-shadow: 0 3px 12px rgba(33, 150, 243, 0.1);
-            border-left: 4px solid #3f51b5;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid #4caf50;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
         }
         
         .visit-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 18px rgba(33, 150, 243, 0.18);
+            transform: translateY(-6px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
         
         .visit-card::before {
@@ -527,7 +717,7 @@
             right: 0;
             width: 100px;
             height: 100px;
-            background: radial-gradient(circle at top right, rgba(63, 81, 181, 0.1), transparent 70%);
+            background: radial-gradient(circle at top right, rgba(76, 175, 80, 0.1), transparent 70%);
             border-radius: 0 0 0 100%;
         }
 
@@ -539,8 +729,8 @@
         }
         
         .visit-header h3 {
-            color: #3f51b5;
-            font-size: 1.2rem;
+            color: #2e7d32;
+            font-size: 1.4rem;
             font-weight: 600;
         }
 
@@ -554,14 +744,22 @@
         .visit-status.scheduled {
             background: #e8f5e9;
             color: #2e7d32;
-            padding: 6px 12px;
+            padding: 6px 15px;
             border-radius: 20px;
             font-size: 0.85rem;
             font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .visit-status.scheduled:before {
+            content: "•";
+            margin-right: 6px;
+            font-size: 1.2rem;
         }
 
         .visit-details p {
-            margin: 8px 0;
+            margin: 10px 0;
             font-size: 1rem;
             color: #555;
         }
@@ -574,28 +772,37 @@
         .visit-actions {
             margin-top: 20px;
             display: flex;
-            gap: 10px;
+            justify-content: flex-end;
+            gap: 12px;
         }
 
         .btn-small {
             padding: 8px 16px;
-            font-size: 0.85rem;
-            border-radius: 20px;
-            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            font-weight: 500;
             transition: all 0.3s ease;
             cursor: pointer;
             border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .btn-danger {
-            background: #f44336;
-            color: white;
+            background: #ffebee;
+            color: #c62828;
         }
         
         .btn-danger:hover {
-            background: #e53935;
+            background: #d32f2f;
+            color: white;
             transform: translateY(-2px);
-            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .btn-small i {
+            margin-right: 5px;
         }
 
         .no-visits {
@@ -606,36 +813,50 @@
             color: #666;
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             font-size: 1.1rem;
-            background-image: linear-gradient(135deg, rgba(63, 81, 181, 0.03) 25%, transparent 25%, transparent 50%, rgba(63, 81, 181, 0.03) 50%, rgba(63, 81, 181, 0.03) 75%, transparent 75%, transparent);
+            background-image: linear-gradient(135deg, rgba(76, 175, 80, 0.03) 25%, transparent 25%, transparent 50%, rgba(76, 175, 80, 0.03) 50%, rgba(76, 175, 80, 0.03) 75%, transparent 75%, transparent);
             background-size: 20px 20px;
         }
         
-        .animate-header {
-            animation: slideDown 0.5s ease-out;
+        /* ====== FOOTER ====== */
+        .footer {
+          background-color: #166534;
+          color: white;
+          text-align: center;
+          padding: 1rem;
+          font-size: 0.9rem;
+          margin-top: auto;
         }
         
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .dashboard-header h1 {
-            color: #3f51b5;
-            margin-bottom: 12px;
-            font-weight: 700;
-            font-size: 2.2rem;
-        }
-        
-        .dashboard-header p {
-            color: #666;
-            font-size: 1.1rem;
-            max-width: 600px;
+        @media (max-width: 768px) {
+          .nav-menu {
+            flex-wrap: wrap;
+            gap: 0.6rem;
+          }
+
+          .dashboard {
+            padding: 90px 0 30px;
+          }
+
+          .dashboard-header h1 {
+            font-size: 1.6rem;
+          }
+          
+          .schedule-form-container {
+            padding: 20px;
+          }
+          
+          .form-row {
+            flex-direction: column;
+          }
+          
+          .form-actions {
+            flex-direction: column;
+          }
+          
+          .btn {
+            width: 100%;
+            margin-bottom: 10px;
+          }
         }
     </style>
 </body>

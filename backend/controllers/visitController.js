@@ -12,16 +12,30 @@ exports.getVisits = async (req, res, next) => {
         
         // Build query based on user role and filters
         if (req.user.role === 'volunteer') {
+            // Volunteers can only see visits assigned to their team
+            if (!req.user.team) {
+                return res.status(200).json({
+                    success: true,
+                    count: 0,
+                    data: [],
+                    message: 'User is not assigned to any team'
+                });
+            }
             query = Visit.find({ team: req.user.team });
+        } else if (req.user.role === 'admin') {
+            // Admins can see all visits across all teams
+            query = Visit.find();
         } else {
+            // Fallback for any other roles
             query = Visit.find();
         }
 
-        // Apply filters
-        if (status) {
+        // Apply status filter if provided
+        if (status && ['scheduled', 'completed', 'cancelled'].includes(status)) {
             query = query.where('status').equals(status);
         }
 
+        // Apply date filter if provided
         if (month && year) {
             const startDate = new Date(year, month - 1, 1);
             const endDate = new Date(year, month, 0);
@@ -31,7 +45,7 @@ exports.getVisits = async (req, res, next) => {
         const visits = await query
             .populate('school', 'name address contactPerson')
             .populate('team', 'name')
-            .populate('submittedBy', 'name')
+            .populate('submittedBy', 'name role')
             .sort({ date: -1 });
 
         res.status(200).json({
@@ -40,6 +54,7 @@ exports.getVisits = async (req, res, next) => {
             data: visits
         });
     } catch (error) {
+        console.error('Error in getVisits:', error);
         res.status(400).json({
             success: false,
             message: error.message
@@ -53,9 +68,9 @@ exports.getVisits = async (req, res, next) => {
 exports.getVisit = async (req, res, next) => {
     try {
         const visit = await Visit.findById(req.params.id)
-            .populate('school')
-            .populate('team')
-            .populate('submittedBy', 'name email');
+            .populate('school', 'name address contactPerson')
+            .populate('team', 'name')
+            .populate('submittedBy', 'name email role');
 
         if (!visit) {
             return res.status(404).json({
@@ -64,11 +79,29 @@ exports.getVisit = async (req, res, next) => {
             });
         }
 
+        // Check if volunteer has access to this visit (must be for their team)
+        if (req.user.role === 'volunteer') {
+            if (!req.user.team) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'User is not assigned to any team'
+                });
+            }
+            if (!req.user.team.equals(visit.team._id)) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'You are not authorized to view this visit'
+                });
+            }
+        }
+        // Admins can view all visits, so no additional check needed
+
         res.status(200).json({
             success: true,
             data: visit
         });
     } catch (error) {
+        console.error('Error in getVisit:', error);
         res.status(400).json({
             success: false,
             message: error.message
@@ -78,29 +111,60 @@ exports.getVisit = async (req, res, next) => {
 
 // @desc    Create new visit
 // @route   POST /api/visits
-// @access  Private/Admin
+// @access  Private (Both admin and volunteer with appropriate validation)
 const mongoose = require('mongoose');
 
 exports.createVisit = async (req, res, next) => {
     try {
-        // Validate team and school IDs
+        // Validate required fields
         if (!req.body.team || !mongoose.Types.ObjectId.isValid(req.body.team)) {
-            return res.status(400).json({ success: false, message: 'Invalid or missing team id' });
+            return res.status(400).json({ success: false, message: 'Invalid or missing team ID' });
         }
         if (!req.body.school || !mongoose.Types.ObjectId.isValid(req.body.school)) {
-            return res.status(400).json({ success: false, message: 'Invalid or missing school id' });
+            return res.status(400).json({ success: false, message: 'Invalid or missing school ID' });
+        }
+        if (!req.body.date) {
+            return res.status(400).json({ success: false, message: 'Visit date is required' });
+        }
+        if (!req.body.assignedClass) {
+            return res.status(400).json({ success: false, message: 'Assigned class is required' });
         }
 
-        // ensure referenced team and school exist
-        const teamExists = await Team.findById(req.body.team).select('_id');
-        if (!teamExists) return res.status(404).json({ success: false, message: 'Team not found' });
-        const schoolExists = await School.findById(req.body.school).select('_id');
-        if (!schoolExists) return res.status(404).json({ success: false, message: 'School not found' });
+        // Ensure referenced team and school exist
+        const teamExists = await Team.findById(req.body.team).select('_id name');
+        if (!teamExists) {
+            return res.status(404).json({ success: false, message: 'Team not found' });
+        }
+        
+        const schoolExists = await School.findById(req.body.school).select('_id name');
+        if (!schoolExists) {
+            return res.status(404).json({ success: false, message: 'School not found' });
+        }
 
-        // Check if team is available on that date
+        // For volunteer users, ensure they're creating visits only for their own team
+        if (req.user.role === 'volunteer') {
+            if (!req.user.team) {
+                return res.status(403).json({
+                    success: false, 
+                    message: 'User is not assigned to any team'
+                });
+            }
+            if (!req.user.team.equals(req.body.team)) {
+                return res.status(403).json({
+                    success: false, 
+                    message: 'Volunteers can only create visits for their own team'
+                });
+            }
+        }
+
+        // Check if team is available on that date (prevent double booking)
+        const visitDate = new Date(req.body.date);
+        const startOfDay = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate());
+        const endOfDay = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate(), 23, 59, 59);
+        
         const existingVisit = await Visit.findOne({
             team: req.body.team,
-            date: req.body.date,
+            date: { $gte: startOfDay, $lte: endOfDay },
             status: { $in: ['scheduled', 'completed'] }
         });
 
@@ -111,18 +175,31 @@ exports.createVisit = async (req, res, next) => {
             });
         }
 
-        const visit = await Visit.create(req.body);
+        // Create the visit with proper default values
+        const visitData = {
+            ...req.body,
+            status: req.body.status || 'scheduled', // Ensure default status
+            submittedBy: req.user.id, // Track who created the visit
+            childrenCount: req.body.childrenCount || 30, // Default expected children
+            totalClasses: req.body.totalClasses || 1, // Default total classes
+            classesVisited: req.body.classesVisited || 0 // Default classes visited
+        };
+        
+        const visit = await Visit.create(visitData);
 
         // Populate the created visit for response
         const populatedVisit = await Visit.findById(visit._id)
-            .populate('school', 'name address')
-            .populate('team', 'name');
+            .populate('school', 'name address contactPerson')
+            .populate('team', 'name')
+            .populate('submittedBy', 'name role');
 
         res.status(201).json({
             success: true,
-            data: populatedVisit
+            data: populatedVisit,
+            message: `Visit created successfully and assigned to ${teamExists.name}`
         });
     } catch (error) {
+        console.error('Error in createVisit:', error);
         res.status(400).json({
             success: false,
             message: error.message
@@ -187,9 +264,26 @@ exports.getVisitStats = async (req, res, next) => {
     try {
         let matchQuery = {};
         
+        // Apply role-based filtering
         if (req.user.role === 'volunteer') {
+            if (!req.user.team) {
+                return res.status(200).json({
+                    success: true,
+                    data: {
+                        totalVisits: 0,
+                        completedVisits: 0,
+                        scheduledVisits: 0,
+                        cancelledVisits: 0,
+                        totalChildren: 0,
+                        averageChildren: 0,
+                        monthlyStats: []
+                    },
+                    message: 'User is not assigned to any team'
+                });
+            }
             matchQuery.team = req.user.team;
         }
+        // Admin can see all stats, so no additional filter needed
 
         const stats = await Visit.aggregate([
             { $match: matchQuery },
@@ -203,13 +297,16 @@ exports.getVisitStats = async (req, res, next) => {
                     scheduledVisits: { 
                         $sum: { $cond: [{ $eq: ['$status', 'scheduled'] }, 1, 0] } 
                     },
+                    cancelledVisits: { 
+                        $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] } 
+                    },
                     totalChildren: { $sum: '$childrenCount' },
                     averageChildren: { $avg: '$childrenCount' }
                 }
             }
         ]);
 
-        // Get monthly stats
+        // Get monthly stats for the last 6 months
         const monthlyStats = await Visit.aggregate([
             { $match: matchQuery },
             {
@@ -219,7 +316,10 @@ exports.getVisitStats = async (req, res, next) => {
                         month: { $month: '$date' }
                     },
                     visits: { $sum: 1 },
-                    children: { $sum: '$childrenCount' }
+                    children: { $sum: '$childrenCount' },
+                    completedVisits: { 
+                        $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } 
+                    }
                 }
             },
             { $sort: { '_id.year': -1, '_id.month': -1 } },
@@ -233,6 +333,7 @@ exports.getVisitStats = async (req, res, next) => {
                     totalVisits: 0,
                     completedVisits: 0,
                     scheduledVisits: 0,
+                    cancelledVisits: 0,
                     totalChildren: 0,
                     averageChildren: 0
                 }),
@@ -240,6 +341,7 @@ exports.getVisitStats = async (req, res, next) => {
             }
         });
     } catch (error) {
+        console.error('Error in getVisitStats:', error);
         res.status(400).json({
             success: false,
             message: error.message
@@ -290,16 +392,27 @@ exports.uploadVisitFiles = uploadVisitFiles;
 
 exports.handleFileUpload = async (req, res, next) => {
     try {
+        console.log('HandleFileUpload received files:', req.files);
+        console.log('HandleFileUpload received body:', req.body);
+        
         const visit = await Visit.findById(req.params.id);
 
         if (!visit) {
             // Clean up uploaded files if visit doesn't exist
             if (req.files) {
-                Object.values(req.files).forEach(files => {
-                    files.forEach(file => {
-                        fs.unlinkSync(file.path);
+                if (Array.isArray(req.files)) {
+                    // Handle array of files from multer.any()
+                    req.files.forEach(file => {
+                        try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
                     });
-                });
+                } else {
+                    // Handle object of file arrays from multer.fields()
+                    Object.values(req.files).forEach(files => {
+                        files.forEach(file => {
+                            try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
+                        });
+                    });
+                }
             }
             return res.status(404).json({
                 success: false,
@@ -311,11 +424,19 @@ exports.handleFileUpload = async (req, res, next) => {
         if (req.user.role === 'volunteer' && !req.user.team.equals(visit.team)) {
             // Clean up uploaded files if not authorized
             if (req.files) {
-                Object.values(req.files).forEach(files => {
-                    files.forEach(file => {
-                        fs.unlinkSync(file.path);
+                if (Array.isArray(req.files)) {
+                    // Handle array of files from multer.any()
+                    req.files.forEach(file => {
+                        try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
                     });
-                });
+                } else {
+                    // Handle object of file arrays from multer.fields()
+                    Object.values(req.files).forEach(files => {
+                        files.forEach(file => {
+                            try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
+                        });
+                    });
+                }
             }
             return res.status(403).json({
                 success: false,
@@ -329,22 +450,48 @@ exports.handleFileUpload = async (req, res, next) => {
             docs: []
         };
 
-        // Process uploaded files
+        // Process uploaded files - handle both multer.any() and multer.fields()
         if (req.files) {
-            if (req.files.photos) {
-                const urls = req.files.photos.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
-                fileUrls.photos = urls;
-                visit.photos = (visit.photos || []).concat(urls);
-            }
-            if (req.files.videos) {
-                const urls = req.files.videos.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
-                fileUrls.videos = urls;
-                visit.videos = (visit.videos || []).concat(urls);
-            }
-            if (req.files.docs) {
-                const urls = req.files.docs.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
-                fileUrls.docs = urls;
-                visit.docs = (visit.docs || []).concat(urls);
+            if (Array.isArray(req.files)) {
+                // Handle files from multer.any()
+                const photoFiles = req.files.filter(file => file.fieldname === 'photos');
+                const videoFiles = req.files.filter(file => file.fieldname === 'videos');
+                const docFiles = req.files.filter(file => file.fieldname === 'docs');
+                
+                if (photoFiles.length > 0) {
+                    const urls = photoFiles.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
+                    fileUrls.photos = urls;
+                    visit.photos = (visit.photos || []).concat(urls);
+                }
+                
+                if (videoFiles.length > 0) {
+                    const urls = videoFiles.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
+                    fileUrls.videos = urls;
+                    visit.videos = (visit.videos || []).concat(urls);
+                }
+                
+                if (docFiles.length > 0) {
+                    const urls = docFiles.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
+                    fileUrls.docs = urls;
+                    visit.docs = (visit.docs || []).concat(urls);
+                }
+            } else {
+                // Handle files from multer.fields()
+                if (req.files.photos) {
+                    const urls = req.files.photos.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
+                    fileUrls.photos = urls;
+                    visit.photos = (visit.photos || []).concat(urls);
+                }
+                if (req.files.videos) {
+                    const urls = req.files.videos.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
+                    fileUrls.videos = urls;
+                    visit.videos = (visit.videos || []).concat(urls);
+                }
+                if (req.files.docs) {
+                    const urls = req.files.docs.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
+                    fileUrls.docs = urls;
+                    visit.docs = (visit.docs || []).concat(urls);
+                }
             }
             // persist visit with new media
             await visit.save();
@@ -357,13 +504,23 @@ exports.handleFileUpload = async (req, res, next) => {
     } catch (error) {
         // Clean up files on error
         if (req.files) {
-            Object.values(req.files).forEach(files => {
-                files.forEach(file => {
+            if (Array.isArray(req.files)) {
+                // Handle array of files from multer.any()
+                req.files.forEach(file => {
                     if (fs.existsSync(file.path)) {
-                        fs.unlinkSync(file.path);
+                        try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
                     }
                 });
-            });
+            } else {
+                // Handle object of file arrays from multer.fields()
+                Object.values(req.files).forEach(files => {
+                    files.forEach(file => {
+                        if (fs.existsSync(file.path)) {
+                            try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
+                        }
+                    });
+                });
+            }
         }
         res.status(400).json({
             success: false,

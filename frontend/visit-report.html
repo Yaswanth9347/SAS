@@ -4,18 +4,134 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Submit Visit Report - SAS</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+    /* ====== RESET ====== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Poppins", sans-serif;
+      background: #f4f6f8;
+      color: #333;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    
+    /* ====== NAVBAR ====== */
+    .navbar {
+      background: linear-gradient(90deg, #4caf50, #2e7d32);
+      color: #fff;
+      position: fixed;
+      width: 100%;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 70px;
+    }
+
+    .nav-logo h2 {
+      font-family: Georgia, 'Times New Roman', Times, serif;
+      font-weight: 700;
+      font-size: 1.75rem;
+      letter-spacing: 0.6px;
+      color: #fff;
+    }
+
+    .nav-menu {
+      display: flex;
+      list-style: none;
+      gap: 20px;
+      margin-left: auto; /* push to right */
+      align-items: center;
+    }
+
+    .nav-link {
+      text-decoration: none;
+      color: #fff;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      padding: 6px 8px;
+      border-radius: 6px;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: #c8e6c9;
+    }
+
+    .logout-btn {
+      background: #f44336;
+      color: white !important;
+      padding: 8px 18px;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .logout-btn:hover {
+      background: #d32f2f;
+      transform: translateY(-2px);
+    }
+    
+    /* ====== DASHBOARD SECTION ====== */
+    .dashboard {
+      flex: 1;
+      padding: 120px 0 60px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .dashboard-header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .dashboard-header h1 {
+      font-size: 2.4rem;
+      color: #2e7d32;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .dashboard-header p {
+      font-size: 1.05rem;
+      color: #555;
+    }
+    </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-logo">
-                <h2>Spread a Smile (SAS)</h2>
-            </div>
+            <div class="nav-logo"><h2>Spread A Smile</h2></div>
             <ul class="nav-menu">
-                <li><a href="index.html" class="nav-link">Home</a></li>
                 <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+                <li><a href="visits.html" class="nav-link">Visits</a></li>
+                <li><a href="schools.html" class="nav-link">Schools</a></li>
+                <li><a href="teams.html" class="nav-link">Teams</a></li>
+                <li><a href="schedule-visit.html" class="nav-link">Schedule Visit</a></li>
                 <li><a href="visit-report.html" class="nav-link active">Submit Report</a></li>
+                <li><a href="analytics.html" class="nav-link">Analytics</a></li>
+                <li><span class="nav-link" id="navUser">Welcome, User</span></li>
                 <li><a href="#" class="nav-link logout-btn">Logout</a></li>
             </ul>
         </div>
@@ -31,9 +147,9 @@
             <div class="report-container">
                 <!-- Visit Selection -->
                 <div class="report-section">
-                    <h2>Select Visit</h2>
+                    <h2><i class="fas fa-calendar-check"></i> Select Visit</h2>
                     <div class="form-group">
-                        <label for="visitSelect">Choose Visit to Report *</label>
+                        <label for="visitSelect">Choose Visit to Report <span style="color: #f44336;">*</span></label>
                         <select id="visitSelect" required>
                             <option value="">Loading your visits...</option>
                         </select>
@@ -45,7 +161,7 @@
                 <form id="visitReportForm" style="display: none;">
                     <!-- Basic Information -->
                     <div class="report-section">
-                        <h2>Visit Details</h2>
+                        <h2><i class="fas fa-info-circle"></i> Visit Details</h2>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="childrenCount">Number of Children *</label>
@@ -64,14 +180,14 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="topicsCovered">Topics Covered *</label>
+                            <label for="topicsCovered">Topics Covered <span style="color: #f44336;">*</span></label>
                             <input type="text" id="topicsCovered" name="topicsCovered" required 
                                    placeholder="e.g., Basic Programming, Environmental Science, Art & Craft">
                             <small>Separate topics with commas</small>
                         </div>
 
                         <div class="form-group">
-                            <label for="teachingMethods">Teaching Methods Used *</label>
+                            <label for="teachingMethods">Teaching Methods Used <span style="color: #f44336;">*</span></label>
                             <input type="text" id="teachingMethods" name="teachingMethods" required
                                    placeholder="e.g., Interactive Games, Storytelling, Hands-on Activities">
                             <small>Separate methods with commas</small>
@@ -80,7 +196,7 @@
 
                     <!-- Challenges & Suggestions -->
                     <div class="report-section">
-                        <h2>Feedback & Suggestions</h2>
+                        <h2><i class="fas fa-comment-alt"></i> Feedback & Suggestions</h2>
                         <div class="form-group">
                             <label for="challengesFaced">Challenges Faced</label>
                             <textarea id="challengesFaced" name="challengesFaced" rows="3" 
@@ -96,30 +212,32 @@
 
                     <!-- Media Upload -->
                     <div class="report-section">
-                        <h2>Photos & Videos</h2>
+                        <h2><i class="fas fa-photo-video"></i> Photos & Videos</h2>
                         <p class="section-description">Upload photos and videos from your visit (Max 8 photos, 2 videos)</p>
                         
                         <div class="upload-area">
                             <div class="upload-section">
-                                <h4>📸 Photos</h4>
+                                <h4><i class="fas fa-image"></i> Photos</h4>
                                 <div class="file-upload">
-                                    <input type="file" id="photoUpload" multiple accept="image/*" class="file-input">
+                                    <input type="file" id="photoUpload" name="photos" multiple accept="image/*" class="file-input">
                                     <label for="photoUpload" class="upload-label">
-                                        <span class="upload-icon">📁</span>
+                                        <span class="upload-icon"><i class="fas fa-images"></i></span>
                                         <span>Choose Photos</span>
                                     </label>
+                                    <small class="upload-limit"><i class="fas fa-info-circle"></i> Max 8 photos, 10MB per file</small>
                                 </div>
                                 <div id="photoPreview" class="preview-grid"></div>
                             </div>
 
                             <div class="upload-section">
-                                <h4>🎥 Videos</h4>
+                                <h4><i class="fas fa-video"></i> Videos</h4>
                                 <div class="file-upload">
-                                    <input type="file" id="videoUpload" multiple accept="video/*" class="file-input">
+                                    <input type="file" id="videoUpload" name="videos" multiple accept="video/*" class="file-input">
                                     <label for="videoUpload" class="upload-label">
-                                        <span class="upload-icon">📁</span>
+                                        <span class="upload-icon"><i class="fas fa-film"></i></span>
                                         <span>Choose Videos</span>
                                     </label>
+                                    <small class="upload-limit"><i class="fas fa-info-circle"></i> Max 2 videos, 10MB per file</small>
                                 </div>
                                 <div id="videoPreview" class="preview-grid"></div>
                             </div>
@@ -128,9 +246,11 @@
 
                     <!-- Submission -->
                     <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="clearForm()">Clear Form</button>
+                        <button type="button" class="btn btn-secondary" onclick="clearForm()">
+                            <i class="fas fa-undo"></i> Clear Form
+                        </button>
                         <button type="submit" class="btn btn-primary" id="submitBtn">
-                            Submit Visit Report
+                            <i class="fas fa-paper-plane"></i> Submit Visit Report
                         </button>
                     </div>
                 </form>
@@ -140,8 +260,8 @@
 
     <!-- Loading Modal -->
     <div id="loadingModal" class="modal" style="display: none;">
-        <div class="modal-content" style="text-align: center; max-width: 400px;">
-            <h3>Submitting Report...</h3>
+        <div class="modal-content">
+            <h3><i class="fas fa-cloud-upload-alt"></i> Submitting Report</h3>
             <div class="loading-spinner"></div>
             <p>Please wait while we upload your files and submit the report.</p>
             <p id="uploadProgress">Initializing...</p>
@@ -159,7 +279,26 @@
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         
         if (!token) {
-            window.location.href = 'login.html';
+            showNotification('Please login to access this page', 'error');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
+        }
+        
+        // Function to show toast notification
+        function showNotification(message, type = 'info') {
+          const notification = document.createElement('div');
+          notification.className = `notification ${type}`;
+          notification.innerText = message;
+          document.body.appendChild(notification);
+          
+          setTimeout(() => {
+            notification.classList.add('show');
+            setTimeout(() => {
+              notification.classList.remove('show');
+              setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+          }, 100);
         }
 
         let selectedVisitId = null;
@@ -171,7 +310,7 @@
         // Load visits that need reporting
         async function loadVisitsForReporting() {
             try {
-                const response = await fetch('/api/visits?status=scheduled', {
+                const response = await fetch('http://localhost:5002/api/visits?status=scheduled', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -235,6 +374,23 @@
         function handlePhotoUpload(event) {
             const files = Array.from(event.target.files);
             const preview = document.getElementById('photoPreview');
+            const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit
+            const MAX_PHOTOS = 8;
+            
+            // Check if adding these photos would exceed the limit
+            if (uploadedFiles.photos.length + files.length > MAX_PHOTOS) {
+                showNotification(`You can only upload a maximum of ${MAX_PHOTOS} photos. Please remove some photos first.`, 'error');
+                event.target.value = '';
+                return;
+            }
+            
+            // Check for oversized files before processing
+            const oversizedFiles = files.filter(file => file.size > MAX_FILE_SIZE);
+            if (oversizedFiles.length > 0) {
+                showNotification(`Some files exceed the maximum size of 10MB: ${oversizedFiles.map(f => f.name).join(', ')}`, 'error');
+                event.target.value = '';
+                return;
+            }
             
             files.forEach(file => {
                 if (file.type.startsWith('image/')) {
@@ -244,8 +400,9 @@
                         previewItem.className = 'preview-item';
                         previewItem.innerHTML = `
                             <img src="${e.target.result}" alt="Preview">
-                            <button type="button" class="remove-btn" onclick="removePhoto('${file.name}')">×</button>
+                            <button type="button" class="remove-btn" onclick="removePhoto('${file.name}')"><i class="fas fa-times"></i></button>
                             <span class="file-name">${file.name}</span>
+                            <span class="file-size">${(file.size / (1024 * 1024)).toFixed(2)} MB</span>
                         `;
                         preview.appendChild(previewItem);
                         
@@ -261,15 +418,33 @@
         function handleVideoUpload(event) {
             const files = Array.from(event.target.files);
             const preview = document.getElementById('videoPreview');
+            const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit
+            const MAX_VIDEOS = 2;
+            
+            // Check if adding these videos would exceed the limit
+            if (uploadedFiles.videos.length + files.length > MAX_VIDEOS) {
+                showNotification(`You can only upload a maximum of ${MAX_VIDEOS} videos. Please remove some videos first.`, 'error');
+                event.target.value = '';
+                return;
+            }
+            
+            // Check for oversized files before processing
+            const oversizedFiles = files.filter(file => file.size > MAX_FILE_SIZE);
+            if (oversizedFiles.length > 0) {
+                showNotification(`Some files exceed the maximum size of 10MB: ${oversizedFiles.map(f => f.name).join(', ')}`, 'error');
+                event.target.value = '';
+                return;
+            }
             
             files.forEach(file => {
                 if (file.type.startsWith('video/')) {
                     const previewItem = document.createElement('div');
                     previewItem.className = 'preview-item';
                     previewItem.innerHTML = `
-                        <div class="video-icon">🎥</div>
-                        <button type="button" class="remove-btn" onclick="removeVideo('${file.name}')">×</button>
+                        <div class="video-icon"><i class="fas fa-film"></i></div>
+                        <button type="button" class="remove-btn" onclick="removeVideo('${file.name}')"><i class="fas fa-times"></i></button>
                         <span class="file-name">${file.name}</span>
+                        <span class="file-size">${(file.size / (1024 * 1024)).toFixed(2)} MB</span>
                     `;
                     preview.appendChild(previewItem);
                     
@@ -301,8 +476,9 @@
                     previewItem.className = 'preview-item';
                     previewItem.innerHTML = `
                         <img src="${e.target.result}" alt="Preview">
-                        <button type="button" class="remove-btn" onclick="removePhoto('${file.name}')">×</button>
+                        <button type="button" class="remove-btn" onclick="removePhoto('${file.name}')"><i class="fas fa-times"></i></button>
                         <span class="file-name">${file.name}</span>
+                        <span class="file-size">${(file.size / (1024 * 1024)).toFixed(2)} MB</span>
                     `;
                     preview.appendChild(previewItem);
                 };
@@ -318,9 +494,10 @@
                 const previewItem = document.createElement('div');
                 previewItem.className = 'preview-item';
                 previewItem.innerHTML = `
-                    <div class="video-icon">🎥</div>
-                    <button type="button" class="remove-btn" onclick="removeVideo('${file.name}')">×</button>
+                    <div class="video-icon"><i class="fas fa-film"></i></div>
+                    <button type="button" class="remove-btn" onclick="removeVideo('${file.name}')"><i class="fas fa-times"></i></button>
                     <span class="file-name">${file.name}</span>
+                    <span class="file-size">${(file.size / (1024 * 1024)).toFixed(2)} MB</span>
                 `;
                 preview.appendChild(previewItem);
             });
@@ -331,7 +508,34 @@
             e.preventDefault();
             
             if (!selectedVisitId) {
-                alert('Please select a visit first');
+                showNotification('Please select a visit first', 'error');
+                return;
+            }
+            
+            // Form validation
+            const childrenCount = document.getElementById('childrenCount').value;
+            const childrenResponse = document.getElementById('childrenResponse').value;
+            const topicsCovered = document.getElementById('topicsCovered').value;
+            const teachingMethods = document.getElementById('teachingMethods').value;
+            
+            // Basic validation
+            if (!childrenCount || childrenCount < 1) {
+                showNotification('Please enter a valid number of children', 'error');
+                return;
+            }
+            
+            if (!childrenResponse) {
+                showNotification('Please select the children\'s response', 'error');
+                return;
+            }
+            
+            if (!topicsCovered.trim()) {
+                showNotification('Please enter the topics covered', 'error');
+                return;
+            }
+            
+            if (!teachingMethods.trim()) {
+                showNotification('Please enter the teaching methods used', 'error');
                 return;
             }
 
@@ -341,9 +545,34 @@
             loadingModal.style.display = 'block';
 
             try {
-                // Upload files first
+                // Validate file sizes BEFORE showing loading modal
+                const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit
+                const oversizedFiles = [...uploadedFiles.photos, ...uploadedFiles.videos].filter(file => file.size > MAX_FILE_SIZE);
+                
+                if (oversizedFiles.length > 0) {
+                    showNotification(`Some files exceed the maximum size of 10MB: ${oversizedFiles.map(f => f.name).join(', ')}`, 'error');
+                    return; // Stop submission process
+                }
+                
+                // Check if total photos exceed limit
+                if (uploadedFiles.photos.length > 8) {
+                    showNotification('You can upload a maximum of 8 photos', 'error');
+                    return; // Stop submission process
+                }
+                
+                // Check if total videos exceed limit
+                if (uploadedFiles.videos.length > 2) {
+                    showNotification('You can upload a maximum of 2 videos', 'error');
+                    return; // Stop submission process
+                }
+                
+                // Upload files first - Only show loading modal AFTER validation passes
                 uploadProgress.textContent = 'Uploading files...';
                 const formData = new FormData();
+                
+                // Log before upload for debugging
+                console.log('Photos to upload:', uploadedFiles.photos.length);
+                console.log('Videos to upload:', uploadedFiles.videos.length);
                 
                 // Add photos
                 uploadedFiles.photos.forEach(photo => {
@@ -354,24 +583,52 @@
                 uploadedFiles.videos.forEach(video => {
                     formData.append('videos', video);
                 });
+                
+                // Add a visit ID field to the form data
+                formData.append('visitId', selectedVisitId);
 
                 let fileUrls = { photos: [], videos: [] };
                 
                 if (uploadedFiles.photos.length > 0 || uploadedFiles.videos.length > 0) {
-                    const uploadResponse = await fetch(`/api/visits/${selectedVisitId}/upload`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: formData
-                    });
-                    
-                    const uploadData = await uploadResponse.json();
-                    
-                    if (uploadData.success) {
-                        fileUrls = uploadData.data;
-                    } else {
-                        throw new Error(uploadData.message);
+                    try {
+                        // Validation was already done above, so we can proceed directly
+                        
+                        // Validation already done before showing loading modal
+                        
+                        const uploadResponse = await fetch(`http://localhost:5002/api/visits/${selectedVisitId}/upload`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: formData
+                        });
+                        
+                        if (!uploadResponse.ok) {
+                            let errorMessage = `File upload failed with status ${uploadResponse.status}`;
+                            try {
+                                const errorData = await uploadResponse.json();
+                                errorMessage = errorData.message || errorMessage;
+                            } catch (parseError) {
+                                try {
+                                    const errorText = await uploadResponse.text();
+                                    if (errorText) errorMessage += `: ${errorText}`;
+                                } catch (textError) {
+                                    // If we can't parse JSON or get text, use the original error
+                                }
+                            }
+                            throw new Error(errorMessage);
+                        }
+                        
+                        const uploadData = await uploadResponse.json();
+                        
+                        if (uploadData && uploadData.success) {
+                            fileUrls = uploadData.data;
+                        } else {
+                            throw new Error(uploadData.message || 'File upload failed without specific error message');
+                        }
+                    } catch (uploadError) {
+                        console.error('File upload error:', uploadError);
+                        throw uploadError; // Rethrow to be caught by the outer catch
                     }
                 }
 
@@ -388,30 +645,66 @@
                     videos: fileUrls.videos
                 };
 
-                const reportResponse = await fetch(`/api/visits/${selectedVisitId}/complete-report`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(reportData)
-                });
+                try {
+                    uploadProgress.textContent = 'Submitting report data...';
+                    
+                    const reportResponse = await fetch(`http://localhost:5002/api/visits/${selectedVisitId}/complete-report`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(reportData),
+                        // Adding timeout to prevent hanging requests (with browser compatibility check)
+                        signal: AbortSignal && AbortSignal.timeout ? AbortSignal.timeout(30000) : undefined // 30 second timeout if supported
+                    });
+                    
+                    if (!reportResponse.ok) {
+                        let errorMessage = `Report submission failed with status ${reportResponse.status}`;
+                        try {
+                            const errorData = await reportResponse.json();
+                            errorMessage = errorData.message || errorMessage;
+                        } catch (parseError) {
+                            try {
+                                const errorText = await reportResponse.text();
+                                if (errorText) errorMessage += `: ${errorText}`;
+                            } catch (textError) {
+                                // If we can't parse JSON or get text, use the original error
+                            }
+                        }
+                        throw new Error(errorMessage);
+                    }
 
-                const reportResult = await reportResponse.json();
+                    const reportResult = await reportResponse.json();
 
-                if (reportResult.success) {
-                    loadingModal.style.display = 'none';
-                    alert('Visit report submitted successfully!');
-                    clearForm();
-                    window.location.href = 'dashboard.html';
-                } else {
-                    throw new Error(reportResult.message);
+                    if (reportResult && reportResult.success) {
+                        loadingModal.style.display = 'none';
+                        showNotification('Visit report submitted successfully!', 'success');
+                        clearForm();
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 2000);
+                    } else {
+                        throw new Error(reportResult.message || 'Report submission failed without specific error message');
+                    }
+                } catch (reportError) {
+                    console.error('Report submission error:', reportError);
+                    throw reportError; // Rethrow to be caught by the outer catch
                 }
 
             } catch (error) {
                 loadingModal.style.display = 'none';
                 console.error('Error submitting report:', error);
-                alert('Failed to submit report: ' + error.message);
+                
+                // Show a more user-friendly error message
+                let errorMessage = error.message || 'An unknown error occurred';
+                
+                // If we have a generic "Something went wrong" message, provide more context
+                if (errorMessage === 'Something went wrong!') {
+                    errorMessage = 'Server error: Unable to process your report. Please try again later or contact support.';
+                }
+                
+                showNotification('Failed to submit report: ' + errorMessage, 'error');
             }
         });
 
@@ -435,6 +728,12 @@
             window.location.href = 'login.html';
         });
 
+        // Update navbar username
+        const navUser = document.getElementById('navUser');
+        if (navUser) {
+            navUser.innerHTML = `<i class="fas fa-user-circle"></i> Welcome, ${user.name || 'User'}`;
+        }
+        
         // Load visits on page load
         loadVisitsForReporting();
     </script>
@@ -443,24 +742,41 @@
         .report-container {
             background: white;
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
             margin: 30px 0;
+            transition: all 0.3s ease;
+            border-left: 5px solid #4caf50;
+        }
+        
+        .report-container:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
 
         .report-section {
             margin-bottom: 40px;
             padding-bottom: 30px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #e8f5e9;
         }
 
         .report-section:last-child {
             border-bottom: none;
         }
+        
+        .report-section h2 {
+            color: #2e7d32;
+            margin-bottom: 20px;
+            font-size: 1.6rem;
+            font-weight: 600;
+            border-bottom: 2px solid #e8f5e9;
+            padding-bottom: 10px;
+        }
 
         .section-description {
             color: #666;
             margin-bottom: 20px;
+            font-size: 1.05rem;
         }
 
         .visit-details {
@@ -468,10 +784,78 @@
         }
 
         .visit-info-card {
-            background: #e3f2fd;
-            padding: 15px;
+            background: #e8f5e9;
+            padding: 20px;
             border-radius: 8px;
-            border-left: 4px solid #2196F3;
+            border-left: 4px solid #4caf50;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="number"],
+        input[type="search"],
+        input[type="url"],
+        input:not([type]),
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9fafb;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: #4caf50;
+            outline: none;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.15);
+        }
+        
+        small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+        
+        small.upload-limit {
+            margin-top: 10px;
+            color: #f44336;
+            font-style: normal;
+            font-weight: 500;
+            background: #ffebee;
+            padding: 5px 10px;
+            border-radius: 4px;
+            text-align: center;
         }
 
         .upload-area {
@@ -488,8 +872,23 @@
 
         .upload-section {
             background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-top: 4px solid #4caf50;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-section:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+        }
+        
+        .upload-section h4 {
+            font-size: 1.2rem;
+            color: #2e7d32;
+            margin-bottom: 15px;
+            font-weight: 600;
         }
 
         .file-upload {
@@ -501,70 +900,103 @@
         }
 
         .upload-label {
-            display: inline-block;
-            padding: 12px 20px;
-            background: #4CAF50;
+            display: inline-flex;
+            align-items: center;
+            padding: 12px 22px;
+            background: #4caf50;
             color: white;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
         }
 
         .upload-label:hover {
-            background: #45a049;
+            background: #388e3c;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.15);
         }
 
         .upload-icon {
-            margin-right: 8px;
+            margin-right: 10px;
         }
 
         .preview-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
         }
 
         .preview-item {
             position: relative;
             background: white;
             padding: 10px;
-            border-radius: 5px;
+            border-radius: 8px;
             text-align: center;
-            border: 1px solid #ddd;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .preview-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
         .preview-item img {
             width: 100%;
-            height: 80px;
+            height: 90px;
             object-fit: cover;
-            border-radius: 3px;
+            border-radius: 5px;
         }
 
         .video-icon {
-            font-size: 2rem;
-            margin: 10px 0;
+            font-size: 2.5rem;
+            margin: 15px 0;
+            color: #4caf50;
         }
 
         .remove-btn {
             position: absolute;
             top: -5px;
             right: -5px;
-            background: #dc3545;
+            background: #f44336;
             color: white;
             border: none;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .remove-btn:hover {
+            background: #d32f2f;
+            transform: scale(1.1);
         }
 
         .file-name {
             display: block;
             font-size: 0.8rem;
-            margin-top: 5px;
+            margin-top: 8px;
             word-break: break-all;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .file-size {
+            display: block;
+            font-size: 0.75rem;
+            color: #777;
+            margin-top: 3px;
         }
 
         .form-actions {
@@ -573,13 +1005,93 @@
             justify-content: flex-end;
             margin-top: 30px;
         }
+        
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+            border: none;
+        }
 
+        .btn-primary {
+            background: #4caf50;
+            color: white;
+            box-shadow: 0 3px 8px rgba(76, 175, 80, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #388e3c;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid #4caf50;
+            color: #4caf50;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(76, 175, 80, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            border-radius: 12px;
+            width: 95%;
+            max-width: 450px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+            padding: 2rem;
+            animation: modalFadeIn 0.4s ease-out;
+            border-top: 6px solid #4caf50;
+            text-align: center;
+        }
+        
+        .modal-content h3 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+        
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         .loading-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #4CAF50;
+            border: 4px solid #e8f5e9;
+            border-top: 4px solid #4caf50;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             animation: spin 2s linear infinite;
             margin: 20px auto;
         }
@@ -587,6 +1099,76 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        
+        /* Footer */
+        .footer {
+          background-color: #166534;
+          color: white;
+          text-align: center;
+          padding: 1rem;
+          font-size: 0.9rem;
+          margin-top: auto;
+        }
+        
+        /* Notifications */
+        .notification {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          padding: 15px 25px;
+          border-radius: 6px;
+          background: #fff;
+          box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+          transform: translateX(120%);
+          transition: transform 0.3s ease;
+          z-index: 2000;
+          font-weight: 500;
+        }
+
+        .notification.show {
+          transform: translateX(0);
+        }
+
+        .notification.success {
+          border-left: 5px solid #4caf50;
+          color: #2e7d32;
+          background-color: #e8f5e9;
+        }
+
+        .notification.error {
+          border-left: 5px solid #f44336;
+          color: #d32f2f;
+          background-color: #ffebee;
+        }
+
+        .notification.info {
+          border-left: 5px solid #2196f3;
+          color: #1565c0;
+          background-color: #e3f2fd;
+        }
+        
+        @media (max-width: 768px) {
+          .nav-menu {
+            flex-wrap: wrap;
+            gap: 0.6rem;
+          }
+
+          .dashboard {
+            padding: 90px 0 30px;
+          }
+
+          .dashboard-header h1 {
+            font-size: 1.8rem;
+          }
+          
+          .form-row {
+            flex-direction: column;
+          }
+          
+          .report-container {
+            padding: 20px;
+          }
         }
     </style>
 </body>

@@ -68,7 +68,7 @@ app.use((err, req, res, next) => {
     res.status(500).json({ message: 'Something went wrong!' });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5002; // Changed from 5001 to avoid port conflict
 
 // Only start server if not in test environment
 if (process.env.NODE_ENV !== 'test') {

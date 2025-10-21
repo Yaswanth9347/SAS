@@ -1,179 +1,841 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teams - SAS Admin</title>
-    <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teams - Spread a Smile</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    /* ====== RESET ====== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Poppins", sans-serif;
+      background: #f4f6f8;
+      color: #333;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ====== NAVBAR ====== */
+    .navbar {
+      background: linear-gradient(90deg, #4caf50, #2e7d32);
+      color: #fff;
+      position: fixed;
+      width: 100%;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 70px;
+    }
+
+    .nav-logo h2 {
+      font-family: Georgia, 'Times New Roman', Times, serif;
+      font-weight: 700;
+      font-size: 1.75rem;
+      letter-spacing: 0.6px;
+      color: #fff;
+    }
+
+    .nav-menu {
+      display: flex;
+      list-style: none;
+      gap: 20px;
+      margin-left: auto; /* push to right */
+      align-items: center;
+    }
+
+    .nav-link {
+      text-decoration: none;
+      color: #fff;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      padding: 6px 8px;
+      border-radius: 6px;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: #c8e6c9;
+    }
+
+    .logout-btn {
+      background: #f44336;
+      color: white !important;
+      padding: 8px 18px;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .logout-btn:hover {
+      background: #d32f2f;
+      transform: translateY(-2px);
+    }
+
+    /* ====== DASHBOARD SECTION ====== */
+    .dashboard {
+      flex: 1;
+      padding: 120px 0 60px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .dashboard-header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .dashboard-header h1 {
+      font-size: 2.4rem;
+      color: #2e7d32;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .dashboard-header p {
+      font-size: 1.05rem;
+      color: #555;
+    }
+
+    /* ====== TEAM CREATOR ====== */
+    .team-creator, .existing-teams {
+      background: #fff;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      margin-bottom: 30px;
+    }
+
+    .team-creator:hover, .existing-teams:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .team-creator h2, .existing-teams h2 {
+      color: #2e7d32;
+      margin-bottom: 20px;
+      font-size: 1.6rem;
+      font-weight: 600;
+      border-bottom: 2px solid #e8f5e9;
+      padding-bottom: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-weight: 600;
+      color: #333;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="search"],
+    input[type="url"],
+    input:not([type]),
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background-color: #f9fafb;
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: #4caf50;
+      outline: none;
+      background-color: #ffffff;
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.15);
+    }
+
+    .form-actions {
+      text-align: right;
+      margin-top: 25px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-block;
+      padding: 12px 25px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      text-align: center;
+      border: none;
+    }
+
+    .btn-primary {
+      background: #4caf50;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #388e3c;
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 2px solid #4caf50;
+      color: #4caf50;
+    }
+
+    .btn-secondary:hover {
+      background: #4caf50;
+      color: white;
+    }
+
+    /* ====== USER LIST ====== */
+    .users-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 15px;
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 10px;
+      border-radius: 8px;
+      background-color: #f8f9fa;
+      border: 1px solid #e0e0e0;
+    }
+
+    .user-item {
+      display: flex;
+      align-items: center;
+      background: #ffffff;
+      padding: 12px 15px;
+      border-left: 4px solid #4caf50;
+      border-radius: 8px;
+      transition: 0.3s;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .user-item:hover {
+      background: #e8f5e9;
+      transform: translateX(3px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+    }
+
+    .username {
+      flex: 1;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .user-item input[type="radio"] {
+      margin-left: auto;
+      cursor: pointer;
+      width: 16px;
+      height: 16px;
+      accent-color: #4caf50;
+    }
+
+    .user-item input[type="checkbox"] {
+      margin-right: 10px;
+      cursor: pointer;
+      width: 16px;
+      height: 16px;
+      accent-color: #4caf50;
+    }
+
+    /* ====== TEAM CARDS ====== */
+    #teamsList {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 25px;
+    }
+
+    .team-card {
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      border-left: 5px solid #4caf50;
+    }
+
+    .team-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .team-card h3 {
+      color: #2e7d32;
+      margin-bottom: 15px;
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    .team-card p {
+      margin: 10px 0;
+      font-size: 1rem;
+      color: #555;
+    }
+    
+    .team-members {
+      margin-top: 15px;
+    }
+
+    .member-tag {
+      display: inline-block;
+      background: #e8f5e9;
+      padding: 5px 12px;
+      margin: 5px 5px 5px 0;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #2e7d32;
+      transition: all 0.2s ease;
+    }
+    
+    .member-tag:hover {
+      background: #4caf50;
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    /* ====== TEAM ACTIONS ====== */
+    .team-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .team-actions button {
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      border-radius: 6px;
+      border: none;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-view {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .btn-view:hover {
+      background: #1976d2;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .btn-delete {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .btn-delete:hover {
+      background: #d32f2f;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    /* ====== MODALS ====== */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(2px);
+    }
+
+    .modal-content {
+      background-color: #fff;
+      border-radius: 12px;
+      width: 95%;
+      max-width: 550px;
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+      padding: 2rem;
+      animation: modalFadeIn 0.4s ease-out;
+      border-top: 6px solid #4caf50;
+    }
+
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      color: #2e7d32;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .close-modal {
+      background: none;
+      border: none;
+      font-size: 1.8rem;
+      color: #9e9e9e;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+    }
+
+    .close-modal:hover {
+      color: #d32f2f;
+      background-color: #ffebee;
+    }
+
+    .modal-body {
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 15px;
+      padding-top: 1rem;
+      border-top: 1px solid #e5e7eb;
+    }
+    
+    /* ====== FOOTER ====== */
+    .footer {
+      background-color: #166534;
+      color: white;
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.9rem;
+      margin-top: auto;
+    }
+
+    /* ====== NOTIFICATIONS ====== */
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+      transform: translateX(120%);
+      transition: transform 0.3s ease;
+      z-index: 2000;
+      font-weight: 500;
+    }
+
+    .notification.show {
+      transform: translateX(0);
+    }
+
+    .notification.success {
+      border-left: 5px solid #4caf50;
+      color: #2e7d32;
+      background-color: #e8f5e9;
+    }
+
+    .notification.error {
+      border-left: 5px solid #f44336;
+      color: #d32f2f;
+      background-color: #ffebee;
+    }
+
+    .notification.info {
+      border-left: 5px solid #2196f3;
+      color: #1565c0;
+      background-color: #e3f2fd;
+    }
+
+    @media (max-width: 768px) {
+      .nav-menu {
+        flex-wrap: wrap;
+        gap: 0.6rem;
+      }
+
+      .dashboard {
+        padding: 1.5rem 1rem;
+      }
+
+      .dashboard-header h1 {
+        font-size: 1.6rem;
+      }
+
+      #teamsList {
+        grid-template-columns: 1fr;
+      }
+
+      .notification {
+        width: 90%;
+        right: 5%;
+      }
+    }
+  </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-logo"><h2>Spread A Smile</h2></div>
-            <ul class="nav-menu">
-                <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
-                <li><a href="visits.html" class="nav-link">Visits</a></li>
-                <li><a href="schools.html" class="nav-link">Schools</a></li>
-                <li><a href="teams.html" class="nav-link active">Teams</a></li>
-                <li><a href="schedule-visit.html" class="nav-link">Schedule Visit</a></li>
-                <li><a href="analytics.html" class="nav-link">Analytics</a></li>
-                <li><a href="reports.html" class="nav-link">Reports</a></li>
-                <li><span class="nav-link" id="navUser">Welcome, User</span></li>
-                <li><a href="#" class="nav-link logout-btn">Logout</a></li>
-            </ul>
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo"><h2>Spread A Smile</h2></div>
+      <ul class="nav-menu">
+        <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+        <li><a href="visits.html" class="nav-link">Visits</a></li>
+        <li><a href="schools.html" class="nav-link">Schools</a></li>
+        <li><a href="teams.html" class="nav-link active">Teams</a></li>
+        <li><a href="schedule-visit.html" class="nav-link">Schedule Visit</a></li>
+        <li><a href="analytics.html" class="nav-link">Analytics</a></li>
+        <li><a href="reports.html" class="nav-link">Reports</a></li>
+        <li><span class="nav-link" id="navUser">Welcome, User</span></li>
+        <li><a href="#" class="nav-link logout-btn">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="dashboard">
+    <div class="container">
+      <div class="dashboard-header">
+        <h1>Manage Teams</h1>
+        <p>Create and manage volunteer teams</p>
+      </div>
+
+      <div class="team-creator">
+        <h2>Create New Team</h2>
+        <form id="teamForm">
+          <div class="form-group">
+            <label for="teamName">Team Name *</label>
+            <input id="teamName" name="name" required placeholder="e.g., Team A" />
+          </div>
+
+          <div class="form-group">
+            <label>Members (pick at least one)</label>
+            <div id="usersList" class="users-list">Loading users...</div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create Team</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="existing-teams">
+        <h2>Existing Teams</h2>
+        <div id="teamsList">Loading teams...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Team View Modal -->
+  <div id="teamModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTeamName">Team Details</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="modalTeamContent">
+          <p><strong>Leader:</strong> <span id="modalTeamLeader"></span></p>
+          <div class="form-group">
+            <label>Team Members</label>
+            <div id="modalTeamMembers" class="users-list"></div>
+          </div>
         </div>
-    </nav>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="closeModalBtn">Close</button>
+        <button class="btn btn-primary" id="editTeamBtn">Edit Team</button>
+      </div>
+    </div>
+  </div>
 
-    <section class="dashboard">
-        <div class="container">
-            <div class="dashboard-header">
-                <h1>Manage Teams</h1>
-                <p>Create and manage volunteer teams</p>
-            </div>
+  <!-- Confirm Delete Modal -->
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Confirm Deletion</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete this team? This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelDeleteBtn">Cancel</button>
+        <button class="btn btn-primary" id="confirmDeleteBtn" style="background:#d32f2f">Delete</button>
+      </div>
+    </div>
+  </div>
 
-            <div class="team-creator">
-                <h2>Create New Team</h2>
-                <form id="teamForm">
-                    <div class="form-group">
-                        <label for="teamName">Team Name *</label>
-                        <input id="teamName" name="name" required placeholder="e.g., Team A" />
-                    </div>
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2025 Spread a Smile (SAS). All rights reserved.</p>
+    </div>
+  </footer>
 
-                    <div class="form-group">
-                        <label>Members (pick at least one)</label>
-                        <div id="usersList" class="users-list">Loading users...</div>
-                    </div>
+  <script>
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    let teams = []; // Store loaded teams for reference
+    let currentTeamId = null; // For delete/view operations
 
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Create Team</button>
-                    </div>
-                </form>
-            </div>
+    if (!token || user.role !== 'admin') {
+      alert('Access denied. Admin privileges required.');
+      window.location.href = 'login.html';
+    }
 
-            <div class="existing-teams">
-                <h2>Existing Teams</h2>
-                <div id="teamsList">Loading teams...</div>
-            </div>
-        </div>
-    </section>
+    // Initialize modals
+    const teamModal = document.getElementById('teamModal');
+    const deleteModal = document.getElementById('deleteModal');
+    
+    // Close modals when clicking the X or close button
+    document.querySelectorAll('.close-modal, #closeModalBtn, #cancelDeleteBtn').forEach(el => {
+      el.addEventListener('click', () => {
+        teamModal.style.display = 'none';
+        deleteModal.style.display = 'none';
+      });
+    });
 
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2025 Spread a Smile (SAS). All rights reserved.</p>
-        </div>
-    </footer>
+    // Close modal when clicking outside the modal content
+    window.addEventListener('click', (e) => {
+      if (e.target === teamModal) teamModal.style.display = 'none';
+      if (e.target === deleteModal) deleteModal.style.display = 'none';
+    });
+    
+    // Confirm delete action
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+      if (!currentTeamId) return;
+      
+      try {
+        const res = await fetch(`/api/admin/teams/${currentTeamId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          deleteModal.style.display = 'none';
+          loadTeams();
+          showNotification('Team deleted successfully', 'success');
+        } else {
+          showNotification('Error: ' + data.message, 'error');
+        }
+      } catch (err) {
+        showNotification('Failed to delete team', 'error');
+      }
+    });
 
-    <script>
-        const token = localStorage.getItem('token');
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+    // Function to show toast notification
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.innerText = message;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.classList.add('show');
+        setTimeout(() => {
+          notification.classList.remove('show');
+          setTimeout(() => document.body.removeChild(notification), 300);
+        }, 3000);
+      }, 100);
+    }
 
-        if (!token || user.role !== 'admin') {
-            alert('Access denied. Admin privileges required.');
-            window.location.href = 'login.html';
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        const usersDiv = document.getElementById('usersList');
+
+        if (!data.success) return usersDiv.innerHTML = '<p>Failed to load users</p>';
+
+        usersDiv.innerHTML = data.data.map(u => `
+          <label class="user-item">
+            <input type="checkbox" name="members" value="${u._id}" />
+            <span class="username">${u.username || u.name}</span>
+            <input type="radio" name="leader" value="${u._id}" title="Set as leader" />
+          </label>
+        `).join('');
+
+      } catch (err) {
+        document.getElementById('usersList').innerHTML = '<p>Error loading users</p>';
+      }
+    }
+
+    async function loadTeams() {
+      try {
+        const res = await fetch('/api/admin/teams', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        const teamsDiv = document.getElementById('teamsList');
+
+        if (!data.success) return teamsDiv.innerHTML = '<p>Failed to load teams</p>';
+
+        teams = data.data; // Store teams data for reference
+
+        if (data.data.length === 0) {
+          teamsDiv.innerHTML = '<p>No teams created yet.</p>';
+          return;
         }
 
-        async function loadUsers() {
-            try {
-                const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } });
-                const data = await res.json();
-                const usersDiv = document.getElementById('usersList');
+        teamsDiv.innerHTML = data.data.map(t => `
+          <div class="team-card">
+            <h3>${t.name}</h3>
+            <p><strong>Leader:</strong> ${t.teamLeader?.username || t.teamLeader?.name || 'N/A'}</p>
+            <p><strong>Members:</strong> ${t.members.length}</p>
+            <div class="team-members">
+              ${t.members.slice(0, 3).map(m => `<span class="member-tag">${m.username || m.name || 'Member'}</span>`).join('')}
+              ${t.members.length > 3 ? `<span class="member-tag">+${t.members.length - 3} more</span>` : ''}
+            </div>
+            <div class="team-actions">
+              <button class="btn-view" onclick="viewTeam('${t._id}')"><i class="fa fa-eye"></i> View</button>
+              <button class="btn-delete" onclick="deleteTeam('${t._id}')"><i class="fa fa-trash"></i> Delete</button>
+            </div>
+          </div>
+        `).join('');
 
-                if (!data.success) return usersDiv.innerHTML = '<p>Failed to load users</p>';
+      } catch (err) {
+        document.getElementById('teamsList').innerHTML = '<p>Error loading teams</p>';
+      }
+    }
 
-                usersDiv.innerHTML = data.data.map(u => `
-                    <label class="user-item">
-                        <input type="checkbox" name="members" value="${u._id}" />
-                        <span class="username">${u.username || u.name}</span>
-                        <input type="radio" name="leader" value="${u._id}" title="Set as leader" />
-                    </label>
-                `).join('');
+    // View team details
+    function viewTeam(teamId) {
+      const team = teams.find(t => t._id === teamId);
+      if (!team) return;
+      
+      currentTeamId = teamId;
+      document.getElementById('modalTeamName').textContent = team.name;
+      document.getElementById('modalTeamLeader').textContent = team.teamLeader?.username || team.teamLeader?.name || 'N/A';
+      
+      const membersDiv = document.getElementById('modalTeamMembers');
+      membersDiv.innerHTML = team.members.map(m => `
+        <div class="user-item">
+          <span class="username">${m.username || m.name || 'Unknown'}</span>
+          ${m._id === team.teamLeader?._id ? '<span class="member-tag">Leader</span>' : ''}
+        </div>
+      `).join('');
+      
+      teamModal.style.display = 'flex';
+    }
 
-            } catch (err) {
-                document.getElementById('usersList').innerHTML = '<p>Error loading users</p>';
-            }
-        }
+    // Delete team confirmation
+    function deleteTeam(teamId) {
+      const team = teams.find(t => t._id === teamId);
+      if (!team) return;
+      
+      currentTeamId = teamId;
+      deleteModal.style.display = 'flex';
+    }
 
-        async function loadTeams() {
-            try {
-                const res = await fetch('/api/admin/teams', { headers: { 'Authorization': `Bearer ${token}` } });
-                const data = await res.json();
-                const teamsDiv = document.getElementById('teamsList');
+    document.getElementById('teamForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const name = document.getElementById('teamName').value.trim();
+      const memberNodes = Array.from(document.querySelectorAll('input[name="members"]:checked'));
+      const leader = document.querySelector('input[name="leader"]:checked');
 
-                if (!data.success) return teamsDiv.innerHTML = '<p>Failed to load teams</p>';
+      if (memberNodes.length === 0) return showNotification('Select at least one member', 'error');
+      if (!leader) return showNotification('Select a team leader', 'error');
 
-                if (data.data.length === 0) {
-                    teamsDiv.innerHTML = '<p>No teams created yet.</p>';
-                    return;
-                }
+      const members = memberNodes.map(n => n.value);
 
-                teamsDiv.innerHTML = data.data.map(t => `
-                    <div class="team-card">
-                        <h3>${t.name}</h3>
-                        <p><strong>Leader:</strong> ${t.teamLeader?.username || t.teamLeader?.name || 'N/A'}</p>
-                        <p><strong>Members:</strong> ${t.members.length}</p>
-                    </div>
-                `).join('');
-
-            } catch (err) {
-                document.getElementById('teamsList').innerHTML = '<p>Error loading teams</p>';
-            }
-        }
-
-        document.getElementById('teamForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const name = document.getElementById('teamName').value.trim();
-            const memberNodes = Array.from(document.querySelectorAll('input[name="members"]:checked'));
-            const leader = document.querySelector('input[name="leader"]:checked');
-
-            if (memberNodes.length === 0) return alert('Select at least one member');
-            if (!leader) return alert('Select a team leader');
-
-            const members = memberNodes.map(n => n.value);
-
-            try {
-                const res = await fetch('/api/admin/teams', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, members, teamLeader: leader.value })
-                });
-
-                const data = await res.json();
-                if (data.success) {
-                    alert('Team created');
-                    this.reset();
-                    loadUsers();
-                    loadTeams();
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            } catch (err) {
-                alert('Failed to create team');
-            }
+      try {
+        const res = await fetch('/api/admin/teams', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, members, teamLeader: leader.value })
         });
 
-        // Logout
-        // Update navbar username
-        const navUser = document.getElementById('navUser');
-        if (navUser) {
-            navUser.textContent = `Welcome, ${user.name || 'User'}`;
+        const data = await res.json();
+        if (data.success) {
+          showNotification('Team created successfully', 'success');
+          this.reset();
+          loadUsers();
+          loadTeams();
+        } else {
+          showNotification('Error: ' + data.message, 'error');
         }
+      } catch (err) {
+        showNotification('Failed to create team', 'error');
+      }
+    });
 
-        document.querySelectorAll('.logout-btn').forEach(el => el.addEventListener('click', function(e){ 
-            e.preventDefault(); 
-            localStorage.removeItem('token'); 
-            localStorage.removeItem('user'); 
-            window.location.href='login.html'; 
-        }));
+    // Edit team
+    document.getElementById('editTeamBtn').addEventListener('click', () => {
+      if (!currentTeamId) return;
+      // Redirect to edit page or implement edit functionality directly
+      showNotification('Edit feature coming soon!', 'info');
+    });
 
-        loadUsers();
-        loadTeams();
-    </script>
+    const navUser = document.getElementById('navUser');
+    if (navUser) navUser.textContent = `Welcome, ${user.name || 'User'}`;
 
-    <style>
-    .users-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap:8px; }
-    .user-item { display:flex; align-items:center; gap:8px; padding:8px; border:1px solid #eee; border-radius:6px; }
-    .user-item input[type="radio"] { margin-left:auto; }
-    .team-card { background:white; padding:12px; border-radius:6px; margin-bottom:8px; }
-    </style>
+    document.querySelectorAll('.logout-btn').forEach(el => el.addEventListener('click', e => {
+      e.preventDefault();
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = 'login.html';
+    }));
+
+    // Make these functions globally available
+    window.viewTeam = viewTeam;
+    window.deleteTeam = deleteTeam;
+
+    loadUsers();
+    loadTeams();
+  </script>
 </body>
 </html>

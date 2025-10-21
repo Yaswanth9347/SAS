@@ -17,9 +17,28 @@ exports.protect = async (req, res, next) => {
     }
 
     try {
-        // Verify token and attach decoded user info (including role) to req.user
+        // Verify token and get full user details including team
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;  // decoded contains user id and role
+        
+        // Fetch complete user data including team information
+        const user = await User.findById(decoded.id).populate('team');
+        
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Attach complete user info to req.user
+        req.user = {
+            id: user._id,
+            role: user.role,
+            team: user.team ? user.team._id : null,
+            name: user.name,
+            username: user.username,
+            email: user.email
+        };
 
         next();
     } catch (err) {

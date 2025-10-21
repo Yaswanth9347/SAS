@@ -1,4 +1,6 @@
 const express = require('express');
+const debugUpload = require('../middleware/debugUpload');
+const { uploadAnyFiles } = require('../middleware/upload');
 const {
     getVisits,
     getVisit,
@@ -14,7 +16,7 @@ const {
     deleteVisit,
     deleteMedia
 } = require('../controllers/visitController');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -22,13 +24,13 @@ router.get('/', protect, getVisits);
 router.get('/stats', protect, getVisitStats);
 router.get('/:id', protect, getVisit);
 router.get('/:id/gallery', protect, getVisitGallery);
-router.post('/', protect, createVisit);
-router.post('/:id/upload', protect, uploadVisitFiles, handleFileUpload);
+router.post('/', protect, createVisit); // Both admin and volunteers can create visits
+router.post('/:id/upload', protect, debugUpload, uploadAnyFiles, handleFileUpload);
 router.put('/:id/submit', protect, submitVisitReport);
 router.put('/:id', protect, updateVisit);
 router.delete('/:id', protect, deleteVisit);
 router.delete('/:id/media', protect, deleteMedia);
 router.put('/:id/complete-report', protect, submitCompleteReport);
-router.put('/:id/cancel', protect, cancelVisit);
+router.put('/:id/cancel', protect, authorize('admin'), cancelVisit); // Only admin can cancel visits
 
 module.exports = router;

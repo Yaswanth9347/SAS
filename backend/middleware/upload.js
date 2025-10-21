@@ -61,4 +61,7 @@ const uploadVisitFiles = upload.fields([
     { name: 'docs', maxCount: 6 }
 ]);
 
-module.exports = { uploadVisitFiles };
+// Alternative upload handler with any() for debugging
+const uploadAnyFiles = upload.any();
+
+module.exports = { uploadVisitFiles, uploadAnyFiles };
