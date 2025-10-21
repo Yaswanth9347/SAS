@@ -182,6 +182,631 @@
         text-align: center;
       }
     }
+    /* Drawer Styles (slide-up panel) */
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 1200;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+
+    .drawer-backdrop.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .drawer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 75vh; /* large enough for laptop */
+      max-height: 800px;
+      background: #fff;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+      box-shadow: 0 -12px 40px rgba(0,0,0,0.2);
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(.22,.9,.32,1);
+      z-index: 1201;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .drawer.open {
+      transform: translateY(0);
+    }
+
+    .drawer-header {
+      padding: 18px 22px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .drawer-title { color: #2e7d32; font-size: 1.25rem; font-weight: 600; }
+
+    .drawer-subtitle {
+      color: #555;
+      font-size: 0.95rem;
+      margin-left: 14px;
+      opacity: 0.95;
+      max-width: 60%;
+      text-align: right;
+    }
+
+    .drawer-body {
+      padding: 18px 22px;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Two-column form grid inside drawer */
+    .drawer-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    /* Align label and field on the same row inside drawer */
+    .drawer-form-grid .form-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .drawer-form-grid .form-group label {
+      width: 140px;
+      margin: 0;
+      font-weight: 600;
+      color: #333;
+      white-space: nowrap;
+    }
+
+    .drawer-form-grid .form-group input,
+    .drawer-form-grid .form-group select {
+      flex: 1 1 auto;
+      width: auto; /* override full-width default inside drawer */
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      font-size: 15px;
+      background: #fff;
+    }
+
+    /* Make single empty grid cell not collapse visually */
+    .drawer-form-grid > div:nth-last-child(1):empty { min-height: 0; }
+
+    @media (max-width: 900px) {
+      .drawer {
+        height: 85vh;
+      }
+      .drawer-subtitle { display:block; max-width: 100%; text-align: left; }
+      .drawer-form-grid { grid-template-columns: 1fr; }
+      .drawer-form-grid .form-group { flex-direction: column; align-items: stretch; }
+      .drawer-form-grid .form-group label { width: auto; margin-bottom: 6px; }
+    }
+
+    /* Page rise animation while drawer open */
+    body.page-raised .container {
+      transform: translateY(-12vh);
+      transition: transform 0.35s ease;
+    }
+
+    footer.footer {
+      transition: transform 0.35s ease, opacity 0.25s ease;
+    }
+
+    .drawer-footer {
+      padding: 14px 22px;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background: #fff;
+    }
+
+    .modal label {
+      display: block;
+      font-weight: 500;
+      margin-top: 15px;
+      margin-bottom: 6px;
+      color: #444;
+    }
+
+    .modal input, 
+    .modal select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      transition: all 0.3s ease;
+    }
+
+    .modal input:focus,
+    .modal select:focus {
+      border-color: #4caf50;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(76,175,80,0.1);
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 25px;
+    }
+
+    .btn-save {
+      background: #4caf50;
+      color: white;
+      font-weight: 600;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+      background: #388e3c;
+      transform: translateY(-2px);
+    }
+
+    .btn-cancel {
+      background: #f5f5f5;
+      color: #333;
+      font-weight: 600;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-cancel:hover {
+      background: #e0e0e0;
+    }
+
+    /* Visit Details Styles */
+    .visit-details {
+      margin-top: 15px;
+      padding: 0;
+      background: transparent;
+      border-radius: 10px;
+      animation: fadeIn 0.4s ease-out forwards;
+      transition: all 0.3s ease;
+    }
+    
+    .visit-details-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+      border-top: 4px solid #4caf50;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* Label / Value rows inside details */
+    .detail-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid #f4f4f4;
+    }
+
+    .detail-row:last-child { border-bottom: none; }
+
+    .detail-label {
+      width: 180px; /* fixed label width for alignment */
+      font-weight: 700;
+      color: #2e7d32;
+      flex-shrink: 0;
+    }
+
+    .detail-value {
+      flex: 1;
+      color: #444;
+      word-break: break-word;
+    }
+    
+    .visit-details-section {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px dashed #e0e0e0;
+    }
+    
+    .visit-details-section h3 {
+      color: #2e7d32;
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+    }
+    
+    .media-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .media-item {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .media-item:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+    
+    .media-input {
+      border: 2px dashed #e0e0e0;
+      padding: 10px;
+      border-radius: 8px;
+      background: #fafafa;
+      width: 100%;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    
+    .media-input:hover {
+      border-color: #4caf50;
+      background: #f0f9f0;
+    }
+    
+    .upload-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 12px;
+      background: #fbfbfb;
+      border-radius: 8px;
+      border: 1px solid #f0f0f0;
+    }
+
+    .upload-controls .btn-save {
+      padding: 8px 14px;
+      font-size: 0.95rem;
+    }
+
+    .upload-hint { margin-top: 8px; color: #6b6b6b; }
+    
+    /* Button styles for details section */
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: none;
+    }
+    
+    .btn-edit {
+      background: #2196f3;
+      color: white;
+    }
+    
+    .btn-edit:hover {
+      background: #1976d2;
+      transform: translateY(-2px);
+    }
+    
+    .btn-delete {
+      background: #f44336;
+      color: white;
+    }
+    
+    .btn-delete:hover {
+      background: #d32f2f;
+      transform: translateY(-2px);
+    }
+    
+    /* Lightbox Styles */
+    .lightbox {
+      display: none;
+      position: fixed;
+      z-index: 1020;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.85);
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .close-lightbox {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      color: white;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 1021;
+    }
+    
+    /* Additional Visit Detail Styles */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    @media (max-width: 768px) {
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .visit-info-section h3,
+    .media-section h4 {
+      color: #2e7d32;
+      margin-bottom: 15px;
+      font-weight: 600;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 8px;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    
+    .status-badge.scheduled {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+    
+    .status-badge.completed {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    
+    .status-badge.cancelled {
+      background: #ffebee;
+      color: #c62828;
+    }
+    
+    .highlight-count {
+      font-weight: 600;
+      color: #2e7d32;
+    }
+    
+    .classes-progress {
+      display: inline-flex;
+      align-items: center;
+    }
+    
+    .classes-progress span:first-child {
+      font-weight: 600;
+      color: #2e7d32;
+    }
+    
+    .photos-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
+    }
+    
+    .photo-item {
+      height: 90px;
+      cursor: pointer;
+    }
+    
+    .photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+    
+    .videos-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 15px;
+    }
+    
+    .video-item {
+      background: #f5f5f5;
+      height: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .video-item:hover {
+      background: #e8f5e9;
+    }
+    
+    .video-play-button {
+      width: 40px;
+      height: 40px;
+      background: #4caf50;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.2rem;
+      margin-bottom: 5px;
+    }
+    
+    .docs-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .doc-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+    
+    .doc-item:hover {
+      background: #e8f5e9;
+    }
+    
+    .doc-item a {
+      color: #2e7d32;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    .doc-item a:hover {
+      text-decoration: underline;
+    }
+    
+    .media-section {
+      margin-bottom: 20px;
+    }
+    
+    .no-media {
+      color: #757575;
+      font-style: italic;
+      padding: 10px 0;
+    }
+    
+    .upload-hint {
+      font-size: 0.85rem;
+      color: #757575;
+      margin-top: 8px;
+    }
+    
+    /* Notification styles */
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      border-radius: 8px;
+      color: white;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1100;
+      animation: slideInRight 0.3s ease-out forwards;
+      transition: all 0.3s ease;
+    }
+    
+    .notification.success {
+      background: #4caf50;
+    }
+    
+    .notification.error {
+      background: #f44336;
+    }
+    
+    .notification.hide {
+      transform: translateX(110%);
+      opacity: 0;
+    }
+    
+    @keyframes slideInRight {
+      from {
+        transform: translateX(110%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    /* Loading Overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1500;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #4caf50;
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      color: white;
+      margin-top: 15px;
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .lightbox-content {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 80%;
+      height: 80%;
+    }
+
+    .lightbox-caption {
+      color: white;
+      margin-top: 20px;
+      font-size: 16px;
+    }
+
+    #vg_lightbox_image {
+      max-width: 90%;
+      max-height: 80%;
+      object-fit: contain;
+    }
   </style>
 </head>
 
@@ -286,11 +911,8 @@
 
           // details element (hidden)
           const details = document.createElement('div');
+          details.className = 'visit-details';
           details.style.display = 'none';
-          details.style.marginTop = '10px';
-          details.style.padding = '12px';
-          details.style.background = '#fafafa';
-          details.style.borderRadius = '8px';
           details.innerHTML = renderVisitDetailsHtml(visit);
 
           // Event: view/edit
@@ -329,40 +951,95 @@
     }
 
     function renderVisitDetailsHtml(visit){
-      const membersHtml = (visit.members && visit.members.length)? `<p><strong>Members:</strong> ${escapeHtml(visit.members.join(', '))}</p>` : '';
-      const classesHtml = `<p><strong>Classes:</strong> ${visit.classesVisited || 0} visited of ${visit.totalClasses || 0}</p>`;
+      const membersHtml = (visit.members && visit.members.length)? `<p><strong>Team Members:</strong> ${escapeHtml(visit.members.join(', '))}</p>` : '';
+      const classesHtml = `<p><strong>Classes:</strong> <span class="classes-progress"><span>${visit.classesVisited || 0}</span> visited of <span>${visit.totalClasses || 0}</span></span></p>`;
       const assignedClass = visit.assignedClass? `<p><strong>Assigned Class:</strong> ${escapeHtml(visit.assignedClass)}</p>` : '';
-      const children = visit.childrenCount? `<p><strong>Children:</strong> ${visit.childrenCount}</p>` : '';
-
+      const children = visit.childrenCount? `<p><strong>Expected Children:</strong> <span class="highlight-count">${visit.childrenCount}</span></p>` : '';
+      const status = `<p><strong>Status:</strong> <span class="status-badge ${visit.status || 'scheduled'}">${escapeHtml(visit.status || 'Scheduled')}</span></p>`;
+      
       let mediaHtml = '';
       if((visit.photos && visit.photos.length) || (visit.videos && visit.videos.length) || (visit.docs && visit.docs.length)){
-        mediaHtml += '<div style="display:flex;flex-direction:column;gap:8px">';
-  if(visit.photos && visit.photos.length){ mediaHtml += `<div><strong>Photos:</strong><div style="display:flex;gap:8px;margin-top:8px">${visit.photos.map(p=>`<div style="width:110px"><img src="${p}" onclick="openLightbox('${p}','image')" style="width:100%;height:70px;object-fit:cover;border-radius:6px;cursor:pointer;"/></div>`).join('')}</div></div>` }
-  if(visit.videos && visit.videos.length){ mediaHtml += `<div><strong>Videos:</strong><div style="display:flex;gap:8px;margin-top:8px">${visit.videos.map(v=>`<div style="width:140px;padding:8px;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;border:1px solid #eee;cursor:pointer;" onclick="openLightbox('${v}','video')">▶ Watch</div>`).join('')}</div></div>` }
-        if(visit.docs && visit.docs.length){ mediaHtml += `<div><strong>Docs:</strong><ul>${visit.docs.map(d=>`<li><a href="${d}" target="_blank">${escapeHtml(d.split('/').pop())}</a></li>`).join('')}</ul></div>` }
+        mediaHtml += '<div class="visit-details-section">';
+        mediaHtml += '<h3>Visit Media</h3>';
+        
+        if(visit.photos && visit.photos.length) {
+          mediaHtml += `<div class="media-section">
+            <h4>Photos (${visit.photos.length})</h4>
+            <div class="media-gallery photos-gallery">
+              ${visit.photos.map(p=>`
+                <div class="media-item photo-item">
+                  <img src="${p}" onclick="openLightbox('${p}','image')" alt="Visit photo" />
+                </div>
+              `).join('')}
+            </div>
+          </div>`;
+        }
+        
+        if(visit.videos && visit.videos.length) {
+          mediaHtml += `<div class="media-section">
+            <h4>Videos (${visit.videos.length})</h4>
+            <div class="media-gallery videos-gallery">
+              ${visit.videos.map(v=>`
+                <div class="media-item video-item" onclick="openLightbox('${v}','video')">
+                  <div class="video-play-button">▶</div>
+                  <span>Play Video</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>`;
+        }
+        
+        if(visit.docs && visit.docs.length) {
+          mediaHtml += `<div class="media-section">
+            <h4>Documents (${visit.docs.length})</h4>
+            <div class="docs-list">
+              ${visit.docs.map(d=>`
+                <div class="doc-item">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="none" d="M0 0h24v24H0z"/><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z" fill="#2e7d32"/></svg>
+                  <a href="${d}" target="_blank">${escapeHtml(d.split('/').pop())}</a>
+                </div>
+              `).join('')}
+            </div>
+          </div>`;
+        }
+        
         mediaHtml += '</div>';
       } else {
-        mediaHtml = '<p style="color:#666">No media uploaded for this visit.</p>';
+        mediaHtml = '<div class="visit-details-section"><h3>Visit Media</h3><p class="no-media">No media uploaded for this visit.</p></div>';
       }
 
       // include upload input and delete media helper buttons
       const uploadControls = `
-        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
-          <input type="file" data-visit-id="${visit._id}" class="media-input" multiple />
-          <button class="btn btn-save upload-btn" data-visit-id="${visit._id}">Upload</button>
+        <div class="visit-details-section">
+          <h3>Upload Media</h3>
+          <div class="upload-controls">
+            <input type="file" data-visit-id="${visit._id}" class="media-input" multiple />
+            <button class="btn btn-save upload-btn" data-visit-id="${visit._id}">Upload Files</button>
+          </div>
+          <p class="upload-hint">Upload photos, videos, or documents related to this visit.</p>
         </div>
       `;
 
       return `
-        <div>
-          <p><strong>School:</strong> ${escapeHtml(visit.school && visit.school.name || '')}</p>
-          <p><strong>Team:</strong> ${escapeHtml(visit.team && visit.team.name || '')}</p>
-          ${assignedClass}
-          ${membersHtml}
-          ${children}
-          ${classesHtml}
-          <p><strong>Status:</strong> ${escapeHtml(visit.status||'')}</p>
-          <div style="margin-top:10px">${mediaHtml}</div>
+        <div class="visit-details-content">
+          <div class="visit-info-section">
+            <h3>Visit Information</h3>
+            <div class="info-grid">
+              <div class="info-column">
+                <div class="detail-row"><div class="detail-label">School</div><div class="detail-value">${escapeHtml(visit.school && visit.school.name || '-')}</div></div>
+                <div class="detail-row"><div class="detail-label">Team</div><div class="detail-value">${escapeHtml(visit.team && visit.team.name || '-')}</div></div>
+                ${assignedClass? `<div class="detail-row"><div class="detail-label">Assigned Class</div><div class="detail-value">${escapeHtml(visit.assignedClass)}</div></div>` : ''}
+                <div class="detail-row"><div class="detail-label">Status</div><div class="detail-value">${escapeHtml(visit.status||'Scheduled')}</div></div>
+              </div>
+              <div class="info-column">
+                ${membersHtml? `<div class="detail-row"><div class="detail-label">Members</div><div class="detail-value">${escapeHtml(visit.members.join(', '))}</div></div>` : ''}
+                ${children? `<div class="detail-row"><div class="detail-label">Expected Children</div><div class="detail-value"><span class="highlight-count">${visit.childrenCount}</span></div></div>` : ''}
+                <div class="detail-row"><div class="detail-label">Classes</div><div class="detail-value">${visit.classesVisited || 0} visited of ${visit.totalClasses || 0}</div></div>
+                <div class="detail-row"><div class="detail-label">Visit Date</div><div class="detail-value">${new Date(visit.date).toLocaleDateString('en-US', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</div></div>
+              </div>
+            </div>
+          </div>
+          ${mediaHtml}
           ${uploadControls}
         </div>
       `;
@@ -379,11 +1056,35 @@
     async function onUploadClick(e){
       const visitId = e.currentTarget.dataset.visitId;
       const input = document.querySelector(`input.media-input[data-visit-id="${visitId}"]`);
-      if(!input || !input.files || input.files.length===0){ alert('Select files to upload'); return; }
+      if(!input || !input.files || input.files.length===0){ 
+        // Show better notification
+        const notification = document.createElement('div');
+        notification.className = 'notification error';
+        notification.innerHTML = '<div>Please select files to upload</div>';
+        document.body.appendChild(notification);
+        
+        // Remove the notification after 3 seconds
+        setTimeout(() => {
+          notification.classList.add('hide');
+          setTimeout(() => notification.remove(), 300);
+        }, 3000);
+        return; 
+      }
+
+      // Create loading overlay
+      const loadingOverlay = document.createElement('div');
+      loadingOverlay.className = 'loading-overlay';
+      loadingOverlay.innerHTML = `
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Uploading media...</div>
+      `;
+      document.body.appendChild(loadingOverlay);
 
       const form = new FormData();
       // split files by type
+      let fileCount = 0;
       for(const file of input.files){
+        fileCount++;
         if(file.type.startsWith('image/')) form.append('photos', file);
         else if(file.type.startsWith('video/')) form.append('videos', file);
         else form.append('docs', file);
@@ -392,28 +1093,117 @@
       try{
         const res = await fetch(`/api/visits/${visitId}/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: form });
         const j = await res.json();
-        if(j.success){ alert('Upload successful'); loadVisits(); } else { alert('Upload failed: '+(j.message||'')); }
-      }catch(err){ console.error(err); alert('Upload error'); }
+        
+        // Remove loading overlay
+        loadingOverlay.remove();
+        
+        if(j.success){ 
+          // Show success notification
+          const notification = document.createElement('div');
+          notification.className = 'notification success';
+          notification.innerHTML = `<div>Successfully uploaded ${fileCount} file${fileCount !== 1 ? 's' : ''}</div>`;
+          document.body.appendChild(notification);
+          
+          // Remove the notification after 3 seconds
+          setTimeout(() => {
+            notification.classList.add('hide');
+            setTimeout(() => notification.remove(), 300);
+          }, 3000);
+          
+          loadVisits(); 
+        } else { 
+          // Show error notification
+          const notification = document.createElement('div');
+          notification.className = 'notification error';
+          notification.innerHTML = `<div>Upload failed: ${j.message || 'Unknown error'}</div>`;
+          document.body.appendChild(notification);
+          
+          // Remove the notification after 3 seconds
+          setTimeout(() => {
+            notification.classList.add('hide');
+            setTimeout(() => notification.remove(), 300);
+          }, 3000);
+        }
+      }catch(err){ 
+        console.error(err); 
+        // Remove loading overlay
+        loadingOverlay.remove();
+        
+        // Show error notification
+        const notification = document.createElement('div');
+        notification.className = 'notification error';
+        notification.innerHTML = '<div>Upload error: Network or server issue</div>';
+        document.body.appendChild(notification);
+        
+        // Remove the notification after 3 seconds
+        setTimeout(() => {
+          notification.classList.add('hide');
+          setTimeout(() => notification.remove(), 300);
+        }, 3000);
+      }
     }
 
-    // open modal for creating or editing a visit
+    // DRAWER: create a single drawer in DOM and reuse for add/edit
+    (function createDrawer(){
+      if(document.getElementById('visits_drawer')) return;
+      const backdrop = document.createElement('div'); backdrop.className = 'drawer-backdrop'; backdrop.id = 'drawer_backdrop';
+      const drawer = document.createElement('div'); drawer.className = 'drawer'; drawer.id = 'visits_drawer';
+
+      drawer.innerHTML = `
+        <div class="drawer-header">
+          <div style="display:flex;flex-direction:column">
+            <div class="drawer-title">Add Visit</div>
+            <div class="drawer-subtitle" id="drawer_subtitle"></div>
+          </div>
+        </div>
+        <div class="drawer-body">
+          <div class="drawer-form-grid">
+            <div class="form-group"><label for="v_name">Visit Name</label><input id="v_name" type="text" placeholder="Enter visit name"></div>
+            <div class="form-group"><label for="v_date">Visit Date</label><input id="v_date" type="date"></div>
+
+            <div class="form-group"><label for="v_team">Team</label><select id="v_team"><option value="">Loading teams...</option></select></div>
+            <div class="form-group"><label for="v_school">School</label><select id="v_school"><option value="">Loading schools...</option></select></div>
+
+            <div class="form-group"><label for="v_assigned">Assigned Class</label><input id="v_assigned" type="text" placeholder="e.g., 6th Standard, Section A"></div>
+            <div class="form-group"><label for="v_members">Team Members</label><input id="v_members" type="text" placeholder="Comma separated names"></div>
+
+            <div class="form-group"><label for="v_total">Total Classes</label><input id="v_total" type="number" min="0" value="0"></div>
+            <div class="form-group"><label for="v_visited">Classes Visited</label><input id="v_visited" type="number" min="0" value="0"></div>
+
+            <div class="form-group"><label for="v_children">Expected Children</label><input id="v_children" type="number" min="0" value="30"></div>
+            <div></div>
+          </div>
+        </div>
+        <div class="drawer-footer">
+          <button class="btn-cancel">Cancel</button>
+          <button class="btn-save">Save Visit</button>
+        </div>
+      `;
+
+      document.body.appendChild(backdrop);
+      document.body.appendChild(drawer);
+
+      // event: close drawer
+      backdrop.addEventListener('click', closeDrawer);
+      drawer.querySelectorAll('.btn-cancel').forEach(b=>b.addEventListener('click', closeDrawer));
+    })();
+
+    // open drawer for creating or editing a visit
     async function openVisitModal(visit=null){
-      // fetch schools and teams for selects
-      const overlay = document.createElement('div'); overlay.className='modal-overlay';
-      overlay.innerHTML = `<div class="modal">
-        <h2>${visit ? 'Edit Visit' : 'Add Visit'}</h2>
-        <label>Visit Name</label><input id="v_name" type="text" value="${visit?escapeHtml(visit.name):''}">
-        <label>Date</label><input id="v_date" type="date" value="${visit?new Date(visit.date).toISOString().split('T')[0]:new Date().toISOString().split('T')[0]}">
-  <label>Team</label><select id="v_team"><option value="">Loading teams...</option></select>
-  <label>School</label><select id="v_school"><option value="">Loading schools...</option></select>
-        <label>Assigned Class</label><input id="v_assigned" type="text" value="${visit?escapeHtml(visit.assignedClass||'') : ''}">
-        <label>Members (comma separated)</label><input id="v_members" type="text" value="${visit && visit.members?escapeHtml(visit.members.join(', ')):''}">
-        <label>Total Classes</label><input id="v_total" type="number" min="0" value="${visit?visit.totalClasses||0:0}">
-        <label>Classes Visited</label><input id="v_visited" type="number" min="0" value="${visit?visit.classesVisited||0:0}">
-        <label>Expected Children</label><input id="v_children" type="number" min="0" value="${visit?visit.childrenCount||0:30}">
-        <div class="modal-actions"><button class="btn-cancel">Cancel</button><button class="btn-save">Save</button></div>
-      </div>`;
-      document.body.appendChild(overlay);
+      const drawer = document.getElementById('visits_drawer');
+      const backdrop = document.getElementById('drawer_backdrop');
+      const title = drawer.querySelector('.drawer-title');
+
+      title.textContent = visit ? 'Edit Visit' : 'Add Visit';
+
+      // Fill fields if editing
+      drawer.querySelector('#v_name').value = visit? (visit.name||'') : '';
+      drawer.querySelector('#v_date').value = visit? (new Date(visit.date).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0];
+      drawer.querySelector('#v_assigned').value = visit? (visit.assignedClass||'') : '';
+      drawer.querySelector('#v_members').value = visit && visit.members? visit.members.join(', ') : '';
+      drawer.querySelector('#v_total').value = visit? (visit.totalClasses||0) : 0;
+      drawer.querySelector('#v_visited').value = visit? (visit.classesVisited||0) : 0;
+      drawer.querySelector('#v_children').value = visit? (visit.childrenCount||30) : 30;
 
       // populate teams and schools
       try{
@@ -421,27 +1211,32 @@
           fetch('/api/admin/teams', { headers: { 'Authorization': `Bearer ${token}` } }).catch(()=>({ ok:false })),
           fetch('/api/schools', { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
-        const teamSelect = overlay.querySelector('#v_team');
+        const teamSelect = drawer.querySelector('#v_team');
         if(teamsRes && teamsRes.ok){ const tjson = await teamsRes.json(); if(tjson.success){ teamSelect.innerHTML = '<option value="">Select team</option>' + tjson.data.map(t=>`<option value="${t._id}">${escapeHtml(t.name)}</option>`).join(''); } }
-        const schoolsJson = await schoolsRes.json(); const schoolSelect = overlay.querySelector('#v_school');
+        const schoolsJson = await schoolsRes.json(); const schoolSelect = drawer.querySelector('#v_school');
         if(schoolsJson.success){ schoolSelect.innerHTML = '<option value="">Select school</option>' + schoolsJson.data.map(s=>`<option value="${s._id}">${escapeHtml(s.name)}</option>`).join(''); }
 
-        // set selected
         if(visit){ if(visit.team) teamSelect.value = visit.team._id || visit.team; if(visit.school) schoolSelect.value = visit.school._id || visit.school; }
       }catch(err){ console.warn('Failed to load teams/schools',err); }
 
-      overlay.querySelector('.btn-cancel').onclick = ()=>overlay.remove();
-      overlay.querySelector('.btn-save').onclick = async ()=>{
+      // open drawer and raise page slightly
+      backdrop.classList.add('open');
+      drawer.classList.add('open');
+      document.body.classList.add('page-raised');
+
+      // Save handler
+      const saveBtn = drawer.querySelector('.btn-save');
+      saveBtn.onclick = async ()=>{
         const payload = {
-          name: document.getElementById('v_name').value.trim(),
-          date: document.getElementById('v_date').value,
-          team: overlay.querySelector('#v_team').value,
-          school: overlay.querySelector('#v_school').value,
-          assignedClass: document.getElementById('v_assigned').value.trim(),
-          members: (document.getElementById('v_members').value||'').split(',').map(s=>s.trim()).filter(Boolean),
-          totalClasses: parseInt(document.getElementById('v_total').value,10)||0,
-          classesVisited: parseInt(document.getElementById('v_visited').value,10)||0,
-          childrenCount: parseInt(document.getElementById('v_children').value,10)||0,
+          name: drawer.querySelector('#v_name').value.trim(),
+          date: drawer.querySelector('#v_date').value,
+          team: drawer.querySelector('#v_team').value,
+          school: drawer.querySelector('#v_school').value,
+          assignedClass: drawer.querySelector('#v_assigned').value.trim(),
+          members: (drawer.querySelector('#v_members').value||'').split(',').map(s=>s.trim()).filter(Boolean),
+          totalClasses: parseInt(drawer.querySelector('#v_total').value,10)||0,
+          classesVisited: parseInt(drawer.querySelector('#v_visited').value,10)||0,
+          childrenCount: parseInt(drawer.querySelector('#v_children').value,10)||0,
           status: 'scheduled'
         };
 
@@ -454,9 +1249,18 @@
           let res, j;
           if(visit && visit._id){ res = await fetch(`/api/visits/${visit._id}`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify(payload) }); j = await res.json(); }
           else { res = await fetch('/api/visits', { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify(payload) }); j = await res.json(); }
-          if(j.success){ overlay.remove(); loadVisits(); } else { alert('Error: '+(j.message||'save failed')); }
+          if(j.success){ closeDrawer(); loadVisits(); } else { alert('Error: '+(j.message||'save failed')); }
         }catch(err){ console.error(err); alert('Save failed'); }
       };
+    }
+
+    function closeDrawer(){
+      const drawer = document.getElementById('visits_drawer');
+      const backdrop = document.getElementById('drawer_backdrop');
+      if(drawer) drawer.classList.remove('open');
+      if(backdrop) backdrop.classList.remove('open');
+      // remove page raised state
+      document.body.classList.remove('page-raised');
     }
 
     // Add Visit button
@@ -467,7 +1271,34 @@
       if(!confirm('Delete this media?')) return;
       try{
         const res = await fetch(`/api/visits/${visitId}/media`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify({ url }) });
-        const j = await res.json(); if(j.success){ alert('Removed'); loadVisits(); } else alert('Error: '+(j.message||''));
+        const j = await res.json(); 
+        if(j.success){ 
+          // Show a nicer notification instead of alert
+          const notification = document.createElement('div');
+          notification.className = 'notification success';
+          notification.innerHTML = '<div>Media successfully removed</div>';
+          document.body.appendChild(notification);
+          
+          // Remove the notification after 3 seconds
+          setTimeout(() => {
+            notification.classList.add('hide');
+            setTimeout(() => notification.remove(), 300);
+          }, 3000);
+          
+          loadVisits(); 
+        } else {
+          // Show error notification
+          const notification = document.createElement('div');
+          notification.className = 'notification error';
+          notification.innerHTML = `<div>Error: ${j.message || 'Failed to delete media'}</div>`;
+          document.body.appendChild(notification);
+          
+          // Remove the notification after 3 seconds
+          setTimeout(() => {
+            notification.classList.add('hide');
+            setTimeout(() => notification.remove(), 300);
+          }, 3000);
+        }
       }catch(err){ console.error(err); alert('Failed to remove media'); }
     }
 
@@ -483,7 +1314,7 @@
     <span class="close-lightbox" id="vg_close">&times;</span>
     <div class="lightbox-content">
       <img id="vg_lightbox_image" src="" alt="Full size" style="display:none;" />
-      <video id="vg_lightbox_video" controls style="display:none; max-width:90%; max-height:80%;">Your browser does not support the video tag.</video>
+      <video id="vg_lightbox_video" controls style="display:none;">Your browser does not support the video tag.</video>
     </div>
     <div class="lightbox-caption" id="vg_lightbox_caption"></div>
   </div>

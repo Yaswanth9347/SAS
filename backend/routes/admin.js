@@ -17,8 +17,12 @@ const {
     getTeams
 } = require('../controllers/adminController');
 
+const { getUsers, createTeam } = require('../controllers/adminController');
+
 router.get('/stats', getDashboardStats);
 router.post('/create-teams', createTeams);
 router.get('/teams', getTeams);
+router.get('/users', getUsers);
+router.post('/teams', createTeam);
 
 module.exports = router;
