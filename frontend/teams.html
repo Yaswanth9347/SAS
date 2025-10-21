@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teams - SAS Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo"><h2>Spread A Smile</h2></div>
+            <ul class="nav-menu">
+                <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+                <li><a href="visits.html" class="nav-link">Visits</a></li>
+                <li><a href="schools.html" class="nav-link">Schools</a></li>
+                <li><a href="teams.html" class="nav-link active">Teams</a></li>
+                <li><a href="schedule-visit.html" class="nav-link">Schedule Visit</a></li>
+                <li><a href="analytics.html" class="nav-link">Analytics</a></li>
+                <li><a href="reports.html" class="nav-link">Reports</a></li>
+                <li><span class="nav-link" id="navUser">Welcome, User</span></li>
+                <li><a href="#" class="nav-link logout-btn">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="dashboard">
+        <div class="container">
+            <div class="dashboard-header">
+                <h1>Manage Teams</h1>
+                <p>Create and manage volunteer teams</p>
+            </div>
+
+            <div class="team-creator">
+                <h2>Create New Team</h2>
+                <form id="teamForm">
+                    <div class="form-group">
+                        <label for="teamName">Team Name *</label>
+                        <input id="teamName" name="name" required placeholder="e.g., Team A" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Members (pick at least one)</label>
+                        <div id="usersList" class="users-list">Loading users...</div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Create Team</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="existing-teams">
+                <h2>Existing Teams</h2>
+                <div id="teamsList">Loading teams...</div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Spread a Smile (SAS). All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        if (!token || user.role !== 'admin') {
+            alert('Access denied. Admin privileges required.');
+            window.location.href = 'login.html';
+        }
+
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                const usersDiv = document.getElementById('usersList');
+
+                if (!data.success) return usersDiv.innerHTML = '<p>Failed to load users</p>';
+
+                usersDiv.innerHTML = data.data.map(u => `
+                    <label class="user-item">
+                        <input type="checkbox" name="members" value="${u._id}" />
+                        <span class="username">${u.username || u.name}</span>
+                        <input type="radio" name="leader" value="${u._id}" title="Set as leader" />
+                    </label>
+                `).join('');
+
+            } catch (err) {
+                document.getElementById('usersList').innerHTML = '<p>Error loading users</p>';
+            }
+        }
+
+        async function loadTeams() {
+            try {
+                const res = await fetch('/api/admin/teams', { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                const teamsDiv = document.getElementById('teamsList');
+
+                if (!data.success) return teamsDiv.innerHTML = '<p>Failed to load teams</p>';
+
+                if (data.data.length === 0) {
+                    teamsDiv.innerHTML = '<p>No teams created yet.</p>';
+                    return;
+                }
+
+                teamsDiv.innerHTML = data.data.map(t => `
+                    <div class="team-card">
+                        <h3>${t.name}</h3>
+                        <p><strong>Leader:</strong> ${t.teamLeader?.username || t.teamLeader?.name || 'N/A'}</p>
+                        <p><strong>Members:</strong> ${t.members.length}</p>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                document.getElementById('teamsList').innerHTML = '<p>Error loading teams</p>';
+            }
+        }
+
+        document.getElementById('teamForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('teamName').value.trim();
+            const memberNodes = Array.from(document.querySelectorAll('input[name="members"]:checked'));
+            const leader = document.querySelector('input[name="leader"]:checked');
+
+            if (memberNodes.length === 0) return alert('Select at least one member');
+            if (!leader) return alert('Select a team leader');
+
+            const members = memberNodes.map(n => n.value);
+
+            try {
+                const res = await fetch('/api/admin/teams', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, members, teamLeader: leader.value })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    alert('Team created');
+                    this.reset();
+                    loadUsers();
+                    loadTeams();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (err) {
+                alert('Failed to create team');
+            }
+        });
+
+        // Logout
+        // Update navbar username
+        const navUser = document.getElementById('navUser');
+        if (navUser) {
+            navUser.textContent = `Welcome, ${user.name || 'User'}`;
+        }
+
+        document.querySelectorAll('.logout-btn').forEach(el => el.addEventListener('click', function(e){ 
+            e.preventDefault(); 
+            localStorage.removeItem('token'); 
+            localStorage.removeItem('user'); 
+            window.location.href='login.html'; 
+        }));
+
+        loadUsers();
+        loadTeams();
+    </script>
+
+    <style>
+    .users-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap:8px; }
+    .user-item { display:flex; align-items:center; gap:8px; padding:8px; border:1px solid #eee; border-radius:6px; }
+    .user-item input[type="radio"] { margin-left:auto; }
+    .team-card { background:white; padding:12px; border-radius:6px; margin-bottom:8px; }
+    </style>
+</body>
+</html>

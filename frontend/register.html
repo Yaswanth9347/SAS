@@ -1,173 +1,247 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Spread a Smile</title>
-    <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register - Spread a Smile</title>
+  <style>
+    /* Base Reset */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: "Poppins", sans-serif; background: linear-gradient(135deg,#4caf50,#81c784); min-height:100vh; display:flex; justify-content:center; align-items:center; padding:20px; color:#333; }
+    .register-card { background:#fff; width:100%; max-width:750px; border-radius:15px; padding:40px 35px; box-shadow:0 10px 35px rgba(0,0,0,0.15); animation:fadeInUp .8s ease forwards; }
+    .register-card h2 { text-align:center; color:#4caf50; font-size:2rem; margin-bottom:10px; }
+    .register-card p { text-align:center; color:#666; margin-bottom:25px; font-size:.95rem; }
+    form { display:flex; flex-direction:column; gap:18px; }
+    .form-row { display:flex; gap:20px; flex-wrap:wrap; }
+    .form-group { flex:1; display:flex; flex-direction:column; }
+    label { font-weight:600; margin-bottom:8px; color:#444; }
+    input, select, textarea { padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; transition:border-color .3s ease; }
+    input:focus, select:focus, textarea:focus { border-color:#4caf50; outline:none; box-shadow:0 0 0 3px rgba(76,175,80,.1); }
+    textarea { resize:vertical; min-height:80px; }
+    small { font-size:12px; color:#777; margin-top:4px; }
+    .agree-checkbox { display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:600; }
+    .agree-checkbox input { width:18px; height:18px; flex-shrink:0; }
+    .agree-checkbox a { color:#4caf50; font-weight:700; text-decoration:underline; }
+    .btn { background:#4caf50; border:none; color:#fff; padding:12px; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; transition:all .3s ease; }
+    .btn:hover { background:#45a049; transform:translateY(-2px); }
+    .login-link { text-align:center; margin-top:15px; }
+    .login-link a { color:#4caf50; font-weight:600; text-decoration:none; }
+    .login-link a:hover { text-decoration:underline; }
+
+    /* Modal Styles */
+    .terms-modal { display:none; position:fixed; inset:0; z-index:1000; }
+    .terms-modal[aria-hidden="false"] { display:block; }
+    .terms-modal__backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.45); }
+    .terms-modal__content { background:#fff; max-width:700px; margin:8vh auto; border-radius:10px; padding:24px; box-shadow:0 10px 35px rgba(0,0,0,.2); overflow:auto; max-height:80vh; position:relative; }
+    .terms-modal__close { position:absolute; right:14px; top:8px; border:none; background:transparent; font-size:26px; cursor:pointer; }
+    .terms-modal__body h3 { margin-top:12px; color:#333; }
+    .terms-modal__body p { margin:6px 0; color:#444; font-size:14px; }
+
+    /* Animation */
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(40px); } to { opacity:1; transform:translateY(0); } }
+
+    /* Validation styling */
+    .field-error { color:#b00020; font-size:12px; margin-top:6px; display:none; }
+    .field-valid { color:#2e7d32; font-size:12px; margin-top:6px; display:none; }
+    input.invalid, select.invalid, textarea.invalid { border-color:#b00020; box-shadow:none; }
+    input.valid, select.valid, textarea.valid { border-color:#2e7d32; }
+
+    /* ensure inputs leave space for the toggle icon (match login page) */
+    input { padding: 12px 40px 12px 12px; }
+
+    /* --- Fix: ensure wrapper anchors toggle and input fills available width --- */
+    .input-with-toggle {
+      position: relative;    /* anchor for absolute toggle */
+      width: 100%;           /* fill the form-group horizontal space */
+      display: block;
+    }
+
+    /* Make the input inside the wrapper fill the width and leave room for toggle */
+    .input-with-toggle input {
+      width: 100%;
+      box-sizing: border-box;
+      padding-right: 44px;   /* leave room for the toggle inside the input */
+    }
+
+    /* toggle inside input - center vertically using 50% + translate
+       this adapts to different input heights and matches login behaviour
+    */
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      font-size: 18px;
+      color: #666;
+      background: transparent;
+      border: none;
+      padding: 0;
+      height: 24px;
+      line-height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 3;
+    }
+    .toggle-password:hover { color: #4caf50; }
+
+    .password-hints { font-size:12px; color:#555; margin-top:6px; list-style: disc; padding-left:18px; }
+    .password-hints li { margin-bottom:4px; }
+    .loading { opacity:.6; pointer-events:none; }
+    @media (max-width:600px) { .register-card { padding:25px 20px; } .form-row { flex-direction:column; } }
+
+    /* small helper so username hint doesn't overlap password toggle when present */
+    .input-with-hint { position: relative; width: 100%; }
+    .input-with-hint small.hint {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      font-weight:600;
+      color:#777;
+      pointer-events: none;
+    }
+  </style>
 </head>
+
 <body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-logo">
-                <h2>Spread a Smile (SAS)</h2>
-            </div>
-            <ul class="nav-menu">
-                <li><a href="index.html" class="nav-link">Home</a></li>
-                <li><a href="about.html" class="nav-link">About</a></li>
-                <li><a href="contact.html" class="nav-link">Contact</a></li>
-                <li><a href="login.html" class="nav-link login-btn">Volunteer Login</a></li>
-            </ul>
+  <div class="register-card" id="card">
+    <h2>Become a SAS Member</h2>
+    <p>Join us in spreading smiles to government school children</p>
+
+    <form id="registerForm" novalidate>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="name">Full Name *</label>
+          <input type="text" id="name" name="name" required />
+          <div id="nameError" class="field-error">Please enter your full name (min 2 characters).</div>
         </div>
-    </nav>
 
-    <section class="page-header">
-        <div class="container">
-            <h1>Become a Volunteer</h1>
-            <p>Join us in spreading smiles to government school children</p>
+        <div class="form-group">
+          <label for="username">Username *</label>
+          <div class="input-with-hint">
+            <input type="text" id="username" name="username" required placeholder="choose a username" />
+            <small id="usernameHint" class="hint"></small>
+          </div>
+          <div id="usernameError" class="field-error">Choose a username (min 3 chars, no spaces).</div>
         </div>
-    </section>
 
-    <section class="register-section">
-        <div class="container">
-            <div class="register-card">
-                <h2>Volunteer Registration</h2>
-                <p>Fill out the form below to join SAS as a volunteer</p>
-                
-                <form id="registerForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="name">Full Name *</label>
-                            <input type="text" id="name" name="name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="email">College Email *</label>
-                            <input type="email" id="email" name="email" required placeholder="yourname@college.edu">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="password">Password *</label>
-                            <input type="password" id="password" name="password" required minlength="6">
-                        </div>
-                        <div class="form-group">
-                            <label for="confirmPassword">Confirm Password *</label>
-                            <input type="password" id="confirmPassword" name="confirmPassword" required>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="collegeId">College ID *</label>
-                            <input type="text" id="collegeId" name="collegeId" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="phone">Phone Number *</label>
-                            <input type="tel" id="phone" name="phone" required>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="department">Department *</label>
-                            <select id="department" name="department" required>
-                                <option value="">Select Department</option>
-                                <option value="CSE">Computer Science & Engineering</option>
-                                <option value="ECE">Electronics & Communication</option>
-                                <option value="EEE">Electrical & Electronics</option>
-                                <option value="MECH">Mechanical Engineering</option>
-                                <option value="CIVIL">Civil Engineering</option>
-                                <option value="IT">Information Technology</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="year">Current Year *</label>
-                            <select id="year" name="year" required>
-                                <option value="">Select Year</option>
-                                <option value="1">1st Year</option>
-                                <option value="2">2nd Year</option>
-                                <option value="3">3rd Year</option>
-                                <option value="4">4th Year</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="skills">Skills & Interests</label>
-                        <textarea id="skills" name="skills" placeholder="List your skills, e.g., Programming, Art, Sports, Music, Teaching..."></textarea>
-                        <small>Separate skills with commas</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="agreeTerms" required>
-                            I agree to the <a href="#">Terms & Conditions</a> and commit to regular participation
-                        </label>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-full">Register as Volunteer</button>
-                </form>
-
-                <div class="login-link">
-                    <p>Already registered? <a href="login.html">Login here</a></p>
-                </div>
-            </div>
+        <div class="form-group">
+          <label for="email">College Email *</label>
+          <input type="email" id="email" name="email" required placeholder="yourname@college.edu" aria-describedby="emailError" />
+          <div id="emailError" class="field-error">Please enter a valid college email (example: you@college.edu).</div>
         </div>
-    </section>
+      </div>
 
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2024 Spread a Smile (SAS). All rights reserved.</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="password">Password *</label>
+          <div class="input-with-toggle">
+            <input type="password" id="password" name="password" required aria-describedby="passwordHints" />
+            <!-- toggle is a button (keyboard accessible) -->
+            <button type="button" id="togglePassword" class="toggle-password" aria-label="Toggle password visibility">👁️</button>
+          </div>
+          <ul id="passwordHints" class="password-hints" aria-live="polite">
+            <li id="h_len">At least 8 characters</li>
+            <li id="h_lower">At least one lowercase letter</li>
+            <li id="h_upper">At least one uppercase letter</li>
+            <li id="h_digit">At least one number</li>
+            <li id="h_special">At least one special character (e.g., !@#$%)</li>
+          </ul>
+          <div id="passwordError" class="field-error">Password must meet all rules above.</div>
         </div>
-    </footer>
 
-    <script>
-        document.getElementById('registerForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            // Validate passwords match
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            if (password !== confirmPassword) {
-                alert('Passwords do not match!');
-                return;
-            }
+        <div class="form-group">
+          <label for="confirmPassword">Confirm Password *</label>
+          <div class="input-with-toggle">
+            <input type="password" id="confirmPassword" name="confirmPassword" required aria-describedby="confirmError" />
+            <button type="button" id="toggleConfirmPassword" class="toggle-password" aria-label="Toggle confirm password visibility">👁️</button>
+          </div>
+          <div id="confirmError" class="field-error">Passwords do not match.</div>
+        </div>
+      </div>
 
-            const formData = {
-                name: document.getElementById('name').value,
-                email: document.getElementById('email').value,
-                password: password,
-                collegeId: document.getElementById('collegeId').value,
-                phone: document.getElementById('phone').value,
-                department: document.getElementById('department').value,
-                year: parseInt(document.getElementById('year').value),
-                skills: document.getElementById('skills').value.split(',').map(skill => skill.trim()).filter(skill => skill)
-            };
+      <div class="form-row">
+        <div class="form-group">
+          <label for="collegeId">College ID *</label>
+          <input type="text" id="collegeId" name="collegeId" required />
+          <div id="collegeError" class="field-error">Enter your college ID.</div>
+        </div>
 
-            try {
-                const response = await fetch('/api/auth/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('Registration successful! You can now login.');
-                    window.location.href = 'login.html';
-                } else {
-                    alert('Registration failed: ' + data.message);
-                }
-            } catch (error) {
-                console.error('Registration error:', error);
-                alert('Registration failed. Please try again.');
-            }
-        });
-    </script>
+        <div class="form-group">
+          <label for="phone">Phone Number *</label>
+          <input type="tel" id="phone" name="phone" required maxlength="10" inputmode="numeric" pattern="\d{10}" placeholder="10 digits only" aria-describedby="phoneError" />
+          <div id="phoneError" class="field-error">Phone must be exactly 10 digits (numbers only).</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="department">Department *</label>
+          <select id="department" name="department" required>
+            <option value="">Select Department</option>
+            <option value="CSE">Computer Science & Engineering</option>
+            <option value="ECE">Electronics & Communication</option>
+            <option value="EEE">Electrical & Electronics</option>
+            <option value="MECH">Mechanical Engineering</option>
+            <option value="CIVIL">Civil Engineering</option>
+            <option value="IT">Information Technology</option>
+          </select>
+          <div id="deptError" class="field-error">Please select your department.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="year">Current Year *</label>
+          <select id="year" name="year" required>
+            <option value="">Select Year</option>
+            <option value="1">1st Year</option>
+            <option value="2">2nd Year</option>
+            <option value="3">3rd Year</option>
+            <option value="4">4th Year</option>
+          </select>
+          <div id="yearError" class="field-error">Please select your current year.</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="skills">Skills & Interests</label>
+        <textarea id="skills" name="skills" placeholder="E.g., Programming, Art, Sports, Music, Teaching..."></textarea>
+        <small>Separate skills with commas</small>
+      </div>
+
+      <div class="form-group">
+        <label class="agree-checkbox">
+          <input type="checkbox" id="agreeTerms" required />
+          <span>I agree to the <a href="#" id="termsLink">Terms & Conditions</a></span>
+        </label>
+      </div>
+
+      <button type="submit" id="submitBtn" class="btn">Register</button>
+    </form>
+
+    <div class="login-link"><p>Already have an account? <a href="login.html">Login here</a></p></div>
+  </div>
+
+  <!-- Terms Modal -->
+  <div id="termsModal" class="terms-modal" aria-hidden="true" role="dialog" aria-labelledby="termsTitle">
+    <div class="terms-modal__backdrop" data-close></div>
+    <div class="terms-modal__content" role="document">
+      <button class="terms-modal__close" id="termsClose">&times;</button>
+      <h2 id="termsTitle">Spread a Smile — Terms & Conditions</h2>
+      <div class="terms-modal__body">
+        <h3>1. Introduction</h3>
+        <p>By registering, you agree to the rules of Spread a Smile (SAS) and its volunteer activities.</p>
+        <h3>2. Commitment</h3>
+        <p>Members agree to participate regularly and maintain professionalism during events.</p>
+        <h3>3. Privacy</h3>
+        <p>Your data is used only for volunteering coordination and never sold to third parties.</p>
+        <h3>4. Termination</h3>
+        <p>Non-compliance or misconduct may result in removal from the SAS community.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Link to external JS file -->
+  <script src="js/register.js" defer></script>
 </body>
 </html>

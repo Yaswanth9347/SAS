@@ -7,6 +7,13 @@ const userSchema = new mongoose.Schema({
         required: [true, 'Please add a name'],
         trim: true
     },
+    username: {
+        type: String,
+        required: [true, 'Please add a username'],
+        unique: true,
+        trim: true,
+        lowercase: true
+    },
     email: {
         type: String,
         required: [true, 'Please add an email'],
@@ -25,7 +32,7 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['volunteer', 'admin'],
+        enum: ['admin', 'volunteer'],
         default: 'volunteer'
     },
     collegeId: {

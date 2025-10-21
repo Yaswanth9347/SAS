@@ -24,6 +24,7 @@ describe('SAS Integration Tests', () => {
         // Create admin user directly in database to ensure role is set
         const adminUser = await User.create({
             name: 'Integration Admin',
+            username: 'integration_admin',
             email: 'integration_admin@sas.org',
             password: 'admin123',
             collegeId: 'INTADM001',
@@ -37,7 +38,7 @@ describe('SAS Integration Tests', () => {
         const loginResponse = await request(app)
             .post('/api/auth/login')
             .send({
-                email: 'integration_admin@sas.org',
+                username: 'integration_admin',
                 password: 'admin123'
             });
 

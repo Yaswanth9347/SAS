@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const visitSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     date: {
         type: Date,
         required: true
@@ -19,6 +24,10 @@ const visitSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    // optional list of individual members (names or ids) who attended
+    members: [{
+        type: String
+    }],
     topicsCovered: [String],
     teachingMethods: [String],
     childrenCount: {
@@ -34,6 +43,16 @@ const visitSchema = new mongoose.Schema({
     suggestions: String,
     photos: [String],
     videos: [String],
+    docs: [String],
+    // total classes planned for the visit and how many were actually visited
+    totalClasses: {
+        type: Number,
+        default: 0
+    },
+    classesVisited: {
+        type: Number,
+        default: 0
+    },
     status: {
         type: String,
         enum: ['scheduled', 'completed', 'cancelled'],

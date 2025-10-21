@@ -1,6 +1,75 @@
 const User = require('../models/User');
 const Team = require('../models/Team');
 
+// @desc    Get all users (for team creation UI)
+// @route   GET /api/admin/users
+// @access  Private/Admin
+exports.getUsers = async (req, res, next) => {
+    try {
+        // Return basic user info used by the frontend (id and username/name)
+        const users = await User.find({}, '_id username name role').sort({ username: 1 });
+
+        res.status(200).json({
+            success: true,
+            count: users.length,
+            data: users
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Create a team manually
+// @route   POST /api/admin/teams
+// @access  Private/Admin
+exports.createTeam = async (req, res, next) => {
+    try {
+        const { name, members = [], teamLeader } = req.body;
+
+        if (!name || typeof name !== 'string' || name.trim().length === 0) {
+            return res.status(400).json({ success: false, message: 'Team name is required' });
+        }
+
+        if (!Array.isArray(members) || members.length === 0) {
+            return res.status(400).json({ success: false, message: 'At least one member is required' });
+        }
+
+        if (!teamLeader) {
+            return res.status(400).json({ success: false, message: 'A team leader must be specified' });
+        }
+
+        // Ensure leader is one of the members
+        if (!members.find(id => String(id) === String(teamLeader))) {
+            return res.status(400).json({ success: false, message: 'Team leader must be one of the members' });
+        }
+
+        // Verify members exist
+        const foundUsers = await User.find({ _id: { $in: members } });
+        if (foundUsers.length !== members.length) {
+            return res.status(400).json({ success: false, message: 'One or more members not found' });
+        }
+
+        // Create team
+        const team = await Team.create({ name: name.trim(), teamLeader, members });
+
+        // Update users to reference this team
+        await User.updateMany({ _id: { $in: members } }, { team: team._id });
+
+        const populated = await Team.findById(team._id)
+            .populate('teamLeader', 'name username')
+            .populate('members', 'name username');
+
+        res.status(201).json({ success: true, data: populated });
+    } catch (error) {
+        // Handle duplicate name error
+        if (error.code === 11000) {
+            return res.status(400).json({ success: false, message: 'A team with that name already exists' });
+        }
+
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
 // @desc    Get dashboard stats
 // @route   GET /api/admin/stats
 // @access  Private/Admin

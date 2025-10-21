@@ -3,11 +3,11 @@ const {
     submitSchoolFeedback,
     getFeedbackStats
 } = require('../controllers/feedbackController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 
 router.post('/visit/:id', submitSchoolFeedback);
-router.get('/stats', protect, authorize('admin'), getFeedbackStats);
+router.get('/stats', protect, getFeedbackStats);
 
 module.exports = router;

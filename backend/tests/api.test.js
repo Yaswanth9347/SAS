@@ -4,6 +4,7 @@ setupTestEnvironment();
 
 const request = require('supertest');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 const app = require('../server');
 const User = require('../models/User');
 
@@ -38,6 +39,7 @@ describe('SAS Basic API Tests', () => {
     test('Should register a new user', async () => {
         const userData = {
             name: 'Test User',
+            username: 'testuser',
             email: 'test@college.edu',
             password: '123456',
             collegeId: 'TEST001',
@@ -60,12 +62,49 @@ describe('SAS Basic API Tests', () => {
         const response = await request(app)
             .post('/api/auth/login')
             .send({
-                email: 'test@college.edu',
+                username: 'testuser',
                 password: '123456'
             })
             .expect(200);
 
         expect(response.body.success).toBe(true);
         expect(response.body.token).toBeDefined();
+    });
+});
+
+describe('Role-based access control tests', () => {
+    let adminToken, volunteerToken, expiredToken;
+    beforeAll(() => {
+        adminToken = jwt.sign({ id: 'admin-id', role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        volunteerToken = jwt.sign({ id: 'volunteer-id', role: 'volunteer' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        expiredToken = jwt.sign({ id: 'user', role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '-1h' });
+    });
+
+    test('Volunteer cannot access admin route returns 403', async () => {
+        const res = await request(app)
+            .get('/api/admin/')
+            .set('Authorization', `Bearer ${volunteerToken}`);
+        expect(res.status).toBe(403);
+    });
+
+    test('Admin can access admin route returns 200', async () => {
+        const res = await request(app)
+            .get('/api/admin/')
+            .set('Authorization', `Bearer ${adminToken}`);
+        expect(res.status).toBe(200);
+    });
+
+    test('Volunteer can access volunteer route returns 200', async () => {
+        const res = await request(app)
+            .get('/api/volunteers/')
+            .set('Authorization', `Bearer ${volunteerToken}`);
+        expect(res.status).toBe(200);
+    });
+
+    test('Expired token results in 401 Unauthorized', async () => {
+        const res = await request(app)
+            .get('/api/volunteers/')
+            .set('Authorization', `Bearer ${expiredToken}`);
+        expect(res.status).toBe(401);
     });
 });
