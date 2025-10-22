@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports - Spread a Smile</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+  <style>
+    /* ====== RESET ====== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Poppins", sans-serif;
+      background: #f4f6f8;
+      color: #333;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ====== NAVBAR ====== */
+    .navbar {
+      background: linear-gradient(90deg, #4caf50, #2e7d32);
+      color: #fff;
+      position: fixed;
+      width: 100%;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-container {
+      width: 100%;
+      padding: 0 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 70px;
+    }
+
+    .nav-logo {
+      flex-shrink: 0;
+    }
+
+    .nav-logo h2 {
+      font-family: Georgia, 'Times New Roman', Times, serif;
+      font-weight: 700;
+      font-size: 1.75rem;
+      letter-spacing: 0.6px;
+      color: #fff;
+    }
+
+    .nav-menu {
+      display: flex;
+      list-style: none;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .nav-link {
+      text-decoration: none;
+      color: #fff;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      padding: 6px 8px;
+      border-radius: 6px;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: #c8e6c9;
+    }
+
+    .logout-btn {
+      background: #f44336;
+      color: white !important;
+      padding: 8px 18px;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .logout-btn:hover {
+      background: #d32f2f;
+      transform: translateY(-2px);
+    }
+
+    /* ====== MAIN SECTION ====== */
+    .reports-section {
+      flex: 1;
+      padding: 120px 0 60px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .reports-header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .reports-header h1 {
+      font-size: 2.4rem;
+      color: #2e7d32;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .reports-header p {
+      font-size: 1.05rem;
+      color: #555;
+    }
+
+    /* ====== FILTERS SECTION ====== */
+    .filters-card {
+      background: #fff;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      margin-bottom: 30px;
+    }
+
+    .filters-card h2 {
+      color: #2e7d32;
+      margin-bottom: 20px;
+      font-size: 1.4rem;
+      font-weight: 600;
+      border-bottom: 2px solid #e8f5e9;
+      padding-bottom: 10px;
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    .form-group select,
+    .form-group input {
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background-color: #f9fafb;
+      font-size: 1rem;
+      transition: all 0.3s;
+      font-family: "Poppins", sans-serif;
+    }
+
+    .form-group select:focus,
+    .form-group input:focus {
+      border-color: #4caf50;
+      outline: none;
+      background-color: #ffffff;
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.15);
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: 15px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 25px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      text-align: center;
+      border: none;
+    }
+
+    .btn-primary {
+      background: #4caf50;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #388e3c;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    }
+
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .btn-export {
+      background: #2196f3;
+      color: white;
+    }
+
+    .btn-export:hover {
+      background: #1976d2;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    }
+
+    /* ====== REPORT TYPES GRID ====== */
+    .report-types {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 25px;
+      margin-bottom: 30px;
+    }
+
+    .report-card {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      border-left: 5px solid #4caf50;
+      cursor: pointer;
+    }
+
+    .report-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+    }
+
+    .report-card-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .report-icon {
+      width: 50px;
+      height: 50px;
+      background: #e8f5e9;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: #4caf50;
+    }
+
+    .report-card h3 {
+      color: #2e7d32;
+      font-size: 1.3rem;
+      margin: 0;
+    }
+
+    .report-card p {
+      color: #666;
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .report-stats {
+      display: flex;
+      gap: 20px;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .stat-item {
+      flex: 1;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #4caf50;
+      display: block;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: #888;
+      display: block;
+    }
+
+    /* ====== RESULTS SECTION ====== */
+    .results-section {
+      background: #fff;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      margin-bottom: 30px;
+      display: none;
+    }
+
+    .results-section.active {
+      display: block;
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e8f5e9;
+    }
+
+    .results-header h2 {
+      color: #2e7d32;
+      font-size: 1.4rem;
+      margin: 0;
+    }
+
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .results-table th {
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid #4caf50;
+    }
+
+    .results-table td {
+      padding: 15px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .results-table tr:hover {
+      background: #f9fafb;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .status-completed {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .status-scheduled {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+
+    .status-cancelled {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .no-data {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+      font-size: 1.1rem;
+    }
+
+    /* ====== FOOTER ====== */
+    .footer {
+      background: #2e7d32;
+      color: white;
+      text-align: center;
+      padding: 25px 0;
+      border-top-left-radius: 50px;
+      border-top-right-radius: 50px;
+      margin-top: auto;
+    }
+
+    .footer p {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    /* ====== LOADING SPINNER ====== */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #4caf50;
+    }
+
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #4caf50;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* ====== RESPONSIVE ====== */
+    @media (max-width: 768px) {
+      .nav-menu {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .reports-header h1 {
+        font-size: 1.8rem;
+      }
+
+      .filters-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .filter-actions {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+
+      .report-types {
+        grid-template-columns: 1fr;
+      }
+
+      .results-table {
+        font-size: 0.85rem;
+      }
+
+      .results-table th,
+      .results-table td {
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <h2>Spread A Smile</h2>
+      </div>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+        <li><a href="visits.html" class="nav-link">Visits</a></li>
+        <li><a href="schools.html" class="nav-link">Schools</a></li>
+        <li><a href="visit-gallery.html" class="nav-link">Gallery</a></li>
+        <!-- Admin-only navigation items will be added dynamically -->
+        <li><span class="nav-link" id="navUser">Welcome, User</span></li>
+        <li><a href="#" class="nav-link logout-btn" id="navLogout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="reports-section">
+    <div class="container">
+      <div class="reports-header">
+        <h1>Reports & Analytics</h1>
+        <p>Generate comprehensive reports for your volunteer activities</p>
+      </div>
+
+      <!-- Report Types -->
+      <div class="report-types">
+        <div class="report-card" onclick="showReport('visits')">
+          <div class="report-card-header">
+            <div class="report-icon">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <h3>Visits Report</h3>
+          </div>
+          <p>Detailed information about all school visits including status, dates, and teams involved.</p>
+          <div class="report-stats">
+            <div class="stat-item">
+              <span class="stat-value" id="totalVisitsCount">0</span>
+              <span class="stat-label">Total Visits</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="completedVisitsCount">0</span>
+              <span class="stat-label">Completed</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="report-card" onclick="showReport('volunteers')">
+          <div class="report-card-header">
+            <div class="report-icon">
+              <i class="fas fa-users"></i>
+            </div>
+            <h3>Volunteers Report</h3>
+          </div>
+          <p>Overview of all registered volunteers with their participation and contribution details.</p>
+          <div class="report-stats">
+            <div class="stat-item">
+              <span class="stat-value" id="totalVolunteersCount">0</span>
+              <span class="stat-label">Volunteers</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="activeVolunteersCount">0</span>
+              <span class="stat-label">Active</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="report-card" onclick="showReport('schools')">
+          <div class="report-card-header">
+            <div class="report-icon">
+              <i class="fas fa-school"></i>
+            </div>
+            <h3>Schools Report</h3>
+          </div>
+          <p>Complete list of partner schools with contact information and visit history.</p>
+          <div class="report-stats">
+            <div class="stat-item">
+              <span class="stat-value" id="totalSchoolsCount">0</span>
+              <span class="stat-label">Schools</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="schoolsVisitedCount">0</span>
+              <span class="stat-label">Visited</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="report-card" onclick="showReport('impact')">
+          <div class="report-card-header">
+            <div class="report-icon">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <h3>Impact Report</h3>
+          </div>
+          <p>Comprehensive analysis of the social impact and reach of SAS activities.</p>
+          <div class="report-stats">
+            <div class="stat-item">
+              <span class="stat-value" id="childrenReachedCount">0</span>
+              <span class="stat-label">Children Reached</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="hoursVolunteeredCount">0</span>
+              <span class="stat-label">Hours</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters Card -->
+      <div class="filters-card">
+        <h2><i class="fas fa-filter"></i> Filter Reports</h2>
+        <div class="filters-grid">
+          <div class="form-group">
+            <label for="dateFrom">From Date</label>
+            <input type="date" id="dateFrom">
+          </div>
+          <div class="form-group">
+            <label for="dateTo">To Date</label>
+            <input type="date" id="dateTo">
+          </div>
+          <div class="form-group">
+            <label for="statusFilter">Status</label>
+            <select id="statusFilter">
+              <option value="">All Status</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="schoolFilter">School</label>
+            <select id="schoolFilter">
+              <option value="">All Schools</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button class="btn btn-secondary" onclick="resetFilters()">
+            <i class="fas fa-redo"></i> Reset
+          </button>
+          <button class="btn btn-primary" onclick="applyFilters()">
+            <i class="fas fa-search"></i> Apply Filters
+          </button>
+          <button class="btn btn-export" onclick="exportReport()">
+            <i class="fas fa-download"></i> Export CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Results Section -->
+      <div class="results-section" id="resultsSection">
+        <div class="results-header">
+          <h2 id="resultsTitle">Report Results</h2>
+          <span id="resultsCount">0 records</span>
+        </div>
+        <div id="resultsContent">
+          <div class="loading">
+            <div class="spinner"></div>
+            <p>Loading report data...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2025 Spread a Smile (SAS). All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    let currentReport = null;
+    let reportData = {};
+
+    // Check authentication
+    if (!token) {
+      alert('Please login to access this page.');
+      window.location.href = 'login.html';
+    }
+
+    // Setup navbar
+    function setupNavbar() {
+      const navMenu = document.getElementById('navMenu');
+      const userNameLi = document.querySelector('#navUser').parentElement;
+      
+      const teamsLi = document.createElement('li');
+      teamsLi.innerHTML = '<a href="teams.html" class="nav-link">Teams</a>';
+      navMenu.insertBefore(teamsLi, userNameLi);
+      
+      const scheduleLi = document.createElement('li');
+      scheduleLi.innerHTML = '<a href="schedule-visit.html" class="nav-link">Schedule Visit</a>';
+      navMenu.insertBefore(scheduleLi, userNameLi);
+      
+      const analyticsLi = document.createElement('li');
+      analyticsLi.innerHTML = '<a href="analytics.html" class="nav-link">Analytics</a>';
+      navMenu.insertBefore(analyticsLi, userNameLi);
+      
+      const reportsLi = document.createElement('li');
+      reportsLi.innerHTML = '<a href="reports.html" class="nav-link active">Reports</a>';
+      navMenu.insertBefore(reportsLi, userNameLi);
+      
+      const navUser = document.getElementById('navUser');
+      if (navUser) {
+        navUser.textContent = `Welcome, ${user.name || 'User'}`;
+      }
+    }
+
+    // Setup logout
+    const navLogout = document.getElementById('navLogout');
+    if (navLogout) {
+      navLogout.addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = 'login.html';
+      });
+    }
+
+    // Initialize
+    setupNavbar();
+    loadStatistics();
+    loadSchoolsForFilter();
+
+    // Load statistics for report cards
+    async function loadStatistics() {
+      try {
+        const [overviewRes, volunteersRes, schoolsRes] = await Promise.all([
+          fetch('/api/analytics/overview', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('/api/analytics/volunteers', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('/api/analytics/schools', { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+
+        const overview = await overviewRes.json();
+        const volunteers = await volunteersRes.json();
+        const schools = await schoolsRes.json();
+
+        if (overview.success) {
+          const data = overview.data.overview;
+          document.getElementById('totalVisitsCount').textContent = data.totalVisits || 0;
+          document.getElementById('completedVisitsCount').textContent = data.completedVisits || 0;
+          document.getElementById('childrenReachedCount').textContent = (data.totalChildren || 0).toLocaleString();
+          document.getElementById('hoursVolunteeredCount').textContent = Math.round((data.completedVisits || 0) * 2.5);
+        }
+
+        if (volunteers.success) {
+          const data = volunteers.data;
+          document.getElementById('totalVolunteersCount').textContent = data.totalVolunteers || 0;
+          document.getElementById('activeVolunteersCount').textContent = data.activeVolunteers || 0;
+        }
+
+        if (schools.success) {
+          const data = schools.data;
+          document.getElementById('totalSchoolsCount').textContent = data.totalSchools || 0;
+          document.getElementById('schoolsVisitedCount').textContent = data.schoolsWithVisits || 0;
+        }
+      } catch (error) {
+        console.error('Error loading statistics:', error);
+      }
+    }
+
+    // Load schools for filter dropdown
+    async function loadSchoolsForFilter() {
+      try {
+        const res = await fetch('/api/schools', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        
+        if (data.success) {
+          const select = document.getElementById('schoolFilter');
+          data.data.forEach(school => {
+            const option = document.createElement('option');
+            option.value = school._id;
+            option.textContent = school.name;
+            select.appendChild(option);
+          });
+        }
+      } catch (error) {
+        console.error('Error loading schools:', error);
+      }
+    }
+
+    // Show specific report
+    async function showReport(type) {
+      currentReport = type;
+      const resultsSection = document.getElementById('resultsSection');
+      const resultsTitle = document.getElementById('resultsTitle');
+      const resultsContent = document.getElementById('resultsContent');
+      
+      resultsSection.classList.add('active');
+      resultsContent.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading report data...</p></div>';
+      
+      switch(type) {
+        case 'visits':
+          resultsTitle.textContent = 'Visits Report';
+          await loadVisitsReport();
+          break;
+        case 'volunteers':
+          resultsTitle.textContent = 'Volunteers Report';
+          await loadVolunteersReport();
+          break;
+        case 'schools':
+          resultsTitle.textContent = 'Schools Report';
+          await loadSchoolsReport();
+          break;
+        case 'impact':
+          resultsTitle.textContent = 'Impact Report';
+          await loadImpactReport();
+          break;
+      }
+    }
+
+    // Load visits report
+    async function loadVisitsReport() {
+      try {
+        const res = await fetch('/api/visits', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        
+        if (data.success) {
+          reportData.visits = data.data;
+          document.getElementById('resultsCount').textContent = `${data.data.length} records`;
+          
+          if (data.data.length === 0) {
+            document.getElementById('resultsContent').innerHTML = '<div class="no-data">No visits found</div>';
+            return;
+          }
+          
+          let html = '<table class="results-table"><thead><tr>';
+          html += '<th>Date</th><th>School</th><th>Team</th><th>Children</th><th>Status</th>';
+          html += '</tr></thead><tbody>';
+          
+          data.data.forEach(visit => {
+            const date = new Date(visit.date).toLocaleDateString();
+            const school = visit.school?.name || 'N/A';
+            const team = visit.team?.name || 'N/A';
+            const children = visit.childrenCount || 0;
+            const status = visit.status || 'scheduled';
+            
+            html += `<tr>
+              <td>${date}</td>
+              <td>${school}</td>
+              <td>${team}</td>
+              <td>${children}</td>
+              <td><span class="status-badge status-${status}">${status}</span></td>
+            </tr>`;
+          });
+          
+          html += '</tbody></table>';
+          document.getElementById('resultsContent').innerHTML = html;
+        }
+      } catch (error) {
+        console.error('Error loading visits report:', error);
+        document.getElementById('resultsContent').innerHTML = '<div class="no-data">Error loading report</div>';
+      }
+    }
+
+    // Load volunteers report
+    async function loadVolunteersReport() {
+      try {
+        const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        
+        if (data.success) {
+          reportData.volunteers = data.data;
+          document.getElementById('resultsCount').textContent = `${data.data.length} records`;
+          
+          if (data.data.length === 0) {
+            document.getElementById('resultsContent').innerHTML = '<div class="no-data">No volunteers found</div>';
+            return;
+          }
+          
+          let html = '<table class="results-table"><thead><tr>';
+          html += '<th>Name</th><th>Email</th><th>Department</th><th>Year</th><th>Role</th>';
+          html += '</tr></thead><tbody>';
+          
+          data.data.forEach(volunteer => {
+            html += `<tr>
+              <td>${volunteer.name || volunteer.username}</td>
+              <td>${volunteer.email || 'N/A'}</td>
+              <td>${volunteer.department || 'N/A'}</td>
+              <td>${volunteer.year || 'N/A'}</td>
+              <td><span class="status-badge status-completed">${volunteer.role || 'volunteer'}</span></td>
+            </tr>`;
+          });
+          
+          html += '</tbody></table>';
+          document.getElementById('resultsContent').innerHTML = html;
+        }
+      } catch (error) {
+        console.error('Error loading volunteers report:', error);
+        document.getElementById('resultsContent').innerHTML = '<div class="no-data">Error loading report</div>';
+      }
+    }
+
+    // Load schools report
+    async function loadSchoolsReport() {
+      try {
+        const res = await fetch('/api/schools', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        
+        if (data.success) {
+          reportData.schools = data.data;
+          document.getElementById('resultsCount').textContent = `${data.data.length} records`;
+          
+          if (data.data.length === 0) {
+            document.getElementById('resultsContent').innerHTML = '<div class="no-data">No schools found</div>';
+            return;
+          }
+          
+          let html = '<table class="results-table"><thead><tr>';
+          html += '<th>School Name</th><th>Contact Person</th><th>Phone</th><th>Location</th><th>Classes</th>';
+          html += '</tr></thead><tbody>';
+          
+          data.data.forEach(school => {
+            const contact = school.contactPerson?.name || 'N/A';
+            const phone = school.contactPerson?.phone || 'N/A';
+            const location = [school.address?.city, school.address?.state].filter(Boolean).join(', ') || 'N/A';
+            
+            html += `<tr>
+              <td>${school.name}</td>
+              <td>${contact}</td>
+              <td>${phone}</td>
+              <td>${location}</td>
+              <td>${school.totalClasses || 0}</td>
+            </tr>`;
+          });
+          
+          html += '</tbody></table>';
+          document.getElementById('resultsContent').innerHTML = html;
+        }
+      } catch (error) {
+        console.error('Error loading schools report:', error);
+        document.getElementById('resultsContent').innerHTML = '<div class="no-data">Error loading report</div>';
+      }
+    }
+
+    // Load impact report
+    async function loadImpactReport() {
+      try {
+        const res = await fetch('/api/analytics/overview', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        
+        if (data.success) {
+          const overview = data.data.overview;
+          document.getElementById('resultsCount').textContent = 'Summary';
+          
+          let html = '<div style="padding: 30px;">';
+          html += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin-bottom: 30px;">`;
+          html += `<div style="background: #e8f5e9; padding: 25px; border-radius: 12px; text-align: center;">
+            <h3 style="color: #2e7d32; margin-bottom: 10px;">Total Children Reached</h3>
+            <p style="font-size: 2.5rem; font-weight: 700; color: #4caf50; margin: 0;">${(overview.totalChildren || 0).toLocaleString()}</p>
+          </div>`;
+          html += `<div style="background: #e3f2fd; padding: 25px; border-radius: 12px; text-align: center;">
+            <h3 style="color: #1565c0; margin-bottom: 10px;">Volunteer Hours</h3>
+            <p style="font-size: 2.5rem; font-weight: 700; color: #2196f3; margin: 0;">${Math.round((overview.completedVisits || 0) * 2.5)}</p>
+          </div>`;
+          html += `<div style="background: #fff3e0; padding: 25px; border-radius: 12px; text-align: center;">
+            <h3 style="color: #ef6c00; margin-bottom: 10px;">Completed Visits</h3>
+            <p style="font-size: 2.5rem; font-weight: 700; color: #ff9800; margin: 0;">${overview.completedVisits || 0}</p>
+          </div>`;
+          html += `<div style="background: #f3e5f5; padding: 25px; border-radius: 12px; text-align: center;">
+            <h3 style="color: #6a1b9a; margin-bottom: 10px;">Schools Visited</h3>
+            <p style="font-size: 2.5rem; font-weight: 700; color: #9c27b0; margin: 0;">${overview.totalSchools || 0}</p>
+          </div>`;
+          html += `</div>`;
+          
+          html += '<h3 style="color: #2e7d32; margin-top: 30px; margin-bottom: 15px;">Impact Summary</h3>';
+          html += '<p style="line-height: 1.8; color: #555; font-size: 1.05rem;">';
+          html += `Through ${overview.completedVisits || 0} completed visits to ${overview.totalSchools || 0} schools, `;
+          html += `${overview.totalVolunteers || 0} dedicated volunteers have positively impacted `;
+          html += `${(overview.totalChildren || 0).toLocaleString()} children. `;
+          html += `Our collective volunteer efforts have contributed approximately ${Math.round((overview.completedVisits || 0) * 2.5)} hours `;
+          html += `towards spreading smiles and making a difference in the community.`;
+          html += '</p></div>';
+          
+          document.getElementById('resultsContent').innerHTML = html;
+        }
+      } catch (error) {
+        console.error('Error loading impact report:', error);
+        document.getElementById('resultsContent').innerHTML = '<div class="no-data">Error loading report</div>';
+      }
+    }
+
+    // Apply filters
+    function applyFilters() {
+      if (!currentReport) {
+        alert('Please select a report type first');
+        return;
+      }
+      showReport(currentReport);
+    }
+
+    // Reset filters
+    function resetFilters() {
+      document.getElementById('dateFrom').value = '';
+      document.getElementById('dateTo').value = '';
+      document.getElementById('statusFilter').value = '';
+      document.getElementById('schoolFilter').value = '';
+    }
+
+    // Export report to CSV
+    function exportReport() {
+      if (!currentReport || !reportData[currentReport]) {
+        alert('Please generate a report first');
+        return;
+      }
+      
+      let csv = '';
+      const data = reportData[currentReport];
+      
+      if (currentReport === 'visits') {
+        csv = 'Date,School,Team,Children,Status\n';
+        data.forEach(visit => {
+          csv += `${new Date(visit.date).toLocaleDateString()},`;
+          csv += `"${visit.school?.name || 'N/A'}",`;
+          csv += `"${visit.team?.name || 'N/A'}",`;
+          csv += `${visit.childrenCount || 0},`;
+          csv += `${visit.status || 'scheduled'}\n`;
+        });
+      } else if (currentReport === 'volunteers') {
+        csv = 'Name,Email,Department,Year,Role\n';
+        data.forEach(vol => {
+          csv += `"${vol.name || vol.username}",`;
+          csv += `${vol.email || 'N/A'},`;
+          csv += `${vol.department || 'N/A'},`;
+          csv += `${vol.year || 'N/A'},`;
+          csv += `${vol.role || 'volunteer'}\n`;
+        });
+      } else if (currentReport === 'schools') {
+        csv = 'School Name,Contact Person,Phone,Location,Classes\n';
+        data.forEach(school => {
+          csv += `"${school.name}",`;
+          csv += `"${school.contactPerson?.name || 'N/A'}",`;
+          csv += `${school.contactPerson?.phone || 'N/A'},`;
+          csv += `"${[school.address?.city, school.address?.state].filter(Boolean).join(', ') || 'N/A'}",`;
+          csv += `${school.totalClasses || 0}\n`;
+        });
+      }
+      
+      // Download CSV
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentReport}_report_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
