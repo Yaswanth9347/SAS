@@ -458,6 +458,128 @@
       transform: translateY(-2px);
     }
 
+    /* Latest Visit Gallery Styles */
+    .gallery-card {
+      grid-column: 1 / -1; /* Span full width */
+      background: linear-gradient(135deg, #ffffff, #f8f9fa);
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .gallery-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .gallery-header h3 {
+      color: #2e7d32;
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+    }
+
+    .gallery-header p {
+      color: #666;
+      font-size: 1rem;
+    }
+
+    .gallery-slider {
+      position: relative;
+      width: 100%;
+      max-width: 1400px; /* Increased from default */
+      height: 600px; /* Increased from 450px */
+      margin: 0 auto;
+      overflow: hidden;
+      border-radius: 12px;
+      background: #000;
+    }
+
+    .gallery-slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gallery-slide.active {
+      opacity: 1;
+      z-index: 1;
+    }
+
+    .gallery-slide img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .gallery-slide video {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .gallery-controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .gallery-btn {
+      background: #4caf50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .gallery-btn:hover {
+      background: #388e3c;
+      transform: translateY(-2px);
+    }
+
+    .gallery-indicators {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ccc;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .indicator.active {
+      background: #4caf50;
+      transform: scale(1.3);
+    }
+
+    .no-gallery {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+
+    .no-gallery-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
       .nav-menu {
@@ -483,6 +605,10 @@
       .action-grid {
         grid-template-columns: 1fr;
       }
+
+      .gallery-slider {
+        height: 400px; /* Increased from 300px for mobile */
+      }
     }
   </style>
 </head>
@@ -497,6 +623,7 @@
         <li><a href="dashboard.html" class="nav-link active">Dashboard</a></li>
         <li><a href="visits.html" class="nav-link">Visits</a></li>
         <li><a href="schools.html" class="nav-link">Schools</a></li>
+        <li><a href="visit-gallery.html" class="nav-link">Gallery</a></li>
         <!-- Admin-only navigation items will be added dynamically -->
         <li><span class="nav-link" id="navUser">Welcome, User</span></li>
         <li><a href="#" class="nav-link logout-btn" id="navLogout">Logout</a></li>
@@ -559,48 +686,17 @@
           </div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="dashboard-card">
-          <h3>Quick Actions</h3>
-          <div class="action-buttons" id="regularActions">
-            <a href="visit-report.html" class="btn btn-primary">Submit Visit Report</a>
-            <a href="#" class="btn btn-secondary">View Schedule</a>
-            <a href="#" class="btn btn-secondary">Update Profile</a>
+        <!-- Latest Visit Gallery - Auto-scrolling media from latest completed visit -->
+        <div class="dashboard-card gallery-card">
+          <div class="gallery-header">
+            <h3>� Latest Visit Gallery</h3>
+            <p id="galleryInfo">Loading latest visit...</p>
           </div>
-          
-          <!-- Admin Actions - Visible only for admins -->
-          <div class="admin-actions" id="adminActions" style="display: none;">
-            <h3>Admin Actions</h3>
-            <div class="action-grid">
-              <button class="action-btn" onclick="createTeams()">
-                <h3>🔄 Create Teams</h3>
-                <p>Automatically create teams from unassigned volunteers</p>
-              </button>
-              <button class="action-btn" onclick="location.href='teams.html'">
-                <h3>👥 View All Teams</h3>
-                <p>See team details and members</p>
-              </button>
-              <button class="action-btn" onclick="location.href='schools.html'">
-                <h3>🏫 Manage Schools</h3>
-                <p>Add or edit partner schools</p>
-              </button>
-              <button class="action-btn" onclick="location.href='schedule-visit.html'">
-                <h3>📅 Schedule Visits</h3>
-                <p>Assign teams to schools and dates</p>
-              </button>
-              <button class="action-btn" onclick="location.href='analytics.html'">
-                <h3>📊 View Analytics</h3>
-                <p>Track performance and impact metrics</p>
-              </button>
+          <div id="galleryContainer">
+            <div class="no-gallery">
+              <div class="no-gallery-icon">�️</div>
+              <p>No completed visits with media yet</p>
             </div>
-          </div>
-        </div>
-
-        <!-- Visits Pending Report -->
-        <div class="dashboard-card">
-          <h3>Visits Pending Report</h3>
-          <div class="visit-list" id="visitsToReport">
-            <p>Loading visits for reporting...</p>
           </div>
         </div>
       </div>
@@ -622,55 +718,45 @@
   <script>
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const isAdmin = user.role === 'admin';
 
     if (!token) {
       window.location.href = 'login.html';
     }
     
-    // Check if user is admin and update UI accordingly
+    // Setup user interface (removed role-based restrictions)
     function setupUserInterface() {
-      // Set up navigation based on user role
       const navMenu = document.getElementById('navMenu');
       
       // Update the username display
       document.getElementById('userName').textContent = user.name || 'User';
+      document.getElementById('userInfo').textContent = `Welcome back! Manage volunteers, teams, and school visits`;
+        
+      // Add navigation items (before the username)
+      const userNameLi = document.querySelector('#navUser').parentElement;
       
-      if (isAdmin) {
-        // Admin-specific UI updates
-        document.getElementById('userInfo').textContent = `Administrator | Manage volunteers, teams, and school visits`;
-        
-        // Add admin-specific nav links (before the username)
-        const userNameLi = document.querySelector('#navUser').parentElement;
-        
-        // Create and insert Teams nav item
-        const teamsLi = document.createElement('li');
-        teamsLi.innerHTML = '<a href="teams.html" class="nav-link">Teams</a>';
-        navMenu.insertBefore(teamsLi, userNameLi);
-        
-        // Create and insert Schedule Visit nav item
-        const scheduleLi = document.createElement('li');
-        scheduleLi.innerHTML = '<a href="schedule-visit.html" class="nav-link">Schedule Visit</a>';
-        navMenu.insertBefore(scheduleLi, userNameLi);
-        
-        // Create and insert Analytics nav item
-        const analyticsLi = document.createElement('li');
-        analyticsLi.innerHTML = '<a href="analytics.html" class="nav-link">Analytics</a>';
-        navMenu.insertBefore(analyticsLi, userNameLi);
-        
-        // Create and insert Reports nav item
-        const reportsLi = document.createElement('li');
-        reportsLi.innerHTML = '<a href="reports.html" class="nav-link">Reports</a>';
-        navMenu.insertBefore(reportsLi, userNameLi);
-        
-        // Show admin-specific sections
-        document.getElementById('adminStats').style.display = 'grid';
-        document.getElementById('adminActions').style.display = 'block';
-      } else {
-        // Regular user UI updates
-        document.getElementById('userInfo').textContent =
-          `Team: ${user.team || 'Not assigned'} | Department: ${user.department || 'N/A'} | Year: ${user.year || 'N/A'}`;
-      }
+      // Create and insert Teams nav item
+      const teamsLi = document.createElement('li');
+      teamsLi.innerHTML = '<a href="teams.html" class="nav-link">Teams</a>';
+      navMenu.insertBefore(teamsLi, userNameLi);
+      
+      // Create and insert Schedule Visit nav item
+      const scheduleLi = document.createElement('li');
+      scheduleLi.innerHTML = '<a href="schedule-visit.html" class="nav-link">Schedule Visit</a>';
+      navMenu.insertBefore(scheduleLi, userNameLi);
+      
+      // Create and insert Analytics nav item
+      const analyticsLi = document.createElement('li');
+      analyticsLi.innerHTML = '<a href="analytics.html" class="nav-link">Analytics</a>';
+      navMenu.insertBefore(analyticsLi, userNameLi);
+      
+      // Create and insert Reports nav item
+      const reportsLi = document.createElement('li');
+      reportsLi.innerHTML = '<a href="reports.html" class="nav-link">Reports</a>';
+      navMenu.insertBefore(reportsLi, userNameLi);
+      
+      // Show admin stats section to all users
+      const adminStatsEl = document.getElementById('adminStats');
+      if (adminStatsEl) adminStatsEl.style.display = 'grid';
       
       const navUser = document.getElementById('navUser');
       if (navUser) {
@@ -690,16 +776,14 @@
     }
 
     async function loadDashboardData() {
-      if (isAdmin) {
-        // Load admin-specific stats
-        await loadAdminStats();
-      } else {
-        // Load regular user stats
-        await loadUserStats();
-      }
+      // Load all stats for all users
+      await loadAdminStats();
 
-      // Load upcoming visits (for both admin and regular users)
+      // Load upcoming visits
       await loadUpcomingVisits();
+      
+      // Load latest visit gallery
+      await loadLatestVisitGallery();
     }
     
     // Regular user stats
@@ -802,6 +886,235 @@
       }
     }
 
+    // Load latest completed visit with gallery
+    let galleryInterval = null;
+    let currentSlide = 0;
+    let galleryMedia = [];
+
+    async function loadLatestVisitGallery() {
+      try {
+        // Get all completed visits, sorted by date descending
+        const response = await fetch('/api/visits?status=completed', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await response.json();
+        
+        if (data.success && data.data.length > 0) {
+          // Sort by date descending to get the most recent
+          const completedVisits = data.data
+            .filter(visit => visit.status === 'completed')
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+          if (completedVisits.length === 0) {
+            showNoGallery();
+            return;
+          }
+
+          // Get the latest completed visit
+          const latestVisit = completedVisits[0];
+          
+          // Fetch gallery for this visit
+          const galleryResponse = await fetch(`/api/visits/${latestVisit._id}/gallery`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+
+          const galleryData = await galleryResponse.json();
+          
+          if (galleryData.success && galleryData.data) {
+            const { photos = [], videos = [] } = galleryData.data;
+            
+            // Combine photos and videos
+            galleryMedia = [
+              ...photos.map(photo => ({ 
+                type: 'photo', 
+                url: typeof photo === 'string' ? photo : photo.path,
+                metadata: typeof photo === 'object' ? photo : null
+              })),
+              ...videos.map(video => ({ 
+                type: 'video', 
+                url: typeof video === 'string' ? video : video.path,
+                metadata: typeof video === 'object' ? video : null
+              }))
+            ];
+
+            if (galleryMedia.length > 0) {
+              displayGallery(latestVisit);
+              startAutoScroll();
+            } else {
+              showNoGallery();
+            }
+          } else {
+            showNoGallery();
+          }
+        } else {
+          showNoGallery();
+        }
+      } catch (error) {
+        console.error('Error loading latest visit gallery:', error);
+        showNoGallery();
+      }
+    }
+
+    function displayGallery(visit) {
+      const galleryInfo = document.getElementById('galleryInfo');
+      const galleryContainer = document.getElementById('galleryContainer');
+      
+      // Update header
+      galleryInfo.innerHTML = `
+        <strong>${visit.school?.name || 'School Visit'}</strong> - 
+        ${new Date(visit.date).toLocaleDateString()} - 
+        ${galleryMedia.length} ${galleryMedia.length === 1 ? 'item' : 'items'}
+      `;
+
+      // Create gallery HTML
+      const slidesHTML = galleryMedia.map((media, index) => {
+        if (media.type === 'photo') {
+          return `
+            <div class="gallery-slide ${index === 0 ? 'active' : ''}" data-index="${index}">
+              <img src="${media.url}" alt="Visit photo ${index + 1}" loading="lazy">
+            </div>
+          `;
+        } else {
+          return `
+            <div class="gallery-slide ${index === 0 ? 'active' : ''}" data-index="${index}">
+              <video src="${media.url}" controls autoplay muted loop></video>
+            </div>
+          `;
+        }
+      }).join('');
+
+      const indicatorsHTML = galleryMedia.map((_, index) => 
+        `<span class="indicator ${index === 0 ? 'active' : ''}" onclick="goToSlide(${index})"></span>`
+      ).join('');
+
+      galleryContainer.innerHTML = `
+        <div class="gallery-slider">
+          ${slidesHTML}
+        </div>
+        <div class="gallery-indicators">
+          ${indicatorsHTML}
+        </div>
+        <div class="gallery-controls">
+          <button class="gallery-btn" onclick="prevSlide()">⬅️ Previous</button>
+          <button class="gallery-btn" onclick="toggleAutoScroll()" id="autoScrollBtn">⏸️ Pause</button>
+          <button class="gallery-btn" onclick="nextSlide()">Next ➡️</button>
+        </div>
+      `;
+
+      currentSlide = 0;
+    }
+
+    function showNoGallery() {
+      const galleryInfo = document.getElementById('galleryInfo');
+      const galleryContainer = document.getElementById('galleryContainer');
+      
+      galleryInfo.textContent = 'No recent visits with media';
+      galleryContainer.innerHTML = `
+        <div class="no-gallery">
+          <div class="no-gallery-icon">🖼️</div>
+          <p>No completed visits with photos or videos yet.</p>
+          <p style="margin-top: 10px; font-size: 0.9rem;">Submit a visit report with media to see it here!</p>
+        </div>
+      `;
+    }
+
+    function startAutoScroll() {
+      if (galleryInterval) clearInterval(galleryInterval);
+      galleryInterval = setInterval(() => {
+        nextSlide();
+      }, 5000); // Change slide every 5 seconds
+    }
+
+    function stopAutoScroll() {
+      if (galleryInterval) {
+        clearInterval(galleryInterval);
+        galleryInterval = null;
+      }
+    }
+
+    function toggleAutoScroll() {
+      const btn = document.getElementById('autoScrollBtn');
+      if (galleryInterval) {
+        stopAutoScroll();
+        btn.textContent = '▶️ Play';
+      } else {
+        startAutoScroll();
+        btn.textContent = '⏸️ Pause';
+      }
+    }
+
+    function nextSlide() {
+      if (galleryMedia.length === 0) return;
+      
+      const slides = document.querySelectorAll('.gallery-slide');
+      const indicators = document.querySelectorAll('.indicator');
+      
+      slides[currentSlide].classList.remove('active');
+      indicators[currentSlide].classList.remove('active');
+      
+      currentSlide = (currentSlide + 1) % galleryMedia.length;
+      
+      slides[currentSlide].classList.add('active');
+      indicators[currentSlide].classList.add('active');
+
+      // Auto-pause video when leaving, auto-play when entering
+      updateVideoPlayback();
+    }
+
+    function prevSlide() {
+      if (galleryMedia.length === 0) return;
+      
+      const slides = document.querySelectorAll('.gallery-slide');
+      const indicators = document.querySelectorAll('.indicator');
+      
+      slides[currentSlide].classList.remove('active');
+      indicators[currentSlide].classList.remove('active');
+      
+      currentSlide = (currentSlide - 1 + galleryMedia.length) % galleryMedia.length;
+      
+      slides[currentSlide].classList.add('active');
+      indicators[currentSlide].classList.add('active');
+
+      updateVideoPlayback();
+    }
+
+    function goToSlide(index) {
+      if (galleryMedia.length === 0) return;
+      
+      const slides = document.querySelectorAll('.gallery-slide');
+      const indicators = document.querySelectorAll('.indicator');
+      
+      slides[currentSlide].classList.remove('active');
+      indicators[currentSlide].classList.remove('active');
+      
+      currentSlide = index;
+      
+      slides[currentSlide].classList.add('active');
+      indicators[currentSlide].classList.add('active');
+
+      updateVideoPlayback();
+    }
+
+    function updateVideoPlayback() {
+      const slides = document.querySelectorAll('.gallery-slide');
+      slides.forEach((slide, index) => {
+        const video = slide.querySelector('video');
+        if (video) {
+          if (index === currentSlide) {
+            video.play().catch(err => console.log('Video play error:', err));
+          } else {
+            video.pause();
+          }
+        }
+      });
+    }
+
+    // Stop auto-scroll when user leaves the page
+    window.addEventListener('beforeunload', () => {
+      stopAutoScroll();
+    });
+
     document.querySelector('.logout-btn').addEventListener('click', function (e) {
       e.preventDefault();
       localStorage.removeItem('token');
@@ -898,7 +1211,6 @@
     // Initialize the dashboard
     setupUserInterface();
     loadDashboardData();
-    loadVisitsForReporting();
   </script>
 </body>
 </html>

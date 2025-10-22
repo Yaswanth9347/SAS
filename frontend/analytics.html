@@ -131,8 +131,9 @@
         const token = localStorage.getItem('token');
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         
-        if (!token || user.role !== 'admin') {
-            alert('Access denied. Admin privileges required.');
+        // Check if user is logged in (removed role restriction)
+        if (!token) {
+            alert('Please login to access this page.');
             window.location.href = 'login.html';
         }
 

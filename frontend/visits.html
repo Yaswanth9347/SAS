@@ -821,6 +821,7 @@
         <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
         <li><a href="visits.html" class="nav-link active">Visits</a></li>
         <li><a href="schools.html" class="nav-link">Schools</a></li>
+        <li><a href="visit-gallery.html" class="nav-link">Gallery</a></li>
         <li><a href="#" class="nav-link logout-btn">Logout</a></li>
       </ul>
     </div>
@@ -884,10 +885,7 @@
           return;
         }
 
-        // Get user info from localStorage to determine if current user is admin
-        const currentUser = JSON.parse(localStorage.getItem('user') || '{"role":"volunteer"}');
-        const isAdmin = currentUser.role === 'admin';
-
+        // Show all functionality to all users (removed role-based restrictions)
         data.data.forEach(visit => {
           const row = document.createElement('div');
           row.className = 'visit-row';
@@ -895,9 +893,6 @@
           // Status indicator (visual cue)
           const statusClass = visit.status === 'completed' ? 'completed' : 
                              visit.status === 'cancelled' ? 'cancelled' : 'scheduled';
-          
-          // Flag for visits created by admin (for volunteers to distinguish)
-          const createdByAdmin = visit.submittedBy && visit.submittedBy.role === 'admin';
           
           // main content
           const left = document.createElement('div');
@@ -916,23 +911,19 @@
             </div>
           `;
 
-          // actions - show different options based on user role and visit status
+          // actions - show same options for all users
           const actions = document.createElement('div');
           actions.className = 'school-actions';
           actions.style.gap = '8px';
           
-          // Different action buttons based on status and user role
+          // Action buttons available to all users
           if (visit.status === 'cancelled') {
             // Limited options for cancelled visits
             actions.innerHTML = `<button class="btn btn-edit">View Details</button>`;
-            if (isAdmin) {
-              actions.innerHTML += `<button class="btn btn-delete">Delete</button>`;
-            }
+            actions.innerHTML += `<button class="btn btn-delete">Delete</button>`;
           } else {
             actions.innerHTML = `<button class="btn btn-edit">View / Edit</button>`;
-            if (isAdmin || visit.status !== 'completed') {
-              actions.innerHTML += `<button class="btn btn-delete">Delete</button>`;
-            }
+            actions.innerHTML += `<button class="btn btn-delete">Delete</button>`;
           }
 
           row.appendChild(left);

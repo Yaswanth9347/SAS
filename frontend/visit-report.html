@@ -145,14 +145,32 @@
             </div>
 
             <div class="report-container">
-                <!-- Visit Selection -->
+                <!-- Team Selection -->
                 <div class="report-section">
+                    <h2><i class="fas fa-users"></i> Select Team</h2>
+                    <div class="form-group">
+                        <label for="teamSelect">Choose Team for Report <span style="color: #f44336;">*</span></label>
+                        <select id="teamSelect" required>
+                            <option value="">Loading teams...</option>
+                        </select>
+                        <div id="teamLoadingStatus" class="loading-status">
+                            <i class="fas fa-spinner fa-spin"></i> Loading available teams...
+                        </div>
+                    </div>
+                    <div id="teamDetails" class="team-details" style="display: none;"></div>
+                </div>
+
+                <!-- Visit Selection (shown after team selection) -->
+                <div class="report-section" id="visitSelectionSection" style="display: none;">
                     <h2><i class="fas fa-calendar-check"></i> Select Visit</h2>
                     <div class="form-group">
                         <label for="visitSelect">Choose Visit to Report <span style="color: #f44336;">*</span></label>
                         <select id="visitSelect" required>
-                            <option value="">Loading your visits...</option>
+                            <option value="">Select a visit</option>
                         </select>
+                        <div id="visitLoadingStatus" class="loading-status">
+                            <i class="fas fa-spinner fa-spin"></i> Loading available visits...
+                        </div>
                     </div>
                     <div id="visitDetails" class="visit-details" style="display: none;"></div>
                 </div>
@@ -301,69 +319,325 @@
           }, 100);
         }
 
+        let selectedTeamId = null;
         let selectedVisitId = null;
         const uploadedFiles = {
             photos: [],
             videos: []
         };
 
-        // Load visits that need reporting
-        async function loadVisitsForReporting() {
+        // Load teams first
+        async function loadTeams() {
+            console.log('Fetching teams from API...');
             try {
-                const response = await fetch('http://localhost:5002/api/visits?status=scheduled', {
+                console.log('Making request to /api/admin/teams endpoint');
+                const response = await fetch('http://localhost:5001/api/admin/teams', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
+                console.log('Teams API response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('Teams API response data:', data);
+                
+                // Log user's team information if volunteer
+                if (user.role === 'volunteer') {
+                    console.log('Current user team ID:', user.team);
+                }
+                
+                const teamSelect = document.getElementById('teamSelect');
+                
+                // Check if we have teams data
+                if (!data.data || !Array.isArray(data.data) || data.data.length === 0) {
+                    console.log('No teams found in database');
+                    teamSelect.innerHTML = '<option value="">No teams available</option>';
+                    
+                    // Display message for no teams
+                    const noTeamsMessage = document.createElement('div');
+                    noTeamsMessage.id = 'noTeamsMessage';
+                    noTeamsMessage.className = 'no-visits-message';
+                    noTeamsMessage.innerHTML = `
+                        <i class="fas fa-exclamation-circle"></i>
+                        <h4>No Teams Available</h4>
+                        <p>No teams are updated yet. Please wait for the admin team updates.</p>
+                    `;
+                    
+                    const formGroup = document.querySelector('#teamSelect').closest('.form-group');
+                    formGroup.parentNode.insertBefore(noTeamsMessage, formGroup.nextSibling);
+                    updateLoadingStatus('No teams available. Please contact admin.', true, 'teamLoadingStatus');
+                    return;
+                }
+                
+                // We have teams, populate the dropdown
+                console.log('Creating team options in dropdown');
+                teamSelect.innerHTML = '<option value="">Select a team</option>' +
+                    data.data.map(team => {
+                        console.log('Processing team:', team);
+                        return `<option value="${team._id}">
+                            ${team.name || 'Unnamed Team'}
+                        </option>`;
+                    }).join('');
+                
+                // Add change event
+                teamSelect.addEventListener('change', handleTeamSelection);
+                
+                // Hide loading status
+                updateLoadingStatus('Teams loaded successfully. Please select a team.', false, 'teamLoadingStatus');
+                document.getElementById('teamLoadingStatus').style.display = 'none';
+            } catch (error) {
+                console.error('Error loading teams:', error);
+                const teamSelect = document.getElementById('teamSelect');
+                teamSelect.innerHTML = '<option value="">Error loading teams</option>';
+                updateLoadingStatus('Failed to load teams: ' + error.message, true, 'teamLoadingStatus');
+                showNotification('Failed to load teams: ' + error.message, 'error');
+            }
+        }
+
+        // Load visits that need reporting for a specific team
+        async function loadVisitsForReporting(teamId) {
+            console.log('Fetching visits for team:', teamId);
+            try {
+                console.log('Making request to /api/visits?status=scheduled endpoint');
+                const response = await fetch(`http://localhost:5001/api/visits?status=scheduled&team=${teamId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                console.log('Visits API response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Visits API response data:', data);
+                
+                // Check if we have visits data at all
+                if (!data.data || !Array.isArray(data.data)) {
+                    console.error('Invalid visits data structure:', data);
+                    updateLoadingStatus('Invalid response format from server', true, 'visitLoadingStatus');
+                    showNotification('Failed to load visits: Invalid response format', 'error');
+                    return;
+                }
+                
                 const visitSelect = document.getElementById('visitSelect');
                 
                 if (data.success) {
-                    const reportableVisits = data.data.filter(visit => 
-                        visit.status === 'scheduled'
-                    );
+                    console.log('Filtering visits with status: scheduled');
+                    const reportableVisits = data.data.filter(visit => {
+                        console.log('Visit ID:', visit._id, 'Status:', visit.status);
+                        return visit.status === 'scheduled';
+                    });
+                    
+                    console.log('Found reportable visits:', reportableVisits.length);
+                    
+                    // Check if each visit has required properties
+                    reportableVisits.forEach(visit => {
+                        console.log('Visit details:', {
+                            id: visit._id,
+                            school: visit.school ? `${visit.school.name} (ID: ${visit.school._id})` : 'No school data',
+                            team: visit.team ? `${visit.team.name} (ID: ${visit.team._id})` : 'No team data',
+                            date: visit.date,
+                            assignedClass: visit.assignedClass
+                        });
+                    });
 
                     if (reportableVisits.length === 0) {
+                        console.log('No reportable visits found for this team');
                         visitSelect.innerHTML = '<option value="">No visits pending report</option>';
+                        updateLoadingStatus('No visits available for reporting. Please schedule a visit first.', false, 'visitLoadingStatus');
+                        
+                        // Display a more descriptive message when no visits are available
+                        const noVisitsMessage = document.createElement('div');
+                        noVisitsMessage.id = 'noVisitsMessage';
+                        noVisitsMessage.className = 'no-visits-message';
+                        noVisitsMessage.innerHTML = `
+                            <i class="fas fa-info-circle"></i>
+                            <h4>No Reportable Visits Found</h4>
+                            <p>This team doesn't have any scheduled visits that need a report submission.</p>
+                            <p>To submit a report, you first need to:</p>
+                            <ol style="text-align: left; padding-left: 40px;">
+                                <li>Schedule a visit in the <a href="schedule-visit.html">Schedule Visit</a> section</li>
+                                <li>Complete the actual visit to the school</li>
+                                <li>Then come back here to submit your report</li>
+                            </ol>
+                        `;
+                        
+                        const formGroup = document.querySelector('#visitSelect').closest('.form-group');
+                        formGroup.parentNode.insertBefore(noVisitsMessage, formGroup.nextSibling);
                         return;
                     }
 
+                    console.log('Creating visit options in dropdown');
                     visitSelect.innerHTML = '<option value="">Select a visit to report</option>' +
-                        reportableVisits.map(visit => 
-                            `<option value="${visit._id}">
-                                ${visit.school.name} - ${new Date(visit.date).toLocaleDateString()} (${visit.assignedClass})
-                            </option>`
-                        ).join('');
+                        reportableVisits.map(visit => {
+                            console.log('Processing visit:', visit);
+                            
+                            // Extra safety check for required properties
+                            const schoolName = visit.school?.name || 'Unknown School';
+                            let visitDate = 'Unknown Date';
+                            
+                            try {
+                                visitDate = new Date(visit.date).toLocaleDateString();
+                            } catch (e) {
+                                console.error('Error formatting date for visit:', visit._id, e);
+                            }
+                            
+                            return `<option value="${visit._id}">
+                                ${schoolName} - ${visitDate} (${visit.assignedClass || 'Unknown Class'})
+                            </option>`;
+                        }).join('');
 
                     // Add change event
                     visitSelect.addEventListener('change', handleVisitSelection);
+                    
+                    // Hide loading status
+                    updateLoadingStatus('Visits loaded successfully. Please select a visit.', false, 'visitLoadingStatus');
+                    document.getElementById('visitLoadingStatus').style.display = 'none';
+                } else {
+                    console.error('API returned unsuccessful response:', data);
+                    visitSelect.innerHTML = '<option value="">Error loading visits</option>';
+                    updateLoadingStatus('Failed to load visits: ' + (data.message || 'Unknown error'), true, 'visitLoadingStatus');
+                    showNotification('Failed to load visits: ' + (data.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Error loading visits:', error);
+                const visitSelect = document.getElementById('visitSelect');
+                visitSelect.innerHTML = '<option value="">Error loading visits</option>';
+                updateLoadingStatus('Failed to load visits: ' + error.message, true, 'visitLoadingStatus');
+                showNotification('Failed to load visits: ' + error.message, 'error');
+            }
+        }
+        
+        // Handle team selection
+        function handleTeamSelection(event) {
+            const teamId = event.target.value;
+            console.log('Team selected:', teamId);
+            selectedTeamId = teamId;
+            const teamDetails = document.getElementById('teamDetails');
+            const visitSelectionSection = document.getElementById('visitSelectionSection');
+            
+            // Hide no teams message if it exists
+            const noTeamsMessage = document.getElementById('noTeamsMessage');
+            if (noTeamsMessage) {
+                noTeamsMessage.style.display = 'none';
+            }
+
+            if (teamId) {
+                try {
+                    // Show team details
+                    const selectedOption = event.target.options[event.target.selectedIndex];
+                    console.log('Selected team option text:', selectedOption.text);
+                    
+                    teamDetails.innerHTML = `
+                        <div class="team-info-card">
+                            <h4>Selected Team</h4>
+                            <p><strong>Team Name:</strong> ${selectedOption.text}</p>
+                        </div>
+                    `;
+                    teamDetails.style.display = 'block';
+                    
+                    // Show visit selection section and load visits for this team
+                    visitSelectionSection.style.display = 'block';
+                    loadVisitsForReporting(teamId);
+                    
+                    console.log('Team details displayed successfully');
+                } catch (error) {
+                    console.error('Error displaying team details:', error);
+                    teamDetails.innerHTML = `
+                        <div class="team-info-card" style="border-left-color: #f44336">
+                            <h4>Team Details</h4>
+                            <p>Error displaying team details. Please try selecting again or contact support.</p>
+                            <p class="error-details">${error.message}</p>
+                        </div>
+                    `;
+                    teamDetails.style.display = 'block';
+                    visitSelectionSection.style.display = 'none';
+                }
+            } else {
+                teamDetails.style.display = 'none';
+                visitSelectionSection.style.display = 'none';
+                console.log('No team selected, hiding details');
             }
         }
 
         function handleVisitSelection(event) {
             const visitId = event.target.value;
+            console.log('Visit selected:', visitId);
             selectedVisitId = visitId;
             const visitDetails = document.getElementById('visitDetails');
             const reportForm = document.getElementById('visitReportForm');
+            
+            // Hide no visits message if it exists
+            const noVisitsMessage = document.getElementById('noVisitsMessage');
+            if (noVisitsMessage) {
+                noVisitsMessage.style.display = 'none';
+            }
 
             if (visitId) {
-                // Show visit details
-                const selectedOption = event.target.options[event.target.selectedIndex];
-                visitDetails.innerHTML = `
-                    <div class="visit-info-card">
-                        <h4>Visit Details</h4>
-                        <p><strong>School:</strong> ${selectedOption.text.split(' - ')[0]}</p>
-                        <p><strong>Date:</strong> ${selectedOption.text.split(' - ')[1]}</p>
-                        <p><strong>Class:</strong> ${selectedOption.text.split('(')[1].replace(')', '')}</p>
-                    </div>
-                `;
-                visitDetails.style.display = 'block';
-                reportForm.style.display = 'block';
+                try {
+                    // Show visit details
+                    const selectedOption = event.target.options[event.target.selectedIndex];
+                    console.log('Selected visit option text:', selectedOption.text);
+                    
+                    // Parse the option text more robustly
+                    let schoolName, visitDate, assignedClass;
+                    
+                    try {
+                        const parts = selectedOption.text.split(' - ');
+                        schoolName = parts[0].trim();
+                        
+                        if (parts.length > 1) {
+                            const secondPart = parts[1];
+                            const dateClassParts = secondPart.split('(');
+                            visitDate = dateClassParts[0].trim();
+                            
+                            if (dateClassParts.length > 1) {
+                                assignedClass = dateClassParts[1].replace(')', '').trim();
+                            } else {
+                                assignedClass = 'Not specified';
+                            }
+                        } else {
+                            visitDate = 'Not specified';
+                            assignedClass = 'Not specified';
+                        }
+                    } catch (parseError) {
+                        console.error('Error parsing visit details:', parseError);
+                        schoolName = selectedOption.text;
+                        visitDate = 'Format error';
+                        assignedClass = 'Format error';
+                    }
+                    
+                    visitDetails.innerHTML = `
+                        <div class="visit-info-card">
+                            <h4>Visit Details</h4>
+                            <p><strong>School:</strong> ${schoolName}</p>
+                            <p><strong>Date:</strong> ${visitDate}</p>
+                            <p><strong>Class:</strong> ${assignedClass}</p>
+                            <p><strong>Team:</strong> ${document.getElementById('teamSelect').options[document.getElementById('teamSelect').selectedIndex].text}</p>
+                        </div>
+                    `;
+                    visitDetails.style.display = 'block';
+                    reportForm.style.display = 'block';
+                    
+                    console.log('Visit details displayed successfully');
+                } catch (error) {
+                    console.error('Error displaying visit details:', error);
+                    visitDetails.innerHTML = `
+                        <div class="visit-info-card" style="border-left-color: #f44336">
+                            <h4>Visit Details</h4>
+                            <p>Error displaying visit details. Please try selecting again or contact support.</p>
+                            <p class="error-details">${error.message}</p>
+                        </div>
+                    `;
+                    visitDetails.style.display = 'block';
+                    reportForm.style.display = 'none';
+                }
             } else {
                 visitDetails.style.display = 'none';
                 reportForm.style.display = 'none';
+                console.log('No visit selected, hiding details');
             }
         }
 
@@ -507,6 +781,11 @@
         document.getElementById('visitReportForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            if (!selectedTeamId) {
+                showNotification('Please select a team first', 'error');
+                return;
+            }
+            
             if (!selectedVisitId) {
                 showNotification('Please select a visit first', 'error');
                 return;
@@ -584,8 +863,9 @@
                     formData.append('videos', video);
                 });
                 
-                // Add a visit ID field to the form data
+                // Add visit ID and team ID fields to the form data
                 formData.append('visitId', selectedVisitId);
+                formData.append('teamId', selectedTeamId);
 
                 let fileUrls = { photos: [], videos: [] };
                 
@@ -595,7 +875,7 @@
                         
                         // Validation already done before showing loading modal
                         
-                        const uploadResponse = await fetch(`http://localhost:5002/api/visits/${selectedVisitId}/upload`, {
+                        const uploadResponse = await fetch(`http://localhost:5001/api/visits/${selectedVisitId}/upload`, {
                             method: 'POST',
                             headers: {
                                 'Authorization': `Bearer ${token}`
@@ -635,6 +915,7 @@
                 // Submit report data
                 uploadProgress.textContent = 'Submitting report...';
                 const reportData = {
+                    team: selectedTeamId,
                     childrenCount: parseInt(document.getElementById('childrenCount').value),
                     childrenResponse: document.getElementById('childrenResponse').value,
                     topicsCovered: document.getElementById('topicsCovered').value,
@@ -648,7 +929,7 @@
                 try {
                     uploadProgress.textContent = 'Submitting report data...';
                     
-                    const reportResponse = await fetch(`http://localhost:5002/api/visits/${selectedVisitId}/complete-report`, {
+                    const reportResponse = await fetch(`http://localhost:5001/api/visits/${selectedVisitId}/complete-report`, {
                         method: 'PUT',
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -718,6 +999,10 @@
             uploadedFiles.photos = [];
             uploadedFiles.videos = [];
             selectedVisitId = null;
+            
+            // Keep the team selection but reset visit selection
+            document.getElementById('visitSelectionSection').style.display = 'block';
+            updateLoadingStatus('Please select a visit for the chosen team', false, 'visitLoadingStatus');
         }
 
         // Logout functionality
@@ -734,8 +1019,25 @@
             navUser.innerHTML = `<i class="fas fa-user-circle"></i> Welcome, ${user.name || 'User'}`;
         }
         
-        // Load visits on page load
-        loadVisitsForReporting();
+        // Status update function for loading
+        function updateLoadingStatus(message, isError = false, elementId = 'visitLoadingStatus') {
+            const statusElement = document.getElementById(elementId);
+            if (!statusElement) {
+                console.error(`Status element with id ${elementId} not found`);
+                return;
+            }
+            
+            if (isError) {
+                statusElement.innerHTML = `<i class="fas fa-exclamation-circle" style="color: #f44336;"></i> ${message}`;
+                statusElement.classList.add('error-status');
+            } else {
+                statusElement.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+                statusElement.classList.remove('error-status');
+            }
+        }
+        
+        // Load teams on page load
+        loadTeams();
     </script>
 
     <style>
@@ -783,7 +1085,7 @@
             margin-top: 15px;
         }
 
-        .visit-info-card {
+        .visit-info-card, .team-info-card {
             background: #e8f5e9;
             padding: 20px;
             border-radius: 8px;
@@ -791,8 +1093,74 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
         
+        .team-details {
+            margin-top: 15px;
+        }
+        
         .form-group {
             margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .loading-status {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #e8f5e9;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #2e7d32;
+        }
+        
+        .loading-status.error-status {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .no-visits-message {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .no-visits-message h4 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .no-visits-message i {
+            font-size: 2rem;
+            color: #4caf50;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        .no-visits-message p {
+            margin-bottom: 10px;
+        }
+        
+        .no-visits-message a {
+            color: #2e7d32;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .no-visits-message a:hover {
+            text-decoration: underline;
+        }
+        
+        .error-details {
+            font-family: monospace;
+            background: #ffebee;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 10px;
+            color: #c62828;
+            font-size: 0.9rem;
         }
 
         label {

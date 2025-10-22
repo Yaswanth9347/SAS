@@ -633,8 +633,9 @@
     let teams = []; // Store loaded teams for reference
     let currentTeamId = null; // For delete/view operations
 
-    if (!token || user.role !== 'admin') {
-      alert('Access denied. Admin privileges required.');
+    // Check if user is logged in (removed role restriction)
+    if (!token) {
+      alert('Please login to access this page.');
       window.location.href = 'login.html';
     }
 

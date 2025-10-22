@@ -223,12 +223,8 @@
           localStorage.setItem("token", data.token);
           localStorage.setItem("user", JSON.stringify(data.user));
           
-          // Redirect based on role
-          if (data.user.role === 'admin') {
-            window.location.href = "admin-dashboard.html";
-          } else {
-            window.location.href = "dashboard.html";
-          }
+          // Redirect all users to dashboard
+          window.location.href = "dashboard.html";
         } else {
           loginStatus.textContent = "Login failed: " + data.message;
           loginStatus.style.color = "#f44336";
