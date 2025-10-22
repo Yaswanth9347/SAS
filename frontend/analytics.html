@@ -11,13 +11,16 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-logo">
-                <h2>SAS Analytics Dashboard</h2>
+                <h2>Spread A Smile</h2>
             </div>
-            <ul class="nav-menu">
-                <li><a href="index.html" class="nav-link">Home</a></li>
-                <li><a href="admin-dashboard.html" class="nav-link">Admin</a></li>
-                <li><a href="analytics.html" class="nav-link active">Analytics</a></li>
-                <li><a href="#" class="nav-link logout-btn">Logout</a></li>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+                <li><a href="visits.html" class="nav-link">Visits</a></li>
+                <li><a href="schools.html" class="nav-link">Schools</a></li>
+                <li><a href="visit-gallery.html" class="nav-link">Gallery</a></li>
+                <!-- Admin-only navigation items will be added dynamically -->
+                <li><span class="nav-link" id="navUser">Welcome, User</span></li>
+                <li><a href="#" class="nav-link logout-btn" id="navLogout">Logout</a></li>
             </ul>
         </div>
     </nav>
@@ -123,7 +126,7 @@
 
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2024 Spread a Smile (SAS). All rights reserved.</p>
+            <p>&copy; 2025 Spread a Smile (SAS). All rights reserved.</p>
         </div>
     </footer>
 
@@ -136,6 +139,52 @@
             alert('Please login to access this page.');
             window.location.href = 'login.html';
         }
+
+        // Setup navbar - Add admin navigation items dynamically
+        function setupNavbar() {
+            const navMenu = document.getElementById('navMenu');
+            const userNameLi = document.querySelector('#navUser').parentElement;
+            
+            // Create and insert Teams nav item
+            const teamsLi = document.createElement('li');
+            teamsLi.innerHTML = '<a href="teams.html" class="nav-link">Teams</a>';
+            navMenu.insertBefore(teamsLi, userNameLi);
+            
+            // Create and insert Schedule Visit nav item
+            const scheduleLi = document.createElement('li');
+            scheduleLi.innerHTML = '<a href="schedule-visit.html" class="nav-link">Schedule Visit</a>';
+            navMenu.insertBefore(scheduleLi, userNameLi);
+            
+            // Create and insert Analytics nav item
+            const analyticsLi = document.createElement('li');
+            analyticsLi.innerHTML = '<a href="analytics.html" class="nav-link active">Analytics</a>';
+            navMenu.insertBefore(analyticsLi, userNameLi);
+            
+            // Create and insert Reports nav item
+            const reportsLi = document.createElement('li');
+            reportsLi.innerHTML = '<a href="reports.html" class="nav-link">Reports</a>';
+            navMenu.insertBefore(reportsLi, userNameLi);
+            
+            // Update username display
+            const navUser = document.getElementById('navUser');
+            if (navUser) {
+                navUser.textContent = `Welcome, ${user.name || 'User'}`;
+            }
+        }
+
+        // Setup logout functionality
+        const navLogout = document.getElementById('navLogout');
+        if (navLogout) {
+            navLogout.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            });
+        }
+
+        // Initialize navbar
+        setupNavbar();
 
         let charts = {};
 

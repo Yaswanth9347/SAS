@@ -13,9 +13,10 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Poppins', sans-serif;
             line-height: 1.6;
             color: #333;
+            background: #f4f6f8;
         }
 
         .container {
@@ -26,50 +27,69 @@
 
         /* Navigation */
         .navbar {
-            background: #fff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            background: linear-gradient(90deg, #4caf50, #2e7d32);
+            color: #fff;
             position: fixed;
             width: 100%;
             top: 0;
+            left: 0;
             z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
+            width: 100%;
+            padding: 0 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             height: 70px;
         }
 
+        .nav-logo {
+            flex-shrink: 0;
+        }
+
         .nav-logo h2 {
-            color: #4CAF50;
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            font-weight: 700;
+            font-size: 1.75rem;
+            letter-spacing: 0.6px;
+            color: #fff;
         }
 
         .nav-menu {
             display: flex;
             list-style: none;
-            gap: 30px;
+            gap: 20px;
+            align-items: center;
         }
 
         .nav-link {
             text-decoration: none;
-            color: #333;
-            font-weight: 500;
-            transition: color 0.3s;
+            color: #fff;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            padding: 6px 8px;
+            border-radius: 6px;
         }
 
         .nav-link:hover, .nav-link.active {
-            color: #4CAF50;
+            color: #c8e6c9;
         }
 
-        .login-btn {
-            background: #4CAF50;
+        .logout-btn {
+            background: #f44336;
             color: white !important;
-            padding: 8px 20px;
-            border-radius: 5px;
+            padding: 8px 18px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .logout-btn:hover {
+            background: #d32f2f;
+            transform: translateY(-2px);
         }
 
         /* Page Header */
@@ -186,10 +206,18 @@
 
         /* Footer */
         .footer {
-            background: #333;
+            background: #2e7d32;
             color: white;
             text-align: center;
-            padding: 30px 0;
+            padding: 25px 0;
+            border-top-left-radius: 50px;
+            border-top-right-radius: 50px;
+            margin-top: 60px;
+        }
+
+        .footer p {
+            font-size: 0.9rem;
+            opacity: 0.9;
         }
 
         /* Responsive Design */
@@ -225,13 +253,16 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-logo">
-                <h2>Spread a Smile (SAS)</h2>
+                <h2>Spread A Smile</h2>
             </div>
-            <ul class="nav-menu">
-                <li><a href="index.html" class="nav-link">Home</a></li>
-                <li><a href="about.html" class="nav-link">About</a></li>
-                <li><a href="contact.html" class="nav-link active">Contact</a></li>
-                <li><a href="login.html" class="nav-link login-btn"> Login</a></li>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+                <li><a href="visits.html" class="nav-link">Visits</a></li>
+                <li><a href="schools.html" class="nav-link">Schools</a></li>
+                <li><a href="visit-gallery.html" class="nav-link">Gallery</a></li>
+                <!-- Admin-only navigation items will be added dynamically -->
+                <li><span class="nav-link" id="navUser">Welcome, User</span></li>
+                <li><a href="#" class="nav-link logout-btn" id="navLogout">Logout</a></li>
             </ul>
         </div>
     </nav>
@@ -299,10 +330,65 @@
 
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2024 Spread a Smile (SAS). All rights reserved.</p>
+            <p>&copy; 2025 Spread a Smile (SAS). All rights reserved.</p>
         </div>
     </footer>
 
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        if (!token) {
+            alert('Please login to access this page.');
+            window.location.href = 'login.html';
+        }
+
+        // Setup navbar - Add admin navigation items dynamically
+        function setupNavbar() {
+            const navMenu = document.getElementById('navMenu');
+            const userNameLi = document.querySelector('#navUser').parentElement;
+            
+            // Create and insert Teams nav item
+            const teamsLi = document.createElement('li');
+            teamsLi.innerHTML = '<a href="teams.html" class="nav-link">Teams</a>';
+            navMenu.insertBefore(teamsLi, userNameLi);
+            
+            // Create and insert Schedule Visit nav item
+            const scheduleLi = document.createElement('li');
+            scheduleLi.innerHTML = '<a href="schedule-visit.html" class="nav-link">Schedule Visit</a>';
+            navMenu.insertBefore(scheduleLi, userNameLi);
+            
+            // Create and insert Analytics nav item
+            const analyticsLi = document.createElement('li');
+            analyticsLi.innerHTML = '<a href="analytics.html" class="nav-link">Analytics</a>';
+            navMenu.insertBefore(analyticsLi, userNameLi);
+            
+            // Create and insert Reports nav item
+            const reportsLi = document.createElement('li');
+            reportsLi.innerHTML = '<a href="reports.html" class="nav-link">Reports</a>';
+            navMenu.insertBefore(reportsLi, userNameLi);
+            
+            // Update username display
+            const navUser = document.getElementById('navUser');
+            if (navUser) {
+                navUser.textContent = `Welcome, ${user.name || 'User'}`;
+            }
+        }
+
+        // Setup logout functionality
+        const navLogout = document.getElementById('navLogout');
+        if (navLogout) {
+            navLogout.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            });
+        }
+
+        // Initialize navbar
+        setupNavbar();
+    </script>
     <script src="js/script.js"></script>
 </body>
 </html>
