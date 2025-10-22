@@ -31,6 +31,6 @@ router.put('/:id', protect, updateVisit);
 router.delete('/:id', protect, deleteVisit);
 router.delete('/:id/media', protect, deleteMedia);
 router.put('/:id/complete-report', protect, submitCompleteReport);
-router.put('/:id/cancel', protect, authorize('admin'), cancelVisit); // Only admin can cancel visits
+router.put('/:id/cancel', protect, cancelVisit); // All users can cancel visits (removed role restriction)
 
 module.exports = router;

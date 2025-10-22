@@ -1,28 +1,30 @@
 const express = require('express');
 const router = express.Router();
 
-// Require authentication and role-checking middleware
+// Require authentication middleware (removed role-checking)
 const auth = require('../middleware/auth');
-const role = require('../middleware/role');
 
-// Apply authentication middleware for all admin routes (use the exported protect function)
+// Apply authentication middleware for all routes (removed role restriction)
 router.use(auth.protect);
-
-// Apply role-checking middleware to ensure only admin users can access these routes
-router.use(role('admin'));
 
 const { 
     getDashboardStats,
     createTeams,
-    getTeams
+    getTeams,
+    getUsers,
+    createTeam,
+    getStorageStats,
+    cleanupStorage
 } = require('../controllers/adminController');
-
-const { getUsers, createTeam } = require('../controllers/adminController');
 
 router.get('/stats', getDashboardStats);
 router.post('/create-teams', createTeams);
 router.get('/teams', getTeams);
 router.get('/users', getUsers);
 router.post('/teams', createTeam);
+
+// Storage management endpoints (Hybrid Approach)
+router.get('/storage/stats', getStorageStats);
+router.post('/storage/cleanup', cleanupStorage);
 
 module.exports = router;

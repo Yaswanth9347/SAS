@@ -2,54 +2,118 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Create uploads directory if it doesn't exist
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
+// ============================================
+// HYBRID STORAGE APPROACH CONFIGURATION
+// MongoDB (Metadata) + File System (Media)
+// Ready for future Cloud Storage integration
+// ============================================
 
-// Configure storage
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const visitId = req.params.id || 'temp';
-        const visitDir = path.join(uploadDir, visitId);
-        
-        // Create visit-specific directory
-        if (!fs.existsSync(visitDir)) {
-            fs.mkdirSync(visitDir, { recursive: true });
-        }
-        
-        cb(null, visitDir);
-    },
-    filename: function (req, file, cb) {
-        // Generate unique filename with timestamp
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+// Create uploads directory structure if it doesn't exist
+const uploadDir = path.join(__dirname, '../uploads');
+const photosDir = path.join(uploadDir, 'photos');
+const videosDir = path.join(uploadDir, 'videos');
+const docsDir = path.join(uploadDir, 'docs');
+
+// Create necessary directories
+[uploadDir, photosDir, videosDir, docsDir].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
     }
 });
 
-// File filter
-const fileFilter = (req, file, cb) => {
-    // Allow images, videos and common document types
-    if (
-        file.mimetype.startsWith('image/') ||
-        file.mimetype.startsWith('video/') ||
-        file.mimetype === 'application/pdf' ||
-        file.mimetype === 'application/msword' ||
-        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ) {
-        cb(null, true);
-    } else {
-        cb(new Error('Only image, video and document files are allowed!'), false);
+// Storage configuration constants
+const STORAGE_CONFIG = {
+    photos: {
+        maxSize: 10 * 1024 * 1024, // 10MB per photo
+        maxCount: 10,
+        allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+        quality: 85
+    },
+    videos: {
+        maxSize: 100 * 1024 * 1024, // 100MB per video
+        maxCount: 5,
+        allowedTypes: ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm'],
+        duration: 300 // Max 5 minutes
+    },
+    docs: {
+        maxSize: 5 * 1024 * 1024, // 5MB per document
+        maxCount: 5,
+        allowedTypes: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
     }
 };
 
-// Configure multer
+// Configure storage with visit-specific folders
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const visitId = req.params.id || 'temp';
+        let typeDir;
+        
+        // Organize by file type and visit
+        if (file.fieldname === 'photos') {
+            typeDir = path.join(photosDir, visitId);
+        } else if (file.fieldname === 'videos') {
+            typeDir = path.join(videosDir, visitId);
+        } else if (file.fieldname === 'docs') {
+            typeDir = path.join(docsDir, visitId);
+        } else {
+            typeDir = path.join(uploadDir, visitId);
+        }
+        
+        // Create visit-specific directory
+        if (!fs.existsSync(typeDir)) {
+            fs.mkdirSync(typeDir, { recursive: true });
+        }
+        
+        cb(null, typeDir);
+    },
+    filename: function (req, file, cb) {
+        // Generate unique filename with sanitized original name
+        const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const timestamp = Date.now();
+        const randomString = Math.round(Math.random() * 1E9).toString(36);
+        const extension = path.extname(sanitizedName);
+        const basename = path.basename(sanitizedName, extension);
+        
+        // Format: fieldname-basename-timestamp-random.ext
+        const filename = `${file.fieldname}-${basename}-${timestamp}-${randomString}${extension}`;
+        cb(null, filename);
+    }
+});
+
+// Enhanced file filter with detailed validation
+const fileFilter = (req, file, cb) => {
+    const fieldName = file.fieldname;
+    const fileSize = parseInt(req.headers['content-length']);
+    
+    // Check if field is valid
+    if (!STORAGE_CONFIG[fieldName]) {
+        return cb(new Error(`Invalid upload field: ${fieldName}`), false);
+    }
+    
+    const config = STORAGE_CONFIG[fieldName];
+    
+    // Check file type
+    if (!config.allowedTypes.includes(file.mimetype)) {
+        return cb(new Error(`Invalid file type for ${fieldName}: ${file.mimetype}. Allowed types: ${config.allowedTypes.join(', ')}`), false);
+    }
+    
+    // Check file size (rough estimate from headers)
+    if (fileSize && fileSize > config.maxSize) {
+        const maxSizeMB = (config.maxSize / (1024 * 1024)).toFixed(2);
+        return cb(new Error(`File too large for ${fieldName}. Maximum size: ${maxSizeMB}MB`), false);
+    }
+    
+    cb(null, true);
+};
+
+// Configure multer with enhanced settings
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 50 * 1024 * 1024, // 50MB limit
-        files: 10 // Maximum 10 files
+        fileSize: 100 * 1024 * 1024, // Global 100MB limit (for videos)
+        files: 20, // Maximum 20 files per request
+        fields: 10, // Maximum 10 non-file fields
+        parts: 30 // Maximum 30 parts (files + fields)
     },
     fileFilter: fileFilter
 });

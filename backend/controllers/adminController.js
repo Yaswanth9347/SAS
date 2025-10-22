@@ -180,3 +180,83 @@ exports.getTeams = async (req, res, next) => {
         });
     }
 };
+
+// ============================================
+// STORAGE MANAGEMENT ENDPOINTS
+// Hybrid Storage Approach Monitoring
+// ============================================
+
+const path = require('path');
+const Visit = require('../models/Visit');
+const {
+    getStorageStats: getStorageStatsUtil,
+    cleanupOrphanedFiles,
+    checkDiskSpace
+} = require('../utils/storage');
+
+// @desc    Get storage statistics
+// @route   GET /api/admin/storage/stats
+// @access  Private
+exports.getStorageStats = async (req, res, next) => {
+    try {
+        const uploadsDir = path.join(__dirname, '../uploads');
+        
+        // Get storage stats
+        const storageStats = await getStorageStatsUtil(uploadsDir);
+        
+        // Get disk space info
+        const diskSpace = await checkDiskSpace(uploadsDir);
+        
+        // Get database stats
+        const totalVisits = await Visit.countDocuments();
+        const visitsWithPhotos = await Visit.countDocuments({ 'photos.0': { $exists: true } });
+        const visitsWithVideos = await Visit.countDocuments({ 'videos.0': { $exists: true } });
+        const visitsWithDocs = await Visit.countDocuments({ 'docs.0': { $exists: true } });
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                storage: storageStats,
+                diskSpace: diskSpace,
+                database: {
+                    totalVisits,
+                    visitsWithPhotos,
+                    visitsWithVideos,
+                    visitsWithDocs
+                }
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// @desc    Cleanup orphaned files
+// @route   POST /api/admin/storage/cleanup
+// @access  Private
+exports.cleanupStorage = async (req, res, next) => {
+    try {
+        const uploadsDir = path.join(__dirname, '../uploads');
+        
+        // Get all valid visit IDs from database
+        const visits = await Visit.find({}, '_id');
+        const visitIds = visits.map(visit => visit._id);
+        
+        // Cleanup orphaned files
+        const cleanupResults = await cleanupOrphanedFiles(uploadsDir, visitIds);
+        
+        res.status(200).json({
+            success: true,
+            data: cleanupResults,
+            message: `Cleaned up ${cleanupResults.deletedFolders.length} orphaned folders (${cleanupResults.deletedSizeFormatted})`
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};

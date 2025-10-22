@@ -1,5 +1,67 @@
 const mongoose = require('mongoose');
 
+// ============================================
+// HYBRID STORAGE APPROACH - FILE METADATA SCHEMA
+// Stores file information in MongoDB while 
+// actual media files stored in File System
+// Ready for Cloud Storage migration
+// ============================================
+
+const fileMetadataSchema = new mongoose.Schema({
+    filename: { 
+        type: String, 
+        required: true 
+    },
+    originalName: { 
+        type: String, 
+        required: true 
+    },
+    path: { 
+        type: String, 
+        required: true 
+    },
+    size: { 
+        type: Number, 
+        required: true 
+    },
+    mimetype: { 
+        type: String, 
+        required: true 
+    },
+    uploadedAt: { 
+        type: Date, 
+        default: Date.now 
+    },
+    storageType: { 
+        type: String, 
+        enum: ['local', 'cloud'], 
+        default: 'local' 
+    },
+    cloudUrl: { 
+        type: String 
+    }, // For future S3/Cloudinary
+    
+    // Photo-specific metadata
+    width: { type: Number },
+    height: { type: Number },
+    
+    // Video-specific metadata
+    duration: { type: Number }, // in seconds
+    thumbnail: { type: String }, // thumbnail path
+    
+    // Document-specific metadata
+    pageCount: { type: Number },
+    
+    // Processing status for thumbnails/optimization
+    processed: { 
+        type: Boolean, 
+        default: false 
+    },
+    processingError: { 
+        type: String 
+    }
+}, { _id: true });
+
 const visitSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -41,9 +103,20 @@ const visitSchema = new mongoose.Schema({
     },
     challengesFaced: String,
     suggestions: String,
-    photos: [String],
-    videos: [String],
-    docs: [String],
+    
+    // Enhanced file storage with full metadata (Hybrid Approach)
+    photos: {
+        type: [fileMetadataSchema],
+        default: []
+    },
+    videos: {
+        type: [fileMetadataSchema],
+        default: []
+    },
+    docs: {
+        type: [fileMetadataSchema],
+        default: []
+    },
     // total classes planned for the visit and how many were actually visited
     totalClasses: {
         type: Number,

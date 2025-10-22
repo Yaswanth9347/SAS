@@ -8,26 +8,14 @@ const School = require('../models/School');
 exports.getVisits = async (req, res, next) => {
     try {
         let query;
-        const { status, month, year } = req.query;
+        const { status, month, year, team } = req.query;
         
-        // Build query based on user role and filters
-        if (req.user.role === 'volunteer') {
-            // Volunteers can only see visits assigned to their team
-            if (!req.user.team) {
-                return res.status(200).json({
-                    success: true,
-                    count: 0,
-                    data: [],
-                    message: 'User is not assigned to any team'
-                });
-            }
-            query = Visit.find({ team: req.user.team });
-        } else if (req.user.role === 'admin') {
-            // Admins can see all visits across all teams
-            query = Visit.find();
-        } else {
-            // Fallback for any other roles
-            query = Visit.find();
+        // All users can see all visits (removed role-based restrictions)
+        query = Visit.find();
+
+        // Apply team filter if provided
+        if (team) {
+            query = query.where('team').equals(team);
         }
 
         // Apply status filter if provided
@@ -79,22 +67,7 @@ exports.getVisit = async (req, res, next) => {
             });
         }
 
-        // Check if volunteer has access to this visit (must be for their team)
-        if (req.user.role === 'volunteer') {
-            if (!req.user.team) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'User is not assigned to any team'
-                });
-            }
-            if (!req.user.team.equals(visit.team._id)) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'You are not authorized to view this visit'
-                });
-            }
-        }
-        // Admins can view all visits, so no additional check needed
+        // All authenticated users can view all visits (removed role-based restrictions)
 
         res.status(200).json({
             success: true,
@@ -141,21 +114,7 @@ exports.createVisit = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'School not found' });
         }
 
-        // For volunteer users, ensure they're creating visits only for their own team
-        if (req.user.role === 'volunteer') {
-            if (!req.user.team) {
-                return res.status(403).json({
-                    success: false, 
-                    message: 'User is not assigned to any team'
-                });
-            }
-            if (!req.user.team.equals(req.body.team)) {
-                return res.status(403).json({
-                    success: false, 
-                    message: 'Volunteers can only create visits for their own team'
-                });
-            }
-        }
+        // All users can create visits for any team (removed role-based restrictions)
 
         // Check if team is available on that date (prevent double booking)
         const visitDate = new Date(req.body.date);
@@ -221,13 +180,7 @@ exports.submitVisitReport = async (req, res, next) => {
             });
         }
 
-        // Check if user is in the team assigned to this visit
-        if (req.user.role === 'volunteer' && !req.user.team.equals(visit.team)) {
-            return res.status(403).json({
-                success: false,
-                message: 'Not authorized to submit report for this visit'
-            });
-        }
+        // All users can submit reports (removed role-based restrictions)
 
         const reportData = {
             ...req.body,
@@ -264,26 +217,7 @@ exports.getVisitStats = async (req, res, next) => {
     try {
         let matchQuery = {};
         
-        // Apply role-based filtering
-        if (req.user.role === 'volunteer') {
-            if (!req.user.team) {
-                return res.status(200).json({
-                    success: true,
-                    data: {
-                        totalVisits: 0,
-                        completedVisits: 0,
-                        scheduledVisits: 0,
-                        cancelledVisits: 0,
-                        totalChildren: 0,
-                        averageChildren: 0,
-                        monthlyStats: []
-                    },
-                    message: 'User is not assigned to any team'
-                });
-            }
-            matchQuery.team = req.user.team;
-        }
-        // Admin can see all stats, so no additional filter needed
+        // All users can see all statistics (removed role-based restrictions)
 
         const stats = await Visit.aggregate([
             { $match: matchQuery },
@@ -382,6 +316,7 @@ exports.cancelVisit = async (req, res, next) => {
 
 
 const { uploadVisitFiles } = require('../middleware/upload');
+const { processUploadedFiles } = require('../utils/fileProcessing');
 const fs = require('fs');
 const path = require('path');
 
@@ -420,37 +355,15 @@ exports.handleFileUpload = async (req, res, next) => {
             });
         }
 
-        // Check if user is authorized to upload files for this visit
-        if (req.user.role === 'volunteer' && !req.user.team.equals(visit.team)) {
-            // Clean up uploaded files if not authorized
-            if (req.files) {
-                if (Array.isArray(req.files)) {
-                    // Handle array of files from multer.any()
-                    req.files.forEach(file => {
-                        try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
-                    });
-                } else {
-                    // Handle object of file arrays from multer.fields()
-                    Object.values(req.files).forEach(files => {
-                        files.forEach(file => {
-                            try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
-                        });
-                    });
-                }
-            }
-            return res.status(403).json({
-                success: false,
-                message: 'Not authorized to upload files for this visit'
-            });
-        }
+        // All users can upload files (removed role-based restrictions)
 
-        const fileUrls = {
+        const fileData = {
             photos: [],
             videos: [],
             docs: []
         };
 
-        // Process uploaded files - handle both multer.any() and multer.fields()
+        // Process uploaded files with enhanced metadata (Hybrid Approach)
         if (req.files) {
             if (Array.isArray(req.files)) {
                 // Handle files from multer.any()
@@ -459,47 +372,48 @@ exports.handleFileUpload = async (req, res, next) => {
                 const docFiles = req.files.filter(file => file.fieldname === 'docs');
                 
                 if (photoFiles.length > 0) {
-                    const urls = photoFiles.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
-                    fileUrls.photos = urls;
-                    visit.photos = (visit.photos || []).concat(urls);
+                    const processedPhotos = await processUploadedFiles(photoFiles, 'photos');
+                    fileData.photos = processedPhotos;
+                    visit.photos = (visit.photos || []).concat(processedPhotos);
                 }
                 
                 if (videoFiles.length > 0) {
-                    const urls = videoFiles.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
-                    fileUrls.videos = urls;
-                    visit.videos = (visit.videos || []).concat(urls);
+                    const processedVideos = await processUploadedFiles(videoFiles, 'videos');
+                    fileData.videos = processedVideos;
+                    visit.videos = (visit.videos || []).concat(processedVideos);
                 }
                 
                 if (docFiles.length > 0) {
-                    const urls = docFiles.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
-                    fileUrls.docs = urls;
-                    visit.docs = (visit.docs || []).concat(urls);
+                    const processedDocs = await processUploadedFiles(docFiles, 'docs');
+                    fileData.docs = processedDocs;
+                    visit.docs = (visit.docs || []).concat(processedDocs);
                 }
             } else {
                 // Handle files from multer.fields()
                 if (req.files.photos) {
-                    const urls = req.files.photos.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
-                    fileUrls.photos = urls;
-                    visit.photos = (visit.photos || []).concat(urls);
+                    const processedPhotos = await processUploadedFiles(req.files.photos, 'photos');
+                    fileData.photos = processedPhotos;
+                    visit.photos = (visit.photos || []).concat(processedPhotos);
                 }
                 if (req.files.videos) {
-                    const urls = req.files.videos.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
-                    fileUrls.videos = urls;
-                    visit.videos = (visit.videos || []).concat(urls);
+                    const processedVideos = await processUploadedFiles(req.files.videos, 'videos');
+                    fileData.videos = processedVideos;
+                    visit.videos = (visit.videos || []).concat(processedVideos);
                 }
                 if (req.files.docs) {
-                    const urls = req.files.docs.map(file => `/uploads/${visit._id}/${path.basename(file.filename)}`);
-                    fileUrls.docs = urls;
-                    visit.docs = (visit.docs || []).concat(urls);
+                    const processedDocs = await processUploadedFiles(req.files.docs, 'docs');
+                    fileData.docs = processedDocs;
+                    visit.docs = (visit.docs || []).concat(processedDocs);
                 }
             }
-            // persist visit with new media
+            // persist visit with new media metadata
             await visit.save();
         }
 
         res.status(200).json({
             success: true,
-            data: fileUrls
+            data: fileData,
+            message: 'Files uploaded successfully with metadata'
         });
     } catch (error) {
         // Clean up files on error
@@ -543,13 +457,7 @@ exports.submitCompleteReport = async (req, res, next) => {
             });
         }
 
-        // Check authorization
-        if (req.user.role === 'volunteer' && !req.user.team.equals(visit.team)) {
-            return res.status(403).json({
-                success: false,
-                message: 'Not authorized to submit report for this visit'
-            });
-        }
+        // All users can submit reports (removed role-based restrictions)
 
         const reportData = {
             ...req.body,
@@ -622,10 +530,7 @@ exports.updateVisit = async (req, res, next) => {
         const visit = await Visit.findById(req.params.id);
         if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
 
-        // basic auth: volunteers can only update their team visits
-        if (req.user.role === 'volunteer' && !req.user.team.equals(visit.team)) {
-            return res.status(403).json({ success: false, message: 'Not authorized to update this visit' });
-        }
+        // All users can update all visits (removed role-based restrictions)
 
         // If team or school are provided in update, validate them
         if (req.body.team && !mongoose.Types.ObjectId.isValid(req.body.team)) {
@@ -662,10 +567,7 @@ exports.deleteVisit = async (req, res, next) => {
         const visit = await Visit.findById(req.params.id);
         if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
 
-        // basic auth: volunteers only allowed to delete their own team's visits
-        if (req.user.role === 'volunteer' && !req.user.team.equals(visit.team)) {
-            return res.status(403).json({ success: false, message: 'Not authorized to delete this visit' });
-        }
+        // All users can delete all visits (removed role-based restrictions)
 
         // delete upload directory if exists
         const uploadDir = path.join(__dirname, '../uploads', String(visit._id));
@@ -691,10 +593,7 @@ exports.deleteMedia = async (req, res, next) => {
         const visit = await Visit.findById(req.params.id);
         if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
 
-        // auth check
-        if (req.user.role === 'volunteer' && !req.user.team.equals(visit.team)) {
-            return res.status(403).json({ success: false, message: 'Not authorized to delete media for this visit' });
-        }
+        // All users can delete media (removed role-based restrictions)
 
         const removeFrom = (arr) => {
             if (!arr) return false;

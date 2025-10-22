@@ -30,10 +30,10 @@ exports.protect = async (req, res, next) => {
             });
         }
 
-        // Attach complete user info to req.user
+        // Attach complete user info to req.user (keeping role for backward compatibility)
         req.user = {
             id: user._id,
-            role: user.role,
+            role: user.role, // Kept for backward compatibility but not enforced
             team: user.team ? user.team._id : null,
             name: user.name,
             username: user.username,
@@ -50,15 +50,11 @@ exports.protect = async (req, res, next) => {
     }
 };
 
-// Grant access to specific roles
+// Grant access to specific roles (DEPRECATED - no longer enforced)
+// Kept for backward compatibility but does not restrict access
 exports.authorize = (...roles) => {
     return (req, res, next) => {
-        if (!roles.includes(req.user.role)) {
-            return res.status(403).json({
-                success: false,
-                message: `User role ${req.user.role} is not authorized to access this route`
-            });
-        }
+        // Role authorization removed - all authenticated users can access
         next();
     };
 };

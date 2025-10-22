@@ -1,10 +1,9 @@
+// DEPRECATED: Role-based authorization has been removed
+// This middleware is kept for backward compatibility but does not restrict access
 const roleCheck = (requiredRole) => {
   return function (req, res, next) {
-    if (req.user && req.user.role === requiredRole) {
-      return next();
-    } else {
-      return res.status(403).json({ message: 'Forbidden: Insufficient role' });
-    }
+    // Role authorization removed - all authenticated users can access
+    return next();
   };
 };
 
