@@ -1,0 +1,214 @@
+/* 
+ * Modals & Drawers CSS - Overlay dialogs and slide-up panels
+ * Part of CSS consolidation to eliminate ~5,500 lines of duplication
+ */
+
+/* ============================================
+   MODAL OVERLAYS
+   ============================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ============================================
+   MODAL DIALOGS
+   ============================================ */
+.modal {
+  background: #fff;
+  padding: 25px;
+  border-radius: 12px;
+  max-width: 700px;
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.modal-overlay.open .modal {
+  transform: scale(1);
+}
+
+.modal h2 {
+  margin-bottom: 15px;
+  color: #2e7d32;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.modal h3 {
+  margin-bottom: 12px;
+  color: #2e7d32;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-actions button {
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* ============================================
+   DRAWER (SLIDE-UP PANELS)
+   ============================================ */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1200;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.drawer-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.drawer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 75vh;
+  max-height: 800px;
+  background: #fff;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.2);
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.22, 0.9, 0.32, 1);
+  z-index: 1201;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.drawer.open {
+  transform: translateY(0);
+}
+
+.drawer-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #f8f9fa;
+}
+
+.drawer-title {
+  color: #2e7d32;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.drawer-subtitle {
+  color: #555;
+  font-size: 0.95rem;
+  margin-left: 14px;
+  opacity: 0.95;
+  max-width: 60%;
+  text-align: right;
+}
+
+.drawer-body {
+  padding: 18px 22px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+}
+
+.drawer-footer {
+  padding: 14px 22px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: #fff;
+}
+
+/* Page rise animation while drawer open */
+body.page-raised .container {
+  transform: translateY(-12vh);
+  transition: transform 0.35s ease;
+}
+
+footer.footer {
+  transition: transform 0.35s ease, opacity 0.25s ease;
+}
+
+/* ============================================
+   RESPONSIVE DRAWER
+   ============================================ */
+@media (max-width: 900px) {
+  .drawer {
+    height: 85vh;
+  }
+  .drawer-subtitle {
+    display: block;
+    max-width: 100%;
+    text-align: left;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal {
+    max-width: 90%;
+    padding: 20px;
+  }
+  
+  .drawer {
+    height: 90vh;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+  }
+}
+
+/* ============================================
+   CLOSE BUTTONS
+   ============================================ */
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.3s ease;
+}
+
+.close-btn:hover {
+  color: #333;
+}

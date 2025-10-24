@@ -1,0 +1,264 @@
+/* 
+ * Layout CSS - Page structure, headers, grids, and sections
+ * Part of CSS consolidation to eliminate ~5,500 lines of duplication
+ */
+
+/* ============================================
+   PAGE HEADERS
+   ============================================ */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 30px 0 30px;
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.dashboard-header h1 {
+  font-size: 2.4rem;
+  color: #2e7d32;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.dashboard-header p {
+  font-size: 1.05rem;
+  color: #555;
+}
+
+/* ============================================
+   GRIDS
+   ============================================ */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 30px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 30px;
+  text-align: center;
+}
+
+/* ============================================
+   SECTIONS
+   ============================================ */
+.dashboard {
+  padding: 120px 0 60px;
+}
+
+.features {
+  padding: 80px 0;
+  background: #f8f9fa;
+}
+
+.features h2 {
+  text-align: center;
+  margin-bottom: 50px;
+  font-size: 2.5rem;
+}
+
+.stats {
+  padding: 60px 0;
+  background: #4CAF50;
+  color: white;
+}
+
+.stat h3 {
+  font-size: 3rem;
+  margin-bottom: 10px;
+}
+
+/* ============================================
+   HERO SECTION
+   ============================================ */
+.hero {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  padding: 150px 0 100px;
+  text-align: center;
+}
+
+.hero-content h1 {
+  font-size: 3rem;
+  margin-bottom: 20px;
+}
+
+.hero-content p {
+  font-size: 1.2rem;
+  margin-bottom: 30px;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+/* ============================================
+   LOGIN & REGISTER SECTIONS
+   ============================================ */
+.login-section,
+.register-section {
+  padding: 100px 0;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+.login-container {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.login-card,
+.register-card {
+  background: white;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.register-card {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.login-card h2 {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.login-card p {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #666;
+}
+
+.login-links,
+.login-link {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.login-links a,
+.login-link a {
+  color: #4CAF50;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-links a:hover,
+.login-link a:hover {
+  text-decoration: underline;
+}
+
+/* ============================================
+   GALLERY SECTION
+   ============================================ */
+.gallery-section {
+  padding: 120px 0 60px;
+}
+
+.gallery-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.gallery-header h1 {
+  font-size: 2.4rem;
+  color: #2e7d32;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.gallery-header p {
+  font-size: 1.05rem;
+  color: #555;
+}
+
+/* ============================================
+   FILTERS & CONTROLS
+   ============================================ */
+.filters {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 10px 20px;
+  background: white;
+  border: 2px solid #4caf50;
+  border-radius: 25px;
+  color: #4caf50;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.filter-btn:hover,
+.filter-btn.active {
+  background: #4caf50;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   RESPONSIVE LAYOUT
+   ============================================ */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .page-header h1 {
+    font-size: 1.6rem;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-content h1 {
+    font-size: 2rem;
+  }
+
+  .hero-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .add-school-btn,
+  .add-visit-btn,
+  .add-team-btn {
+    width: 100%;
+    text-align: center;
+  }
+}

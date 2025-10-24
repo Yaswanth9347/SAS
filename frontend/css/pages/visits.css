@@ -1,0 +1,152 @@
+/* Visits page modern card UI */
+
+/* Header */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 120px 0 20px; /* accommodate fixed navbar */
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 1.9rem;
+  color: #2e7d32;
+}
+
+.add-visit-btn {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(76, 175, 80, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.add-visit-btn:hover {
+  background: #43a047;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(76, 175, 80, 0.28);
+}
+
+/* Grid */
+.visits-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+  margin: 10px 0 20px 0;
+}
+
+/* Card */
+.visit-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 14px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  border-left: 5px solid #c8e6c9;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.2s ease;
+}
+
+.visit-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.10);
+  border-left-color: #4caf50;
+}
+
+.visit-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #2e7d32;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta-row .icon {
+  width: 16px;
+  height: 16px;
+  color: #78909c;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.meta-row .icon svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* Structured layout inside card */
+.visit-main { display: flex; flex-direction: column; gap: 6px; }
+.visit-header { display: flex; align-items: center; gap: 12px; }
+.visit-header .visit-title { flex: 1; min-width: 0; }
+.visit-meta { display: flex; align-items: center; gap: 14px; color: #607d8b; font-size: 0.92rem; flex-wrap: wrap; }
+.visit-meta .meta-item { display: inline-flex; align-items: center; gap: 8px; }
+.visit-meta .meta-right { margin-left: auto; white-space: nowrap; color: #555; font-size: 0.85rem; }
+
+/* Badges */
+.status-badge.scheduled { background: #e3f2fd; color: #1565c0; }
+.status-badge.cancelled { background: #ffebee; color: #c62828; }
+.status-badge.completed { background: #d4edda; color: #2e7d32; }
+
+/* Actions */
+.visit-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: start;
+  margin-top: 2px;
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: none;
+  background: #f5f7fa;
+  color: #455a64;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease, color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06) inset;
+}
+
+.icon-btn:hover {
+  transform: translateY(-1px);
+  background: #eef3f7;
+}
+
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.btn-cancel-visit.icon-btn { color: #ef6c00; }
+.btn-delete.icon-btn { color: #b00020; }
+.btn-edit.icon-btn { color: #2e7d32; }
+
+/* Details panel */
+.visit-details {
+  background: #fff;
+  border-radius: 10px;
+  margin-top: -6px;
+  padding: 0 16px 12px 16px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+
+@media (max-width: 520px) {
+  .visits-list { grid-template-columns: 1fr; }
+  .page-header h1 { font-size: 1.6rem; }
+}

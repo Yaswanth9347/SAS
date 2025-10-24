@@ -1,0 +1,966 @@
+/* 
+ * Components CSS - Reusable UI Components
+ * Part of CSS consolidation to eliminate ~5,500 lines of duplication
+ */
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.btn {
+  display: inline-block;
+  padding: 12px 25px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-align: center;
+  border: none;
+}
+
+.btn-primary {
+  background: #4caf50;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #388e3c;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 2px solid #4caf50;
+  color: #4caf50;
+}
+
+.btn-secondary:hover {
+  background: #4caf50;
+  color: white;
+}
+
+.btn-small {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+}
+
+.btn-edit {
+  background: #4caf50;
+  color: #fff;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.btn-edit:hover {
+  background: #388e3c;
+  transform: translateY(-2px);
+}
+
+.btn-delete {
+  background: #f44336;
+  color: #fff;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.btn-delete:hover {
+  background: #d32f2f;
+  transform: translateY(-2px);
+}
+
+.btn-cancel {
+  background: #ddd;
+  color: #333;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-save {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-save:hover {
+  background: #388e3c;
+  transform: translateY(-2px);
+}
+
+.add-school-btn,
+.add-visit-btn,
+.add-team-btn {
+  background: #4caf50;
+  color: white;
+  font-weight: 600;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.add-school-btn:hover,
+.add-visit-btn:hover,
+.add-team-btn:hover {
+  background: #388e3c;
+  transform: translateY(-2px);
+}
+
+/* Action Buttons */
+.school-actions,
+.team-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ============================================
+   CARDS
+   ============================================ */
+.dashboard-card {
+  background: #fff;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-card h3 {
+  color: #2e7d32;
+  margin-bottom: 20px;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.dashboard-card.full-width {
+  grid-column: 1 / -1;
+}
+
+.stats-card {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, #e8f5e9, #ffffff);
+}
+
+.feature-card {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.feature-card h3 {
+  margin-bottom: 15px;
+  color: #4CAF50;
+}
+
+.stat-card {
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  border-left: 5px solid #4caf50;
+}
+
+.stat-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   STATUS BADGES
+   ============================================ */
+.status-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-badge.upcoming {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.info {
+  background: #cce7ff;
+  color: #004085;
+}
+
+/* ============================================
+   LISTS & ROWS
+   ============================================ */
+.schools-list,
+.teams-list,
+.visits-list {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 15px;
+}
+
+.school-row,
+.team-row,
+.visit-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  padding: 15px 20px;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.school-row:hover,
+.team-row:hover,
+.visit-row:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+}
+
+.school-info,
+.team-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.school-name,
+.team-name,
+.visit-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.headmaster-name,
+.team-members,
+.visit-date {
+  font-size: 0.95rem;
+  color: #666;
+}
+
+.school-address {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+/* Visit Items */
+.visit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.visit-item,
+.visit-report-item {
+  background: #f8f9fa;
+  border-left: 5px solid #3f51b5;
+  padding: 15px 20px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.visit-item:hover,
+.visit-report-item:hover {
+  background: #e8eaf6;
+}
+
+.visit-item h4,
+.visit-report-item h4 {
+  font-size: 1.05rem;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.visit-item p,
+.visit-report-item p {
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 3px;
+}
+
+/* ============================================
+   VISIT DETAILS & MEDIA
+   ============================================ */
+.visit-details {
+  margin-top: 15px;
+  padding: 0;
+  background: transparent;
+  border-radius: 10px;
+  animation: fadeIn 0.4s ease-out forwards;
+  transition: all 0.3s ease;
+}
+
+.visit-details-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+  border-top: 4px solid #3f51b5;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Detail Rows */
+.detail-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid #f4f4f4;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  width: 180px;
+  font-weight: 700;
+  color: #3f51b5;
+  flex-shrink: 0;
+}
+
+.detail-value {
+  flex: 1;
+  color: #444;
+  word-break: break-word;
+}
+
+.visit-details-section {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px dashed #e0e0e0;
+}
+
+.visit-details-section h3 {
+  color: #3f51b5;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+/* Info Grid */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.visit-info-section h3,
+.media-section h4 {
+  color: #3f51b5;
+  margin-bottom: 15px;
+  font-weight: 600;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 8px;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.status-badge.scheduled {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-badge.completed {
+  background: #e8eaf6;
+  color: #3f51b5;
+}
+
+.status-badge.cancelled {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.highlight-count {
+  font-weight: 600;
+  color: #3f51b5;
+}
+
+.classes-progress {
+  display: inline-flex;
+  align-items: center;
+}
+
+.classes-progress span:first-child {
+  font-weight: 600;
+  color: #3f51b5;
+}
+
+/* Media Gallery */
+.media-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+  margin-bottom: 15px;
+}
+
+.media-item {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.media-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.media-input {
+  border: 2px dashed #e0e0e0;
+  padding: 10px;
+  border-radius: 8px;
+  background: #fafafa;
+  width: 100%;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.media-input:hover {
+  border-color: #3f51b5;
+  background: #e8eaf6;
+}
+
+.upload-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  background: #fbfbfb;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+.upload-controls .btn-save {
+  padding: 8px 14px;
+  font-size: 0.95rem;
+}
+
+.upload-hint {
+  margin-top: 8px;
+  color: #6b6b6b;
+  font-size: 0.85rem;
+}
+
+/* Photos Gallery */
+.photos-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.photo-item {
+  height: 90px;
+  cursor: pointer;
+}
+
+.photo-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+/* Videos Gallery */
+.videos-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.video-item {
+  background: #f5f5f5;
+  height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.video-item:hover {
+  background: #e8eaf6;
+}
+
+.video-play-button {
+  width: 40px;
+  height: 40px;
+  background: #3f51b5;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.2rem;
+  margin-bottom: 5px;
+}
+
+/* Documents List */
+.docs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.doc-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.doc-item:hover {
+  background: #e8eaf6;
+}
+
+.doc-item a {
+  color: #3f51b5;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.doc-item a:hover {
+  text-decoration: underline;
+}
+
+.media-section {
+  margin-bottom: 20px;
+}
+
+.no-media {
+  color: #757575;
+  font-style: italic;
+  padding: 10px 0;
+}
+
+/* Lightbox */
+.lightbox {
+  display: none;
+  position: fixed;
+  z-index: 1020;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85);
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.close-lightbox {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  color: white;
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 1021;
+}
+
+.lightbox-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 80%;
+  height: 80%;
+}
+
+.lightbox-caption {
+  color: white;
+  margin-top: 20px;
+  font-size: 16px;
+}
+
+#vg_lightbox_image {
+  max-width: 90%;
+  max-height: 80%;
+  object-fit: contain;
+}
+
+/* Responsive - Visits */
+@media (max-width: 768px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .media-gallery {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+  
+  .detail-label {
+    width: 120px;
+    font-size: 0.9rem;
+  }
+}
+
+/* ============================================
+   STATS
+   ============================================ */
+.quick-stats,
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+  text-align: center;
+}
+
+.stat-item {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 25px;
+  border-left: 5px solid #3f51b5;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
+}
+
+.stat-item:hover {
+  transform: scale(1.05);
+}
+
+.stat-number {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: #3f51b5;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 0.95rem;
+  color: #666;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* ============================================
+   ADMIN ACTIONS
+   ============================================ */
+.admin-actions {
+  margin: 30px 0;
+  background: linear-gradient(135deg, #e8eaf6, #ffffff);
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+}
+
+.admin-actions h3 {
+  color: #3f51b5;
+  margin-bottom: 20px;
+  font-size: 1.6rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.action-btn {
+  background: #ffffff;
+  border: 2px solid #3f51b5;
+  padding: 25px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  font-weight: 600;
+  color: #3f51b5;
+}
+
+.action-btn h3 {
+  color: #3f51b5;
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.action-btn p {
+  font-size: 0.95rem;
+  color: #666;
+  line-height: 1.5;
+}
+
+.action-btn:hover {
+  background: #3f51b5;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(63, 81, 181, 0.3);
+}
+
+.action-btn:hover h3,
+.action-btn:hover p {
+  color: white;
+}
+
+/* ============================================
+   TEAMS SECTION
+   ============================================ */
+.teams-section {
+  margin-top: 40px;
+  padding: 30px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+}
+
+.teams-section h2 {
+  color: #3f51b5;
+  margin-bottom: 25px;
+  font-size: 1.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.teams-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 25px;
+}
+
+.team-card {
+  background: white;
+  padding: 25px;
+  margin: 0;
+  border-radius: 10px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  border-left: 5px solid #3f51b5;
+}
+
+.team-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.team-card h3 {
+  color: #3f51b5;
+  margin-bottom: 15px;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.team-card p {
+  margin: 10px 0;
+  font-size: 1rem;
+  color: #555;
+}
+
+.team-card strong {
+  color: #333;
+  font-weight: 600;
+}
+
+.team-members {
+  margin-top: 15px;
+}
+
+.member-tag {
+  display: inline-block;
+  background: #e8eaf6;
+  padding: 5px 12px;
+  margin: 5px 5px 5px 0;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #3f51b5;
+  transition: all 0.2s ease;
+}
+
+.member-tag:hover {
+  background: #3f51b5;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   GALLERY SECTION
+   ============================================ */
+.gallery-card {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.gallery-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.gallery-header h3 {
+  color: #3f51b5;
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+
+.gallery-header p {
+  color: #666;
+  font-size: 1rem;
+}
+
+.gallery-slider {
+  position: relative;
+  width: 100%;
+  max-width: 1400px;
+  height: 600px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #000;
+}
+
+.gallery-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gallery-slide.active {
+  opacity: 1;
+  z-index: 1;
+}
+
+.gallery-slide img,
+.gallery-slide video {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.gallery-controls {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.gallery-btn {
+  background: #3f51b5;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.gallery-btn:hover {
+  background: #303f9f;
+  transform: translateY(-2px);
+}
+
+.gallery-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ccc;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.indicator.active {
+  background: #3f51b5;
+  transform: scale(1.3);
+}
+
+.no-gallery {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+}
+
+.no-gallery-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+
+/* Responsive Design for Teams and Gallery */
+@media (max-width: 768px) {
+  .teams-list {
+    grid-template-columns: 1fr;
+  }
+
+  .gallery-slider {
+    height: 400px;
+  }
+}

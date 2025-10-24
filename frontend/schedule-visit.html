@@ -5,92 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schedule Visit - SAS Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <!-- Consolidated CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Page-specific CSS -->
     <style>
-    /* ====== RESET ====== */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
     body {
-      font-family: "Poppins", sans-serif;
-      background: #f4f6f8;
-      color: #333;
-      line-height: 1.6;
       display: flex;
       flex-direction: column;
       min-height: 100vh;
     }
     
-    /* ====== NAVBAR ====== */
-    .navbar {
-      background: linear-gradient(90deg, #4caf50, #2e7d32);
-      color: #fff;
-      position: fixed;
-      width: 100%;
-      top: 0;
-      left: 0;
-      z-index: 1000;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    /* Validation Styles */
+    .field-error {
+      color: #d32f2f;
+      font-size: 0.85rem;
+      margin-top: 4px;
+      display: none;
     }
-
-    .nav-container {
-      width: 100%;
-      padding: 0 40px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      height: 70px;
+    
+    .field-error.show {
+      display: block;
     }
-
-    .nav-logo {
-      flex-shrink: 0;
+    
+    input.invalid, select.invalid {
+      border-color: #d32f2f !important;
+      background-color: #ffebee;
     }
-
-    .nav-logo h2 {
-      font-family: Georgia, 'Times New Roman', Times, serif;
-      font-weight: 700;
-      font-size: 1.75rem;
-      letter-spacing: 0.6px;
-      color: #fff;
+    
+    input.valid, select.valid {
+      border-color: #2e7d32 !important;
     }
-
-    .nav-menu {
-      display: flex;
-      list-style: none;
-      gap: 20px;
-      align-items: center;
+    
+    .availability-success {
+      background: #e8f5e9;
+      border-left: 4px solid #4caf50;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
     }
-
-    .nav-link {
-      text-decoration: none;
-      color: #fff;
-      font-weight: 600;
-      transition: all 0.2s ease;
-      padding: 6px 8px;
-      border-radius: 6px;
+    
+    .availability-warning {
+      background: #fff3e0;
+      border-left: 4px solid #ff9800;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
     }
-
-    .nav-link:hover,
-    .nav-link.active {
-      color: #c8e6c9;
+    
+    .availability-error {
+      background: #ffebee;
+      border-left: 4px solid #f44336;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
     }
-
-    .logout-btn {
-      background: #f44336;
-      color: white !important;
-      padding: 8px 18px;
-      border-radius: 6px;
-      transition: all 0.3s ease;
-      font-weight: 500;
+    
+    .required {
+      color: #d32f2f;
+      font-weight: bold;
     }
-
-    .logout-btn:hover {
-      background: #d32f2f;
-      transform: translateY(-2px);
-    }
-    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -101,8 +76,10 @@
             <ul class="nav-menu" id="navMenu">
                 <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
                 <li><a href="visits.html" class="nav-link">Visits</a></li>
-                <li><a href="schools.html" class="nav-link">Schools</a></li>
+                <li><a href="teams.html" class="nav-link">Teams</a></li>
                 <li><a href="visit-gallery.html" class="nav-link">Gallery</a></li>
+        <li><a href="profile.html" class="nav-link">Profile</a></li>
+        <li><a href="contact.html" class="nav-link">Contact</a></li>
                 <!-- Admin-only navigation items will be added dynamically -->
                 <li><span class="nav-link" id="navUser">Welcome, User</span></li>
                 <li><a href="#" class="nav-link logout-btn" id="navLogout">Logout</a></li>
@@ -183,84 +160,9 @@
     </footer>
 
     <script>
-        const token = localStorage.getItem('token');
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        
-        // Check if user is logged in (removed role restriction)
-        if (!token) {
-            showNotification('Please login to access this page', 'error');
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 2000);
-        }
-        
-        // Setup navbar - Add admin navigation items dynamically
-        function setupNavbar() {
-            const navMenu = document.getElementById('navMenu');
-            const userNameLi = document.querySelector('#navUser').parentElement;
-            
-            // Create and insert Teams nav item
-            const teamsLi = document.createElement('li');
-            teamsLi.innerHTML = '<a href="teams.html" class="nav-link">Teams</a>';
-            navMenu.insertBefore(teamsLi, userNameLi);
-            
-            // Create and insert Schedule Visit nav item
-            const scheduleLi = document.createElement('li');
-            scheduleLi.innerHTML = '<a href="schedule-visit.html" class="nav-link active">Schedule Visit</a>';
-            navMenu.insertBefore(scheduleLi, userNameLi);
-            
-            // Create and insert Analytics nav item
-            const analyticsLi = document.createElement('li');
-            analyticsLi.innerHTML = '<a href="analytics.html" class="nav-link">Analytics</a>';
-            navMenu.insertBefore(analyticsLi, userNameLi);
-            
-            // Create and insert Reports nav item
-            const reportsLi = document.createElement('li');
-            reportsLi.innerHTML = '<a href="reports.html" class="nav-link">Reports</a>';
-            navMenu.insertBefore(reportsLi, userNameLi);
-            
-            // Update username display
-            const navUser = document.getElementById('navUser');
-            if (navUser) {
-                navUser.textContent = `Welcome, ${user.name || 'User'}`;
-            }
-        }
-
-        // Setup logout functionality
-        const navLogout = document.getElementById('navLogout');
-        if (navLogout) {
-            navLogout.addEventListener('click', (e) => {
-                e.preventDefault();
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = 'login.html';
-            });
-        }
-
-        // Initialize navbar
-        setupNavbar();
-        
-        // Function to show toast notification
-        function showNotification(message, type = 'info') {
-          const notification = document.createElement('div');
-          notification.className = `notification ${type}`;
-          notification.innerText = message;
-          document.body.appendChild(notification);
-          
-          setTimeout(() => {
-            notification.classList.add('show');
-            setTimeout(() => {
-              notification.classList.remove('show');
-              setTimeout(() => document.body.removeChild(notification), 300);
-            }, 3000);
-          }, 100);
-        }
-        
-        // Update navbar username
-        const navUser = document.getElementById('navUser');
-        if (navUser) {
-            navUser.textContent = `Welcome, ${user.name || 'User'}`;
-        }
+        // Authentication
+        authManager.requireAuth();
+        const user = authManager.getUser();
 
         // Set minimum date to today
         document.getElementById('visitDate').min = new Date().toISOString().split('T')[0];
@@ -268,32 +170,31 @@
         // Load teams and schools
         async function loadTeamsAndSchools() {
             try {
-                // Load teams
-                const teamsResponse = await fetch('/api/admin/teams', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const teamsData = await teamsResponse.json();
+                loading.show('team', 'Loading...');
+                loading.show('school', 'Loading...');
+                
+                const [teamsData, schoolsData] = await Promise.all([
+                    api.getTeams(),
+                    api.getSchools()
+                ]);
+
+                loading.hide('team');
+                loading.hide('school');
 
                 if (teamsData.success) {
                     const teamSelect = document.getElementById('team');
                     teamSelect.innerHTML = '<option value="">Select Team</option>' +
                         teamsData.data.map(team => 
-                            `<option value="${team._id}">${team.name} (${team.members.length} members)</option>`
+                            `<option value="${team._id}">${escapeHtml(team.name)} (${team.members.length} members)</option>`
                         ).join('');
                 }
-
-                // Load schools
-                const schoolsResponse = await fetch('/api/schools', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const schoolsData = await schoolsResponse.json();
 
                 if (schoolsData.success) {
                     const schoolSelect = document.getElementById('school');
                     schoolSelect.innerHTML = '<option value="">Select School</option>' +
                         schoolsData.data.map(school => 
                             `<option value="${school._id}" data-classes="${school.availableClasses}">
-                                ${school.name} (${school.availableClasses} classes available)
+                                ${escapeHtml(school.name)} (${school.availableClasses} classes available)
                             </option>`
                         ).join('');
 
@@ -304,7 +205,9 @@
                 // Load upcoming visits
                 loadUpcomingVisits();
             } catch (error) {
-                console.error('Error loading data:', error);
+                loading.hide('team');
+                loading.hide('school');
+                handleAPIError(error);
             }
         }
 
@@ -329,107 +232,166 @@
             const teamId = document.getElementById('team').value;
 
             if (!visitDate || !teamId) {
-                showNotification('Please select both date and team', 'error');
+                notify.warning('Please select both date and team');
                 return;
             }
 
             try {
-                const response = await fetch(`/api/visits?date=${visitDate}&team=${teamId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                loading.show('availabilityResult', 'Checking...');
+                const data = await api.getVisits(`?date=${visitDate}&team=${teamId}`);
+                loading.hide('availabilityResult');
                 
-                const data = await response.json();
                 const resultDiv = document.getElementById('availabilityResult');
 
                 if (data.data && data.data.length > 0) {
                     resultDiv.innerHTML = `
                         <div class="availability-warning">
                             <h4>⚠️ Team Not Available</h4>
-                            <p>This team already has a visit scheduled on ${new Date(visitDate).toLocaleDateString()}.</p>
+                            <p>This team already has a visit scheduled on ${formatDate(visitDate)}.</p>
                         </div>
                     `;
                 } else {
                     resultDiv.innerHTML = `
                         <div class="availability-success">
                             <h4>✅ Team Available</h4>
-                            <p>This team is available on ${new Date(visitDate).toLocaleDateString()}.</p>
+                            <p>This team is available on ${formatDate(visitDate)}.</p>
                         </div>
                     `;
                 }
                 resultDiv.style.display = 'block';
             } catch (error) {
-                console.error('Error checking availability:', error);
-                showNotification('Error checking availability', 'error');
+                loading.hide('availabilityResult');
+                handleAPIError(error);
             }
         }
 
-        // Schedule visit form submission
+        // Schedule visit form submission with enhanced validation
         document.getElementById('scheduleVisitForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            // Get form values
+            const visitDate = document.getElementById('visitDate').value;
+            const teamId = document.getElementById('team').value;
+            const schoolId = document.getElementById('school').value;
+            const assignedClass = document.getElementById('assignedClass').value.trim();
+            const childrenCount = parseInt(document.getElementById('expectedChildren').value) || 30;
+            
+            // Validation array
+            const validationErrors = [];
+            
+            // 1. Validate date (cannot be in the past)
+            const selectedDate = new Date(visitDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (!visitDate) {
+                validationErrors.push('Please select a visit date');
+            } else if (selectedDate < today) {
+                validationErrors.push('Visit date cannot be in the past');
+            }
+            
+            // 2. Validate team selection
+            if (!teamId) {
+                validationErrors.push('Please select a team');
+            }
+            
+            // 3. Validate school selection
+            if (!schoolId) {
+                validationErrors.push('Please select a school');
+            }
+            
+            // 4. Validate assigned class
+            if (!assignedClass) {
+                validationErrors.push('Please enter the assigned class');
+            } else if (assignedClass.length < 2) {
+                validationErrors.push('Assigned class must be at least 2 characters');
+            }
+            
+            // 5. Validate children count
+            if (childrenCount < 1) {
+                validationErrors.push('Expected children must be at least 1');
+            } else if (childrenCount > 500) {
+                validationErrors.push('Expected children seems too high (max 500)');
+            }
+            
+            // Show validation errors if any
+            if (validationErrors.length > 0) {
+                notify.error(validationErrors.join('<br>'));
+                return;
+            }
+            
+            // Check team availability before submitting
+            try {
+                const availabilityCheck = await api.getVisits(`?date=${visitDate}&team=${teamId}`);
+                if (availabilityCheck.data && availabilityCheck.data.length > 0) {
+                    const existingVisit = availabilityCheck.data.find(v => v.status === 'scheduled' || v.status === 'completed');
+                    if (existingVisit) {
+                        notify.error(`This team already has a ${existingVisit.status} visit on ${formatDate(visitDate)}. Please choose a different date or team.`);
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('Could not check team availability:', err);
+                // Continue anyway if availability check fails
+            }
+            
             const formData = {
-                date: document.getElementById('visitDate').value,
-                team: document.getElementById('team').value,
-                school: document.getElementById('school').value,
-                assignedClass: document.getElementById('assignedClass').value,
-                childrenCount: parseInt(document.getElementById('expectedChildren').value) || 30,
+                date: visitDate,
+                team: teamId,
+                school: schoolId,
+                assignedClass: assignedClass,
+                childrenCount: childrenCount,
                 visitTime: document.getElementById('visitTime').value || '09:00',
                 status: 'scheduled'
             };
 
             try {
-                const response = await fetch('/api/visits', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-                
-                const data = await response.json();
+                loading.showFullPage('Scheduling visit...');
+                const data = await api.createVisit(formData);
+                loading.hideFullPage();
                 
                 if (data.success) {
-                    showNotification('Visit scheduled successfully!', 'success');
+                    notify.success('Visit scheduled successfully!');
                     this.reset();
                     document.getElementById('availabilityResult').style.display = 'none';
                     document.getElementById('schoolInfo').style.display = 'none';
+                    // Reset minimum date
+                    document.getElementById('visitDate').min = new Date().toISOString().split('T')[0];
                     loadUpcomingVisits();
                 } else {
-                    showNotification('Error: ' + data.message, 'error');
+                    notify.error(data.message || 'Failed to schedule visit');
                 }
             } catch (error) {
-                console.error('Error scheduling visit:', error);
-                showNotification('Failed to schedule visit', 'error');
+                loading.hideFullPage();
+                handleAPIError(error);
             }
         });
 
         // Load upcoming visits
         async function loadUpcomingVisits() {
             try {
-                const response = await fetch('/api/visits?status=scheduled', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                loading.show('upcomingVisitsList', 'Loading visits...');
+                const data = await api.getVisits('?status=scheduled');
+                loading.hide('upcomingVisitsList');
                 
-                const data = await response.json();
                 const visitsList = document.getElementById('upcomingVisitsList');
                 
                 if (data.success) {
                     if (data.data.length === 0) {
-                        visitsList.innerHTML = '<p class="no-visits">No upcoming visits scheduled.</p>';
+                        renderNoData('upcomingVisitsList', 'No upcoming visits scheduled.');
                         return;
                     }
 
                     visitsList.innerHTML = data.data.map(visit => `
                         <div class="visit-card">
                             <div class="visit-header">
-                                <h3>${visit.school.name}</h3>
+                                <h3>${escapeHtml(visit.school.name)}</h3>
                                 <span class="visit-status scheduled">Scheduled</span>
                             </div>
                             <div class="visit-details">
-                                <p><i class="far fa-calendar-alt"></i> <strong>Date:</strong> ${new Date(visit.date).toLocaleDateString()}</p>
-                                <p><i class="fas fa-users"></i> <strong>Team:</strong> ${visit.team.name}</p>
-                                <p><i class="fas fa-chalkboard"></i> <strong>Class:</strong> ${visit.assignedClass}</p>
+                                <p><i class="far fa-calendar-alt"></i> <strong>Date:</strong> ${formatDate(visit.date)}</p>
+                                <p><i class="fas fa-users"></i> <strong>Team:</strong> ${escapeHtml(visit.team.name)}</p>
+                                <p><i class="fas fa-chalkboard"></i> <strong>Class:</strong> ${escapeHtml(visit.assignedClass)}</p>
                                 <p><i class="fas fa-child"></i> <strong>Expected Children:</strong> ${visit.childrenCount}</p>
                             </div>
                             <div class="visit-actions">
@@ -439,49 +401,48 @@
                     `).join('');
                 }
             } catch (error) {
-                console.error('Error loading visits:', error);
+                loading.hide('upcomingVisitsList');
+                renderError('upcomingVisitsList', 'Failed to load visits');
             }
         }
 
         // Cancel visit
         async function cancelVisit(visitId) {
-            if (!confirm('Are you sure you want to cancel this visit?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/visits/${visitId}/cancel`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
+            notify.confirm('Are you sure you want to cancel this visit?', async () => {
+                try {
+                    loading.showFullPage('Cancelling visit...');
+                    const data = await api.cancelVisit(visitId);
+                    loading.hideFullPage();
+                    
+                    if (data.success) {
+                        notify.success('Visit cancelled successfully!');
+                        loadUpcomingVisits();
+                    } else {
+                        notify.error(data.message || 'Failed to cancel visit');
                     }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showNotification('Visit cancelled successfully!', 'success');
-                    loadUpcomingVisits();
-                } else {
-                    showNotification('Error: ' + data.message, 'error');
+                } catch (error) {
+                    loading.hideFullPage();
+                    handleAPIError(error);
                 }
-            } catch (error) {
-                console.error('Error cancelling visit:', error);
-                showNotification('Failed to cancel visit', 'error');
-            }
+            });
         }
 
-        // Logout functionality
-        document.querySelector('.logout-btn').addEventListener('click', function(e) {
-            e.preventDefault();
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = 'login.html';
-        });
+        // Make cancelVisit available globally for onclick handlers
+        window.cancelVisit = cancelVisit;
 
         // Load data on page load
         loadTeamsAndSchools();
     </script>
+
+    <!-- Shared JavaScript Modules -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/navbar.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/loading.js"></script>
+    <script src="js/app.js"></script>
 
     <style>
     /* ====== DASHBOARD SECTION ====== */

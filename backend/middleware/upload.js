@@ -13,6 +13,7 @@ const uploadDir = path.join(__dirname, '../uploads');
 const photosDir = path.join(uploadDir, 'photos');
 const videosDir = path.join(uploadDir, 'videos');
 const docsDir = path.join(uploadDir, 'docs');
+const avatarsDir = path.join(uploadDir, 'avatars');
 
 // Create necessary directories
 [uploadDir, photosDir, videosDir, docsDir].forEach(dir => {
@@ -20,6 +21,8 @@ const docsDir = path.join(uploadDir, 'docs');
         fs.mkdirSync(dir, { recursive: true });
     }
 });
+// ensure avatars dir exists
+if (!fs.existsSync(avatarsDir)) fs.mkdirSync(avatarsDir, { recursive: true });
 
 // Storage configuration constants
 const STORAGE_CONFIG = {
@@ -42,10 +45,19 @@ const STORAGE_CONFIG = {
     }
 };
 
+// Avatar upload config
+STORAGE_CONFIG.avatar = {
+    maxSize: 5 * 1024 * 1024, // 5MB
+    maxCount: 1,
+    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+};
+
 // Configure storage with visit-specific folders
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        const visitId = req.params.id || 'temp';
+        // Prefer authenticated user's id when present, otherwise route param (visit id), else 'temp'
+        const rawId = (req.user && (req.user.id || req.user._id)) || req.params.id || 'temp';
+        const visitId = typeof rawId === 'string' ? rawId : String(rawId);
         let typeDir;
         
         // Organize by file type and visit
@@ -55,6 +67,8 @@ const storage = multer.diskStorage({
             typeDir = path.join(videosDir, visitId);
         } else if (file.fieldname === 'docs') {
             typeDir = path.join(docsDir, visitId);
+        } else if (file.fieldname === 'avatar' || file.fieldname === 'avatars') {
+            typeDir = path.join(avatarsDir, visitId);
         } else {
             typeDir = path.join(uploadDir, visitId);
         }

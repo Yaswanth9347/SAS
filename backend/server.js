@@ -39,6 +39,7 @@ app.use('/api/schools', require('./routes/schools'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/feedback', require('./routes/feedback'));
+app.use('/api/contact', require('./routes/contact'));
 
 // Test route
 app.get('/api/test', (req, res) => {
@@ -68,7 +69,7 @@ app.use((err, req, res, next) => {
     res.status(500).json({ message: 'Something went wrong!' });
 });
 
-const PORT = process.env.PORT || 5002; // Changed from 5001 to avoid port conflict
+const PORT = process.env.PORT || 5001;
 
 // Only start server if not in test environment
 if (process.env.NODE_ENV !== 'test') {

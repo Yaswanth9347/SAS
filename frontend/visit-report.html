@@ -5,50 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Submit Visit Report - SAS</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <!-- Consolidated CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Page-specific CSS -->
     <style>
-    /* ====== RESET ====== */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
     body {
-      font-family: "Poppins", sans-serif;
-      background: #f4f6f8;
-      color: #333;
-      line-height: 1.6;
       display: flex;
       flex-direction: column;
       min-height: 100vh;
     }
     
-    /* ====== NAVBAR ====== */
-    .navbar {
-      background: linear-gradient(90deg, #4caf50, #2e7d32);
-      color: #fff;
-      position: fixed;
-      width: 100%;
-      top: 0;
-      left: 0;
-      z-index: 1000;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-
-    .nav-container {
-      width: 100%;
-      padding: 0 40px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      height: 70px;
-    }
-
-    .nav-logo {
-      flex-shrink: 0;
-    }
-
-    .nav-logo h2 {
+    /* ====== VISIT REPORT SPECIFIC ====== */
+    .report-section {
       font-family: Georgia, 'Times New Roman', Times, serif;
       font-weight: 700;
       font-size: 1.75rem;
@@ -130,8 +100,10 @@
             <ul class="nav-menu" id="navMenu">
                 <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
                 <li><a href="visits.html" class="nav-link">Visits</a></li>
-                <li><a href="schools.html" class="nav-link">Schools</a></li>
+                <li><a href="teams.html" class="nav-link">Teams</a></li>
                 <li><a href="visit-gallery.html" class="nav-link">Gallery</a></li>
+                <li><a href="profile.html" class="nav-link">Profile</a></li>
+                <li><a href="contact.html" class="nav-link">Contact</a></li>
                 <!-- Admin-only navigation items will be added dynamically -->
                 <li><span class="nav-link" id="navUser">Welcome, User</span></li>
                 <li><a href="#" class="nav-link logout-btn" id="navLogout">Logout</a></li>
@@ -295,77 +267,9 @@
     </footer>
 
     <script>
-        const token = localStorage.getItem('token');
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        
-        if (!token) {
-            showNotification('Please login to access this page', 'error');
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 2000);
-        }
-        
-        // Setup navbar - Add admin navigation items dynamically
-        function setupNavbar() {
-            const navMenu = document.getElementById('navMenu');
-            const userNameLi = document.querySelector('#navUser').parentElement;
-            
-            // Create and insert Teams nav item
-            const teamsLi = document.createElement('li');
-            teamsLi.innerHTML = '<a href="teams.html" class="nav-link">Teams</a>';
-            navMenu.insertBefore(teamsLi, userNameLi);
-            
-            // Create and insert Schedule Visit nav item
-            const scheduleLi = document.createElement('li');
-            scheduleLi.innerHTML = '<a href="schedule-visit.html" class="nav-link">Schedule Visit</a>';
-            navMenu.insertBefore(scheduleLi, userNameLi);
-            
-            // Create and insert Analytics nav item
-            const analyticsLi = document.createElement('li');
-            analyticsLi.innerHTML = '<a href="analytics.html" class="nav-link">Analytics</a>';
-            navMenu.insertBefore(analyticsLi, userNameLi);
-            
-            // Create and insert Reports nav item
-            const reportsLi = document.createElement('li');
-            reportsLi.innerHTML = '<a href="reports.html" class="nav-link">Reports</a>';
-            navMenu.insertBefore(reportsLi, userNameLi);
-            
-            // Update username display
-            const navUser = document.getElementById('navUser');
-            if (navUser) {
-                navUser.textContent = `Welcome, ${user.name || 'User'}`;
-            }
-        }
-
-        // Setup logout functionality
-        const navLogout = document.getElementById('navLogout');
-        if (navLogout) {
-            navLogout.addEventListener('click', (e) => {
-                e.preventDefault();
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = 'login.html';
-            });
-        }
-
-        // Initialize navbar
-        setupNavbar();
-        
-        // Function to show toast notification
-        function showNotification(message, type = 'info') {
-          const notification = document.createElement('div');
-          notification.className = `notification ${type}`;
-          notification.innerText = message;
-          document.body.appendChild(notification);
-          
-          setTimeout(() => {
-            notification.classList.add('show');
-            setTimeout(() => {
-              notification.classList.remove('show');
-              setTimeout(() => document.body.removeChild(notification), 300);
-            }, 3000);
-          }, 100);
-        }
+        // Authentication
+        authManager.requireAuth();
+        const user = authManager.getUser();
 
         let selectedTeamId = null;
         let selectedVisitId = null;
@@ -376,31 +280,15 @@
 
         // Load teams first
         async function loadTeams() {
-            console.log('Fetching teams from API...');
             try {
-                console.log('Making request to /api/admin/teams endpoint');
-                const response = await fetch('http://localhost:5001/api/admin/teams', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                console.log('Teams API response status:', response.status);
-                if (!response.ok) {
-                    throw new Error(`Server responded with status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                console.log('Teams API response data:', data);
-                
-                // Log user's team information if volunteer
-                if (user.role === 'volunteer') {
-                    console.log('Current user team ID:', user.team);
-                }
+                loading.show('teamSelect', 'Loading teams...');
+                const data = await api.getTeams();
+                loading.hide('teamSelect');
                 
                 const teamSelect = document.getElementById('teamSelect');
                 
                 // Check if we have teams data
                 if (!data.data || !Array.isArray(data.data) || data.data.length === 0) {
-                    console.log('No teams found in database');
                     teamSelect.innerHTML = '<option value="">No teams available</option>';
                     
                     // Display message for no teams
@@ -420,14 +308,12 @@
                 }
                 
                 // We have teams, populate the dropdown
-                console.log('Creating team options in dropdown');
                 teamSelect.innerHTML = '<option value="">Select a team</option>' +
-                    data.data.map(team => {
-                        console.log('Processing team:', team);
-                        return `<option value="${team._id}">
-                            ${team.name || 'Unnamed Team'}
-                        </option>`;
-                    }).join('');
+                    data.data.map(team => 
+                        `<option value="${team._id}">
+                            ${escapeHtml(team.name || 'Unnamed Team')}
+                        </option>`
+                    ).join('');
                 
                 // Add change event
                 teamSelect.addEventListener('change', handleTeamSelection);
@@ -436,36 +322,26 @@
                 updateLoadingStatus('Teams loaded successfully. Please select a team.', false, 'teamLoadingStatus');
                 document.getElementById('teamLoadingStatus').style.display = 'none';
             } catch (error) {
-                console.error('Error loading teams:', error);
+                loading.hide('teamSelect');
                 const teamSelect = document.getElementById('teamSelect');
                 teamSelect.innerHTML = '<option value="">Error loading teams</option>';
                 updateLoadingStatus('Failed to load teams: ' + error.message, true, 'teamLoadingStatus');
-                showNotification('Failed to load teams: ' + error.message, 'error');
+                handleAPIError(error);
             }
         }
 
         // Load visits that need reporting for a specific team
         async function loadVisitsForReporting(teamId) {
-            console.log('Fetching visits for team:', teamId);
             try {
-                console.log('Making request to /api/visits?status=scheduled endpoint');
-                const response = await fetch(`http://localhost:5001/api/visits?status=scheduled&team=${teamId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                console.log('Visits API response status:', response.status);
-                if (!response.ok) {
-                    throw new Error(`Server responded with status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                console.log('Visits API response data:', data);
+                loading.show('visitSelect', 'Loading visits...');
+                const data = await api.getVisits(`?status=scheduled&team=${teamId}`);
+                loading.hide('visitSelect');
                 
                 // Check if we have visits data at all
                 if (!data.data || !Array.isArray(data.data)) {
                     console.error('Invalid visits data structure:', data);
                     updateLoadingStatus('Invalid response format from server', true, 'visitLoadingStatus');
-                    showNotification('Failed to load visits: Invalid response format', 'error');
+                    notify.error('Failed to load visits: Invalid response format');
                     return;
                 }
                 
@@ -506,7 +382,7 @@
                             <p>This team doesn't have any scheduled visits that need a report submission.</p>
                             <p>To submit a report, you first need to:</p>
                             <ol style="text-align: left; padding-left: 40px;">
-                                <li>Schedule a visit in the <a href="schedule-visit.html">Schedule Visit</a> section</li>
+                                <li>Schedule a visit from the <a href="teams.html">Teams</a> page or <a href="visits.html">Visits</a> page</li>
                                 <li>Complete the actual visit to the school</li>
                                 <li>Then come back here to submit your report</li>
                             </ol>
@@ -830,39 +706,76 @@
             e.preventDefault();
             
             if (!selectedTeamId) {
-                showNotification('Please select a team first', 'error');
+                notify.error('Please select a team first');
                 return;
             }
             
             if (!selectedVisitId) {
-                showNotification('Please select a visit first', 'error');
+                notify.error('Please select a visit first');
                 return;
             }
             
-            // Form validation
-            const childrenCount = document.getElementById('childrenCount').value;
+            // Get form values
+            const childrenCount = parseInt(document.getElementById('childrenCount').value);
             const childrenResponse = document.getElementById('childrenResponse').value;
-            const topicsCovered = document.getElementById('topicsCovered').value;
-            const teachingMethods = document.getElementById('teachingMethods').value;
+            const topicsCovered = document.getElementById('topicsCovered').value.trim();
+            const teachingMethods = document.getElementById('teachingMethods').value.trim();
+            const challengesFaced = document.getElementById('challengesFaced').value.trim();
+            const suggestions = document.getElementById('suggestions').value.trim();
             
-            // Basic validation
-            if (!childrenCount || childrenCount < 1) {
-                showNotification('Please enter a valid number of children', 'error');
-                return;
+            // Comprehensive validation with detailed messages
+            const validationErrors = [];
+            
+            // 1. Children count validation
+            if (!childrenCount || isNaN(childrenCount)) {
+                validationErrors.push('Please enter the number of children');
+            } else if (childrenCount < 1) {
+                validationErrors.push('Number of children must be at least 1');
+            } else if (childrenCount > 500) {
+                validationErrors.push('Number of children seems too high (max 500)');
             }
             
+            // 2. Children response validation
             if (!childrenResponse) {
-                showNotification('Please select the children\'s response', 'error');
-                return;
+                validationErrors.push('Please select the children\'s response');
             }
             
-            if (!topicsCovered.trim()) {
-                showNotification('Please enter the topics covered', 'error');
-                return;
+            // 3. Topics covered validation (min 20 characters)
+            if (!topicsCovered) {
+                validationErrors.push('Please enter the topics covered');
+            } else if (topicsCovered.length < 20) {
+                validationErrors.push('Topics covered must be at least 20 characters (currently ' + topicsCovered.length + ')');
             }
             
-            if (!teachingMethods.trim()) {
-                showNotification('Please enter the teaching methods used', 'error');
+            // 4. Teaching methods validation (min 20 characters)
+            if (!teachingMethods) {
+                validationErrors.push('Please enter the teaching methods used');
+            } else if (teachingMethods.length < 20) {
+                validationErrors.push('Teaching methods must be at least 20 characters (currently ' + teachingMethods.length + ')');
+            }
+            
+            // 5. Challenges faced validation (min 15 characters if provided)
+            if (challengesFaced && challengesFaced.length < 15) {
+                validationErrors.push('Challenges faced should be at least 15 characters or leave it empty');
+            }
+            
+            // 6. File validation - At least 1 photo OR 1 video required
+            if (uploadedFiles.photos.length === 0 && uploadedFiles.videos.length === 0) {
+                validationErrors.push('Please upload at least one photo or video from the visit');
+            }
+            
+            // 7. File count limits
+            if (uploadedFiles.photos.length > 10) {
+                validationErrors.push('Maximum 10 photos allowed (currently ' + uploadedFiles.photos.length + ')');
+            }
+            
+            if (uploadedFiles.videos.length > 3) {
+                validationErrors.push('Maximum 3 videos allowed (currently ' + uploadedFiles.videos.length + ')');
+            }
+            
+            // Show all validation errors at once
+            if (validationErrors.length > 0) {
+                notify.error('<strong>Please fix the following:</strong><br>' + validationErrors.join('<br>'));
                 return;
             }
 
@@ -883,13 +796,13 @@
                 
                 // Check if total photos exceed limit
                 if (uploadedFiles.photos.length > 8) {
-                    showNotification('You can upload a maximum of 8 photos', 'error');
+                    notify.error('You can upload a maximum of 8 photos');
                     return; // Stop submission process
                 }
                 
                 // Check if total videos exceed limit
                 if (uploadedFiles.videos.length > 2) {
-                    showNotification('You can upload a maximum of 2 videos', 'error');
+                    notify.error('You can upload a maximum of 2 videos');
                     return; // Stop submission process
                 }
                 
@@ -919,40 +832,12 @@
                 
                 if (uploadedFiles.photos.length > 0 || uploadedFiles.videos.length > 0) {
                     try {
-                        // Validation was already done above, so we can proceed directly
-                        
-                        // Validation already done before showing loading modal
-                        
-                        const uploadResponse = await fetch(`http://localhost:5001/api/visits/${selectedVisitId}/upload`, {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${token}`
-                            },
-                            body: formData
-                        });
-                        
-                        if (!uploadResponse.ok) {
-                            let errorMessage = `File upload failed with status ${uploadResponse.status}`;
-                            try {
-                                const errorData = await uploadResponse.json();
-                                errorMessage = errorData.message || errorMessage;
-                            } catch (parseError) {
-                                try {
-                                    const errorText = await uploadResponse.text();
-                                    if (errorText) errorMessage += `: ${errorText}`;
-                                } catch (textError) {
-                                    // If we can't parse JSON or get text, use the original error
-                                }
-                            }
-                            throw new Error(errorMessage);
-                        }
-                        
-                        const uploadData = await uploadResponse.json();
+                        const uploadData = await api.uploadVisitMedia(selectedVisitId, formData);
                         
                         if (uploadData && uploadData.success) {
                             fileUrls = uploadData.data;
                         } else {
-                            throw new Error(uploadData.message || 'File upload failed without specific error message');
+                            throw new Error(uploadData.message || 'File upload failed');
                         }
                     } catch (uploadError) {
                         console.error('File upload error:', uploadError);
@@ -977,38 +862,17 @@
                 try {
                     uploadProgress.textContent = 'Submitting report data...';
                     
-                    const reportResponse = await fetch(`http://localhost:5001/api/visits/${selectedVisitId}/complete-report`, {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(reportData),
-                        // Adding timeout to prevent hanging requests (with browser compatibility check)
-                        signal: AbortSignal && AbortSignal.timeout ? AbortSignal.timeout(30000) : undefined // 30 second timeout if supported
-                    });
+                    const reportResponse = await api.completeVisitReport(selectedVisitId, reportData);
                     
-                    if (!reportResponse.ok) {
-                        let errorMessage = `Report submission failed with status ${reportResponse.status}`;
-                        try {
-                            const errorData = await reportResponse.json();
-                            errorMessage = errorData.message || errorMessage;
-                        } catch (parseError) {
-                            try {
-                                const errorText = await reportResponse.text();
-                                if (errorText) errorMessage += `: ${errorText}`;
-                            } catch (textError) {
-                                // If we can't parse JSON or get text, use the original error
-                            }
-                        }
-                        throw new Error(errorMessage);
+                    if (!reportResponse.success) {
+                        throw new Error(reportResponse.message || 'Report submission failed');
                     }
 
                     const reportResult = await reportResponse.json();
 
                     if (reportResult && reportResult.success) {
                         loadingModal.style.display = 'none';
-                        showNotification('Visit report submitted successfully!', 'success');
+                        notify.success('Visit report submitted successfully!');
                         clearForm();
                         setTimeout(() => {
                             window.location.href = 'dashboard.html';
@@ -1087,6 +951,16 @@
         // Load teams on page load
         loadTeams();
     </script>
+
+    <!-- Shared JavaScript Modules -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/navbar.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/loading.js"></script>
+    <script src="js/app.js"></script>
 
     <style>
         .report-container {

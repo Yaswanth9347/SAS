@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profile - Spread a Smile</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/pages/profile.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <h2>Spread A Smile</h2>
+      </div>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+        <li><a href="visits.html" class="nav-link">Visits</a></li>
+        <li><a href="teams.html" class="nav-link">Teams</a></li>
+        <li><a href="visit-gallery.html" class="nav-link">Gallery</a></li>
+        <li><a href="profile.html" class="nav-link active">Profile</a></li>
+        <li><a href="contact.html" class="nav-link">Contact</a></li>
+        <li><span class="nav-link" id="navUser">Welcome, User</span></li>
+        <li><a href="#" class="nav-link logout-btn" id="navLogout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Hero header -->
+    <section class="profile-hero">
+      <div id="profileAvatarWrapper" class="avatar-large" title="Click to change avatar"></div>
+      <div class="hero-info">
+        <div class="hero-title-row">
+          <h1 id="heroName">Your Name</h1>
+          <span id="heroRole" class="role-badge">ROLE</span>
+        </div>
+        <div class="contact-line">
+          <span id="heroEmail"></span>
+          <span class="dot">•</span>
+          <span id="heroPhone"></span>
+        </div>
+        <div class="hero-actions">
+          <button id="changeAvatarBtn" class="btn btn-small">Change Photo</button>
+          <button id="removeAvatarBtn" class="btn btn-danger btn-small">Remove</button>
+          <input id="avatarInput" type="file" accept="image/*" style="display:none">
+        </div>
+      </div>
+    </section>
+
+    
+
+    <!-- Tabs -->
+    <div class="profile-tabs" role="tablist">
+      <button class="tab-btn active" data-tab="info" aria-selected="true">Profile</button>
+      <button class="tab-btn" data-tab="security" aria-selected="false">Security</button>
+    </div>
+
+    <section class="tab-panels">
+      <div id="tab-info" class="tab-panel active" role="tabpanel" aria-labelledby="tab-info">
+        <div class="profile-card">
+          <h2>Personal Information</h2>
+          <div id="profileForm" class="form-grid">
+            <!-- injected by JS -->
+          </div>
+          <div class="form-actions">
+            <button id="saveProfileBtn" class="btn btn-primary">Save Changes</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-security" class="tab-panel" role="tabpanel" aria-labelledby="tab-security">
+        <div class="profile-card">
+          <h2>Change Password</h2>
+          <div id="passwordForm" class="form-grid">
+            <div class="form-group">
+              <label for="cur_pwd">Current Password</label>
+              <input id="cur_pwd" type="password" placeholder="Current password">
+            </div>
+            <div class="form-group">
+              <label for="new_pwd">New Password</label>
+              <input id="new_pwd" type="password" placeholder="New password">
+            </div>
+            <div class="form-group">
+              <label for="confirm_pwd">Confirm New Password</label>
+              <input id="confirm_pwd" type="password" placeholder="Confirm new password">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button id="changePwdBtn" class="btn btn-primary">Change Password</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  
+
+  <!-- Shared JS -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/navbar.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/loading.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- Page script -->
+  <script src="js/pages/profile.js" defer></script>
+</body>
+</html>

@@ -4,107 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact - Spread a Smile</title>
+    
+    <!-- Consolidated CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Page-specific CSS -->
     <style>
-        /* Reset and Base Styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: #f4f6f8;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        /* Navigation */
-        .navbar {
-            background: linear-gradient(90deg, #4caf50, #2e7d32);
-            color: #fff;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            left: 0;
-            z-index: 1000;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .nav-container {
-            width: 100%;
-            padding: 0 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 70px;
-        }
-
-        .nav-logo {
-            flex-shrink: 0;
-        }
-
-        .nav-logo h2 {
-            font-family: Georgia, 'Times New Roman', Times, serif;
-            font-weight: 700;
-            font-size: 1.75rem;
-            letter-spacing: 0.6px;
-            color: #fff;
-        }
-
-        .nav-menu {
-            display: flex;
-            list-style: none;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .nav-link {
-            text-decoration: none;
-            color: #fff;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            padding: 6px 8px;
-            border-radius: 6px;
-        }
-
-        .nav-link:hover, .nav-link.active {
-            color: #c8e6c9;
-        }
-
-        .logout-btn {
-            background: #f44336;
-            color: white !important;
-            padding: 8px 18px;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-
-        .logout-btn:hover {
-            background: #d32f2f;
-            transform: translateY(-2px);
-        }
-
-        /* Page Header */
-        .page-header {
-            background: #f8f9fa;
-            padding: 120px 0 60px;
-            text-align: center;
-        }
-
-        .page-header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-
-        /* Contact Content */
         .contact-content {
             padding: 80px 0;
             background: #f8f9fa;
@@ -116,7 +21,6 @@
             gap: 50px;
         }
 
-        /* Contact Form */
         .contact-form {
             background: white;
             padding: 40px;
@@ -130,55 +34,6 @@
             font-size: 1.8rem;
         }
 
-        /* Forms */
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-
-        .form-group textarea {
-            resize: vertical;
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 12px 30px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            transition: all 0.3s;
-            display: inline-block;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        .btn-primary {
-            background: #4CAF50;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #45a049;
-            transform: translateY(-2px);
-        }
-
-        /* Contact Info */
         .contact-info h2 {
             color: #4CAF50;
             margin-bottom: 30px;
@@ -204,36 +59,32 @@
             line-height: 1.5;
         }
 
-        /* Footer */
-        .footer {
-            background: #2e7d32;
-            color: white;
-            text-align: center;
-            padding: 25px 0;
-            border-top-left-radius: 50px;
-            border-top-right-radius: 50px;
-            margin-top: 60px;
+        .error-message {
+            display: none;
+            color: #ff4444;
+            font-size: 0.85rem;
+            margin-top: 5px;
         }
 
-        .footer p {
-            font-size: 0.9rem;
-            opacity: 0.9;
+        .char-count {
+            display: block;
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            text-align: right;
         }
 
-        /* Responsive Design */
+        input.valid,
+        textarea.valid {
+            border-color: #4CAF50;
+        }
+
+        input.invalid,
+        textarea.invalid {
+            border-color: #ff4444;
+        }
+
         @media (max-width: 768px) {
-            .nav-menu {
-                display: none;
-            }
-            
-            .page-header {
-                padding: 100px 0 40px;
-            }
-            
-            .page-header h1 {
-                font-size: 2rem;
-            }
-            
             .contact-grid {
                 grid-template-columns: 1fr;
                 gap: 30px;
@@ -258,8 +109,10 @@
             <ul class="nav-menu" id="navMenu">
                 <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
                 <li><a href="visits.html" class="nav-link">Visits</a></li>
-                <li><a href="schools.html" class="nav-link">Schools</a></li>
+                <li><a href="teams.html" class="nav-link">Teams</a></li>
                 <li><a href="visit-gallery.html" class="nav-link">Gallery</a></li>
+                <li><a href="profile.html" class="nav-link">Profile</a></li>
+                <li><a href="contact.html" class="nav-link active">Contact</a></li>
                 <!-- Admin-only navigation items will be added dynamically -->
                 <li><span class="nav-link" id="navUser">Welcome, User</span></li>
                 <li><a href="#" class="nav-link logout-btn" id="navLogout">Logout</a></li>
@@ -281,25 +134,24 @@
                     <h2>Send us a Message</h2>
                     <form id="contactForm">
                         <div class="form-group">
-                            <label for="name">Full Name</label>
-                            <input type="text" id="name" name="name" required>
+                            <label for="name">Full Name *</label>
+                            <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+                            <div class="error-message">Name must be at least 2 characters</div>
                         </div>
                         <div class="form-group">
-                            <label for="email">Email Address</label>
-                            <input type="email" id="email" name="email" required>
+                            <label for="email">Email Address *</label>
+                            <input type="email" id="email" name="email" placeholder="your.email@example.com" required>
+                            <div class="error-message">Please enter a valid email address</div>
                         </div>
                         <div class="form-group">
-                            <label for="role">I am a</label>
-                            <select id="role" name="role">
-                                <option value="student">College Student (Want to volunteer)</option>
-                                <option value="school">School Representative</option>
-                                <option value="supporter">Well-wisher/Supporter</option>
-                                <option value="other">Other</option>
-                            </select>
+                            <label for="subject">Subject</label>
+                            <input type="text" id="subject" name="subject" placeholder="What's this about?">
                         </div>
                         <div class="form-group">
-                            <label for="message">Message</label>
-                            <textarea id="message" name="message" rows="5" required></textarea>
+                            <label for="message">Message *</label>
+                            <textarea id="message" name="message" rows="5" placeholder="Tell us how we can help..." required></textarea>
+                            <div class="error-message">Message must be at least 10 characters</div>
+                            <small class="char-count" id="messageCount">0 / 10 characters minimum</small>
                         </div>
                         <button type="submit" class="btn btn-primary">Send Message</button>
                     </form>
@@ -328,67 +180,211 @@
         </div>
     </section>
 
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2025 Spread a Smile (SAS). All rights reserved.</p>
-        </div>
-    </footer>
+    
 
+    <!-- Shared JavaScript Modules -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/navbar.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/loading.js"></script>
+    <script src="js/app.js"></script>
+    
     <script>
-        const token = localStorage.getItem('token');
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        
-        if (!token) {
-            alert('Please login to access this page.');
-            window.location.href = 'login.html';
-        }
+        // Contact Form Handler
+        class ContactFormManager {
+          constructor() {
+            this.form = document.getElementById('contactForm');
+            this.nameInput = document.getElementById('name');
+            this.emailInput = document.getElementById('email');
+            this.subjectInput = document.getElementById('subject');
+            this.messageInput = document.getElementById('message');
+            this.messageCount = document.getElementById('messageCount');
+            
+            this.init();
+          }
 
-        // Setup navbar - Add admin navigation items dynamically
-        function setupNavbar() {
-            const navMenu = document.getElementById('navMenu');
-            const userNameLi = document.querySelector('#navUser').parentElement;
-            
-            // Create and insert Teams nav item
-            const teamsLi = document.createElement('li');
-            teamsLi.innerHTML = '<a href="teams.html" class="nav-link">Teams</a>';
-            navMenu.insertBefore(teamsLi, userNameLi);
-            
-            // Create and insert Schedule Visit nav item
-            const scheduleLi = document.createElement('li');
-            scheduleLi.innerHTML = '<a href="schedule-visit.html" class="nav-link">Schedule Visit</a>';
-            navMenu.insertBefore(scheduleLi, userNameLi);
-            
-            // Create and insert Analytics nav item
-            const analyticsLi = document.createElement('li');
-            analyticsLi.innerHTML = '<a href="analytics.html" class="nav-link">Analytics</a>';
-            navMenu.insertBefore(analyticsLi, userNameLi);
-            
-            // Create and insert Reports nav item
-            const reportsLi = document.createElement('li');
-            reportsLi.innerHTML = '<a href="reports.html" class="nav-link">Reports</a>';
-            navMenu.insertBefore(reportsLi, userNameLi);
-            
-            // Update username display
-            const navUser = document.getElementById('navUser');
-            if (navUser) {
-                navUser.textContent = `Welcome, ${user.name || 'User'}`;
+          init() {
+            // Add validation listeners
+            this.nameInput.addEventListener('input', () => this.validateName());
+            this.emailInput.addEventListener('input', () => this.validateEmail());
+            this.messageInput.addEventListener('input', () => this.validateMessage());
+
+            // Form submission
+            this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+
+            // Pre-fill user data if logged in
+            this.prefillUserData();
+          }
+
+          prefillUserData() {
+            try {
+              // Check if user is logged in
+              if (typeof authManager !== 'undefined' && authManager.isLoggedIn()) {
+                const user = authManager.getUser();
+                if (user) {
+                  if (user.name) this.nameInput.value = user.name;
+                  if (user.email) this.emailInput.value = user.email;
+                }
+              }
+            } catch (error) {
+              // User not logged in, no prefill - that's okay for contact form
+              console.log('User not logged in, form will be empty');
             }
+          }
+
+          validateName() {
+            const name = this.nameInput.value.trim();
+            const isValid = name.length >= 2;
+            
+            if (name && !isValid) {
+              this.nameInput.classList.add('invalid');
+              this.nameInput.classList.remove('valid');
+              this.showError(this.nameInput, true);
+            } else if (name) {
+              this.nameInput.classList.remove('invalid');
+              this.nameInput.classList.add('valid');
+              this.showError(this.nameInput, false);
+            } else {
+              this.nameInput.classList.remove('invalid', 'valid');
+              this.showError(this.nameInput, false);
+            }
+            
+            return isValid || !name;
+          }
+
+          validateEmail() {
+            const email = this.emailInput.value.trim();
+            const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+            const isValid = emailRegex.test(email);
+            
+            if (email && !isValid) {
+              this.emailInput.classList.add('invalid');
+              this.emailInput.classList.remove('valid');
+              this.showError(this.emailInput, true);
+            } else if (email) {
+              this.emailInput.classList.remove('invalid');
+              this.emailInput.classList.add('valid');
+              this.showError(this.emailInput, false);
+            } else {
+              this.emailInput.classList.remove('invalid', 'valid');
+              this.showError(this.emailInput, false);
+            }
+            
+            return isValid || !email;
+          }
+
+          validateMessage() {
+            const message = this.messageInput.value.trim();
+            const length = message.length;
+            const isValid = length >= 10;
+            
+            // Update character count
+            this.messageCount.textContent = `${length} / 10 characters minimum`;
+            
+            if (length > 0 && !isValid) {
+              this.messageInput.classList.add('invalid');
+              this.messageInput.classList.remove('valid');
+              this.showError(this.messageInput, true);
+              this.messageCount.style.color = '#ff4444';
+            } else if (length >= 10) {
+              this.messageInput.classList.remove('invalid');
+              this.messageInput.classList.add('valid');
+              this.showError(this.messageInput, false);
+              this.messageCount.style.color = '#4CAF50';
+            } else {
+              this.messageInput.classList.remove('invalid', 'valid');
+              this.showError(this.messageInput, false);
+              this.messageCount.style.color = '#666';
+            }
+            
+            return isValid || length === 0;
+          }
+
+          showError(input, show) {
+            const errorElement = input.nextElementSibling;
+            if (errorElement && errorElement.classList.contains('error-message')) {
+              errorElement.style.display = show ? 'block' : 'none';
+            }
+          }
+
+          async handleSubmit(e) {
+            e.preventDefault();
+
+            // Validate all fields
+            const isNameValid = this.validateName();
+            const isEmailValid = this.validateEmail();
+            const isMessageValid = this.validateMessage();
+
+            if (!isNameValid || !isEmailValid || !isMessageValid) {
+              showNotification('Please fix the errors before submitting', 'error');
+              return;
+            }
+
+            // Get form data
+            const formData = {
+              name: this.nameInput.value.trim(),
+              email: this.emailInput.value.trim(),
+              subject: this.subjectInput.value.trim() || 'General Inquiry',
+              message: this.messageInput.value.trim()
+            };
+
+            // Final validation
+            if (formData.name.length < 2) {
+              showNotification('Name must be at least 2 characters', 'error');
+              return;
+            }
+
+            if (formData.message.length < 10) {
+              showNotification('Message must be at least 10 characters', 'error');
+              return;
+            }
+
+            try {
+              Loading.show();
+              const response = await api.submitContact(formData);
+              Loading.hide();
+
+              if (response.success) {
+                showNotification('Thank you! Your message has been sent successfully. We will get back to you soon.', 'success');
+                
+                // Reset form
+                this.form.reset();
+                this.messageCount.textContent = '0 / 10 characters minimum';
+                this.messageCount.style.color = '#666';
+                
+                // Remove validation classes
+                this.form.querySelectorAll('input, textarea').forEach(field => {
+                  field.classList.remove('valid', 'invalid');
+                });
+              } else {
+                showNotification(response.message || 'Failed to send message. Please try again.', 'error');
+              }
+            } catch (error) {
+              Loading.hide();
+              console.error('Contact form submission error:', error);
+              const message = error.response?.data?.message || error.message || 'An error occurred. Please try again.';
+              showNotification(message, 'error');
+            }
+          }
         }
 
-        // Setup logout functionality
-        const navLogout = document.getElementById('navLogout');
-        if (navLogout) {
-            navLogout.addEventListener('click', (e) => {
-                e.preventDefault();
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = 'login.html';
-            });
-        }
-
-        // Initialize navbar
-        setupNavbar();
+        // Initialize contact form when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+          // Setup navbar (always initialize; it will show appropriate items based on auth)
+          try {
+            if (typeof navbarManager !== 'undefined') {
+              navbarManager.setupNavbar();
+            }
+          } catch (error) {
+            console.warn('Navbar setup failed:', error);
+          }
+          
+          // Initialize contact form
+          new ContactFormManager();
+        });
     </script>
-    <script src="js/script.js"></script>
 </body>
 </html>
