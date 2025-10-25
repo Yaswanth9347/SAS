@@ -127,9 +127,13 @@ async function aSYNC_loadVisits(){
         });
       }
 
-      // Toggle details by clicking the card
+      // Toggle details behavior: for scheduled visits, open a centered modal with info and uploads
       card.addEventListener('click', ()=>{
-        details.style.display = details.style.display === 'none' ? 'block' : 'none';
+        if (sClass === 'scheduled') {
+          openVisitInfoModal(visit);
+        } else {
+          details.style.display = details.style.display === 'none' ? 'block' : 'none';
+        }
       });
 
       const wrapper = document.createElement('div');
@@ -438,3 +442,43 @@ async function deleteMedia(visitId, url){
   });
 }
 window.deleteMedia = deleteMedia;
+
+// =============== Centered Visit Info Modal (for scheduled visits) ===============
+(function ensureVisitInfoModal(){
+  if (document.getElementById('visit_info_overlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'visit_info_overlay';
+  overlay.className = 'modal-overlay';
+
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.id = 'visit_info_modal';
+  modal.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <h2 style="margin:0;">Visit Information</h2>
+      <button class="close-btn" id="visit_info_close" aria-label="Close">×</button>
+    </div>
+    <div id="visit_info_body" style="margin-top:12px;max-height:70vh;overflow:auto;"></div>
+  `;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.classList.remove('open');
+  overlay.addEventListener('click', (e)=>{ if (e.target === overlay) close(); });
+  modal.querySelector('#visit_info_close').addEventListener('click', close);
+  document.addEventListener('keydown', (e)=>{ if (overlay.classList.contains('open') && e.key === 'Escape') close(); });
+})();
+
+function openVisitInfoModal(visit){
+  const overlay = document.getElementById('visit_info_overlay');
+  const body = document.getElementById('visit_info_body');
+  if (!overlay || !body) return;
+
+  // Inject visit details + upload controls
+  body.innerHTML = renderVisitDetailsHtml(visit);
+  // Wire upload handlers in the injected content
+  attachDetailsHandlers();
+
+  overlay.classList.add('open');
+}

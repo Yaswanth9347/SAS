@@ -34,6 +34,17 @@ class NavbarManager {
     // Update user display
     this.updateUserDisplay();
 
+    // Remove public Contact link from the main navbar — Contact will be reachable from About page only
+    try {
+      const contactAnchors = this.navMenu.querySelectorAll('a[href="contact.html"]');
+      contactAnchors.forEach(a => {
+        const li = a.closest('li');
+        if (li) li.remove();
+      });
+    } catch (e) {
+      // non-fatal
+    }
+
     // Add admin menu items if user is admin
     if (authManager.isAdmin()) {
       this.addAdminMenuItems();

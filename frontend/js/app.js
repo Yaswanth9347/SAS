@@ -16,16 +16,15 @@
 
       // For pages that require authentication, enforce login after navbar is ready
       const authenticatedPages = [
-        'dashboard.html', 
-        'visits.html', 
-        'schools.html', 
-        'teams.html',
-        'visit-gallery.html', 
-        'schedule-visit.html', 
-        'visit-report.html',
-        'contact.html', 
-        'analytics.html', 
-        'reports.html'
+  'dashboard.html', 
+  'visits.html', 
+  'schools.html', 
+  'teams.html',
+  'visit-gallery.html', 
+  'schedule-visit.html', 
+  'visit-report.html',
+  'analytics.html', 
+  'reports.html'
       ];
 
       const currentPage = window.location.pathname.split('/').pop();
