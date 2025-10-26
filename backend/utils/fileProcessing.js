@@ -1,10 +1,11 @@
 const path = require('path');
 const fs = require('fs').promises;
+const { optimizePhoto, generateThumbnail } = require('./imageOptimizer');
 
 // ============================================
 // FILE PROCESSING UTILITIES
 // Ready for Sharp (images) and FFmpeg (videos)
-// Install: npm install sharp fluent-ffmpeg
+// Sharp is now integrated for image optimization
 // ============================================
 
 /**
@@ -27,65 +28,56 @@ function extractFileMetadata(file) {
 
 /**
  * Process image file (resize, optimize, extract dimensions)
- * Requires: npm install sharp
+ * Now using Sharp library for image optimization
  * @param {string} filePath - Path to image file
  * @param {Object} options - Processing options
  * @returns {Promise<Object>} - Processing results with metadata
  */
 async function processImage(filePath, options = {}) {
     try {
-        // NOTE: Install sharp to enable this feature
-        // npm install sharp
+        console.log('Processing image:', filePath);
         
-        // For now, just return basic metadata without processing
-        // Uncomment below code after installing sharp
+        // Optimize the photo using Sharp
+        const optimizeResult = await optimizePhoto(filePath);
         
-        /*
-        const sharp = require('sharp');
-        
-        const defaults = {
-            maxWidth: 1920,
-            maxHeight: 1080,
-            quality: 85,
-            format: 'jpeg'
-        };
-        
-        const config = { ...defaults, ...options };
-        
-        // Get image metadata
-        const metadata = await sharp(filePath).metadata();
-        
-        // Create optimized version if needed
-        if (metadata.width > config.maxWidth || metadata.height > config.maxHeight) {
-            const optimizedPath = filePath.replace(
-                path.extname(filePath),
-                `-optimized${path.extname(filePath)}`
-            );
-            
-            await sharp(filePath)
-                .resize(config.maxWidth, config.maxHeight, {
-                    fit: 'inside',
-                    withoutEnlargement: true
-                })
-                .jpeg({ quality: config.quality })
-                .toFile(optimizedPath);
+        if (!optimizeResult.success) {
+            console.error('Image optimization failed:', optimizeResult.error);
+            return {
+                width: null,
+                height: null,
+                format: path.extname(filePath).substring(1),
+                processed: false,
+                processingError: optimizeResult.error
+            };
         }
         
-        return {
-            width: metadata.width,
-            height: metadata.height,
-            format: metadata.format,
-            processed: true
-        };
-        */
+        console.log('Image optimized:', optimizeResult);
         
-        // Temporary return without sharp
+        // Generate thumbnail if enabled
+        let thumbnailInfo = null;
+        if (options.generateThumbnail !== false) {
+            const thumbResult = await generateThumbnail(filePath);
+            if (thumbResult.success) {
+                thumbnailInfo = {
+                    thumbnailPath: thumbResult.thumbnailPath,
+                    thumbnailSize: thumbResult.size
+                };
+                console.log('Thumbnail generated:', thumbResult);
+            }
+        }
+        
+        // Extract dimensions from optimization result
+        const dimensions = optimizeResult.finalDimensions.split('x');
+        
         return {
-            width: null,
-            height: null,
-            format: path.extname(filePath).substring(1),
-            processed: false,
-            note: 'Install sharp for image processing: npm install sharp'
+            width: parseInt(dimensions[0]),
+            height: parseInt(dimensions[1]),
+            format: path.extname(filePath).substring(1).replace('.', ''),
+            processed: true,
+            originalSize: optimizeResult.originalSize,
+            optimizedSize: optimizeResult.optimizedSize,
+            reduction: optimizeResult.reduction,
+            ...thumbnailInfo
         };
         
     } catch (error) {

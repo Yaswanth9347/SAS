@@ -1,12 +1,43 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { fileTypeFromBuffer } = require('file-type');
 
 // ============================================
 // HYBRID STORAGE APPROACH CONFIGURATION
 // MongoDB (Metadata) + File System (Media)
 // Ready for future Cloud Storage integration
 // ============================================
+
+// ============================================
+// SECURITY: Path Sanitization
+// ============================================
+/**
+ * Sanitize ID to prevent directory traversal attacks
+ * Removes: ../ , ..\, absolute paths, special characters
+ */
+function sanitizeId(rawId) {
+    if (!rawId) return 'temp';
+    
+    // Convert to string
+    let id = typeof rawId === 'string' ? rawId : String(rawId);
+    
+    // Remove any path traversal attempts
+    id = id.replace(/\.\./g, ''); // Remove ..
+    id = id.replace(/[\/\\]/g, ''); // Remove slashes
+    id = id.replace(/^[.]/, ''); // Remove leading dot
+    
+    // Allow only alphanumeric, hyphens, and underscores (MongoDB ObjectId format)
+    id = id.replace(/[^a-zA-Z0-9_-]/g, '');
+    
+    // Ensure non-empty after sanitization
+    if (!id || id.length === 0) {
+        return 'temp';
+    }
+    
+    // Limit length to prevent abuse
+    return id.substring(0, 50);
+}
 
 // Create uploads directory structure if it doesn't exist
 const uploadDir = path.join(__dirname, '../uploads');
@@ -57,7 +88,10 @@ const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         // Prefer authenticated user's id when present, otherwise route param (visit id), else 'temp'
         const rawId = (req.user && (req.user.id || req.user._id)) || req.params.id || 'temp';
-        const visitId = typeof rawId === 'string' ? rawId : String(rawId);
+        
+        // SECURITY: Sanitize the ID to prevent path traversal
+        const visitId = sanitizeId(rawId);
+        
         let typeDir;
         
         // Organize by file type and visit
@@ -142,4 +176,78 @@ const uploadVisitFiles = upload.fields([
 // Alternative upload handler with any() for debugging
 const uploadAnyFiles = upload.any();
 
-module.exports = { uploadVisitFiles, uploadAnyFiles };
+// ============================================
+// SECURITY: MIME Type Validation Middleware
+// ============================================
+/**
+ * Validates that file content matches the declared MIME type
+ * Use this middleware AFTER multer upload to verify actual file content
+ */
+async function validateMimeType(req, res, next) {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return next(); // No files to validate
+        }
+
+        // Validate each uploaded file
+        for (const file of req.files) {
+            const buffer = await fs.promises.readFile(file.path);
+            
+            // Get actual file type from content
+            const fileType = await fileTypeFromBuffer(buffer);
+            
+            if (!fileType) {
+                // Could not determine file type - delete and reject
+                await fs.promises.unlink(file.path);
+                return res.status(400).json({
+                    success: false,
+                    message: `Unable to verify file type for ${file.originalname}. File may be corrupted or unsupported.`
+                });
+            }
+            
+            // Verify MIME type matches
+            if (fileType.mime !== file.mimetype) {
+                // MIME type mismatch - potential attack
+                await fs.promises.unlink(file.path);
+                return res.status(400).json({
+                    success: false,
+                    message: `File type mismatch detected for ${file.originalname}. Declared: ${file.mimetype}, Actual: ${fileType.mime}. Upload rejected for security reasons.`
+                });
+            }
+            
+            // Additional validation: Check if detected type is in allowed types
+            const fieldName = file.fieldname;
+            const config = STORAGE_CONFIG[fieldName];
+            
+            if (config && !config.allowedTypes.includes(fileType.mime)) {
+                await fs.promises.unlink(file.path);
+                return res.status(400).json({
+                    success: false,
+                    message: `File type ${fileType.mime} is not allowed for ${fieldName}.`
+                });
+            }
+        }
+        
+        next();
+    } catch (error) {
+        console.error('MIME validation error:', error);
+        
+        // Clean up files on error
+        if (req.files) {
+            for (const file of req.files) {
+                try {
+                    await fs.promises.unlink(file.path);
+                } catch (unlinkError) {
+                    console.error('Error deleting file:', unlinkError);
+                }
+            }
+        }
+        
+        return res.status(500).json({
+            success: false,
+            message: 'Error validating uploaded files'
+        });
+    }
+}
+
+module.exports = { uploadVisitFiles, uploadAnyFiles, validateMimeType, sanitizeId };

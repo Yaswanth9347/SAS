@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 
-// Require authentication middleware (removed role-checking)
+// Require authentication middleware
 const auth = require('../middleware/auth');
 
-// Apply authentication middleware for all routes (removed role restriction)
+// Apply authentication and admin authorization for all routes
 router.use(auth.protect);
+router.use(auth.authorize('admin'));
 
 const { 
     getDashboardStats,
@@ -22,6 +23,18 @@ const {
     getStorageStats,
     cleanupStorage
 } = require('../controllers/adminController');
+
+// Root endpoint for admin access verification
+router.get('/', (req, res) => {
+    res.status(200).json({
+        success: true,
+        message: 'Admin access confirmed',
+        user: {
+            id: req.user.id,
+            role: req.user.role
+        }
+    });
+});
 
 router.get('/stats', getDashboardStats);
 router.post('/create-teams', createTeams);

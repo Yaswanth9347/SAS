@@ -46,6 +46,67 @@
   .form-row {
     grid-template-columns: 1fr;
   }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px; /* Prevents iOS zoom */
+  }
+  
+  .upload-section {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-group input,
+  .form-group select,
+  .form-group textarea,
+  .modal input,
+  .modal select,
+  .modal textarea {
+    padding: 14px 12px; /* Larger touch targets */
+  }
+  
+  .upload-group input[type="file"] {
+    padding: 14px 12px;
+  }
+}
+
+/* Touch-friendly form improvements */
+@media (hover: none) and (pointer: coarse) {
+  /* Ensure all form inputs have proper sizing */
+  input,
+  select,
+  textarea,
+  button[type="submit"] {
+    font-size: 16px; /* Prevents iOS zoom */
+    min-height: 44px; /* iOS recommended touch target */
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 14px 12px;
+  }
+  
+  /* Better visual feedback on touch */
+  input:focus,
+  select:focus,
+  textarea:focus {
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+  }
+  
+  /* File upload button improvements */
+  input[type="file"] {
+    padding: 12px;
+  }
+  
+  /* Form validation feedback */
+  .form-error {
+    font-size: 0.9rem;
+    margin-top: 8px;
+  }
 }
 
 /* ============================================

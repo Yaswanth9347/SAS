@@ -1,6 +1,6 @@
 const express = require('express');
 const debugUpload = require('../middleware/debugUpload');
-const { uploadAnyFiles } = require('../middleware/upload');
+const { uploadAnyFiles, validateMimeType } = require('../middleware/upload');
 const {
     getVisits,
     getVisit,
@@ -25,7 +25,7 @@ router.get('/stats', protect, getVisitStats);
 router.get('/:id', protect, getVisit);
 router.get('/:id/gallery', protect, getVisitGallery);
 router.post('/', protect, createVisit); // Both admin and volunteers can create visits
-router.post('/:id/upload', protect, debugUpload, uploadAnyFiles, handleFileUpload);
+router.post('/:id/upload', protect, debugUpload, uploadAnyFiles, validateMimeType, handleFileUpload);
 router.put('/:id/submit', protect, submitVisitReport);
 router.put('/:id', protect, updateVisit);
 router.delete('/:id', protect, deleteVisit);

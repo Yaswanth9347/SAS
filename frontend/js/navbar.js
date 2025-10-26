@@ -7,6 +7,7 @@ class NavbarManager {
   constructor() {
     this.navMenu = null;
     this.navUser = null;
+    this.hamburger = null;
     this.currentPage = this.getCurrentPage();
   }
 
@@ -30,6 +31,9 @@ class NavbarManager {
       console.warn('Navbar menu element not found');
       return;
     }
+
+    // Setup mobile hamburger menu
+    this.setupHamburgerMenu();
 
     // Update user display
     this.updateUserDisplay();
@@ -66,6 +70,10 @@ class NavbarManager {
           if (link.classList.contains('logout-btn')) return;
           const href = link.getAttribute('href');
           if (!href || href === '#') return;
+          
+          // Close mobile menu on navigation
+          this.closeMobileMenu();
+          
           ev.preventDefault();
           ev.stopPropagation();
           window.location.href = href;
@@ -79,12 +87,123 @@ class NavbarManager {
   }
 
   /**
+   * Setup mobile hamburger menu toggle
+   */
+  setupHamburgerMenu() {
+    // Check if hamburger already exists
+    this.hamburger = document.querySelector('.hamburger');
+    
+    if (!this.hamburger) {
+      // Create hamburger menu element
+      const navContainer = document.querySelector('.nav-container');
+      if (!navContainer) return;
+      
+      this.hamburger = document.createElement('div');
+      this.hamburger.className = 'hamburger';
+      this.hamburger.innerHTML = `
+        <span></span>
+        <span></span>
+        <span></span>
+      `;
+      
+      // Insert hamburger before the nav menu
+      navContainer.appendChild(this.hamburger);
+    }
+    
+    // Add click event listener
+    this.hamburger.addEventListener('click', () => this.toggleMobileMenu());
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.nav-container') && this.navMenu.classList.contains('active')) {
+        this.closeMobileMenu();
+      }
+    });
+  }
+
+  /**
+   * Toggle mobile menu open/close
+   */
+  toggleMobileMenu() {
+    this.hamburger.classList.toggle('active');
+    this.navMenu.classList.toggle('active');
+    
+    // Prevent body scroll when menu is open
+    if (this.navMenu.classList.contains('active')) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  }
+
+  /**
+   * Close mobile menu
+   */
+  closeMobileMenu() {
+    this.hamburger?.classList.remove('active');
+    this.navMenu?.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  /**
    * Update user display in navbar
    */
   updateUserDisplay() {
     if (this.navUser) {
       const user = authManager.getUser();
-      this.navUser.textContent = `Welcome, ${user?.name || user?.username || 'User'}`;
+      const userName = user?.name || user?.username || 'User';
+      
+      // Create avatar element
+      const avatarHTML = this.createAvatarHTML(user);
+      
+      // Update navbar user display with avatar + name
+      this.navUser.innerHTML = `
+        ${avatarHTML}
+        <span class="nav-user-name">Welcome, ${userName}</span>
+      `;
+    }
+  }
+
+  /**
+   * Create avatar HTML with fallback to initials
+   */
+  createAvatarHTML(user) {
+    if (!user) {
+      return '<div class="nav-avatar"><span>?</span></div>';
+    }
+
+    const avatarUrl = user.avatar;
+    
+    if (avatarUrl) {
+      // User has avatar - display image
+      return `
+        <div class="nav-avatar">
+          <img src="${avatarUrl}" alt="${user.name || user.username}" 
+               onerror="this.parentElement.innerHTML='<span>${this.getInitials(user)}</span>'">
+        </div>
+      `;
+    } else {
+      // No avatar - display initials
+      const initials = this.getInitials(user);
+      return `<div class="nav-avatar"><span>${initials}</span></div>`;
+    }
+  }
+
+  /**
+   * Get user initials from name or username
+   */
+  getInitials(user) {
+    if (!user) return '?';
+    
+    const name = user.name || user.username || '?';
+    const parts = name.trim().split(/\s+/);
+    
+    if (parts.length >= 2) {
+      // First name + Last name initials
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    } else {
+      // Single name - first 2 letters
+      return name.substring(0, 2).toUpperCase();
     }
   }
 

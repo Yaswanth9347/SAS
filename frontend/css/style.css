@@ -80,6 +80,37 @@ body {
     align-items: center;
 }
 
+/* Hamburger Menu - Hidden by default on desktop */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+    padding: 8px;
+    z-index: 1001;
+}
+
+.hamburger span {
+    width: 25px;
+    height: 3px;
+    background: #fff;
+    margin: 3px 0;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+/* Hamburger animation when active */
+.hamburger.active span:nth-child(1) {
+    transform: rotate(45deg) translate(7px, 7px);
+}
+
+.hamburger.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -7px);
+}
+
 .nav-link {
     text-decoration: none;
     color: #fff;
@@ -105,6 +136,63 @@ body {
 .logout-btn:hover {
     background: #d32f2f;
     transform: translateY(-2px);
+}
+
+/* Navbar User Display with Avatar */
+#navUser {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+    font-weight: 500;
+}
+
+.nav-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    flex-shrink: 0;
+}
+
+.nav-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.nav-avatar span {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.nav-user-name {
+    white-space: nowrap;
+}
+
+/* Responsive navbar user */
+@media (max-width: 768px) {
+    .nav-user-name {
+        display: none;
+    }
+    
+    .nav-avatar {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .nav-avatar span {
+        font-size: 12px;
+    }
 }
 
 /* Hero Section */
@@ -346,22 +434,6 @@ body {
     color: #004085;
 }
 
-/* Footer */
-.footer {
-    background: #2e7d32;
-    color: white;
-    text-align: center;
-    padding: 25px 0;
-    border-top-left-radius: 50px;
-    border-top-right-radius: 50px;
-    margin-top: 60px;
-}
-
-.footer p {
-    font-size: 0.9rem;
-    opacity: 0.9;
-}
-
 /* Login Section */
 .login-section {
     padding: 100px 0;
@@ -545,11 +617,79 @@ body {
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
-    .nav-menu {
-        display: none;
+/* Tablet & Mobile Responsive */
+@media (max-width: 900px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
     }
     
+    .dashboard {
+        padding: 90px 0 40px;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Mobile Navigation */
+    .hamburger {
+        display: flex;
+    }
+    
+    .nav-menu {
+        position: fixed;
+        right: -100%;
+        top: 70px;
+        width: 280px;
+        height: calc(100vh - 70px);
+        background: linear-gradient(180deg, #4caf50, #2e7d32);
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 30px 20px;
+        gap: 0;
+        transition: right 0.3s ease-in-out;
+        box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+        overflow-y: auto;
+    }
+    
+    .nav-menu.active {
+        right: 0;
+    }
+    
+    .nav-menu li {
+        width: 100%;
+        margin: 8px 0;
+    }
+    
+    .nav-link {
+        display: block;
+        width: 100%;
+        padding: 12px 16px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    
+    .nav-link:hover, .nav-link.active {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+    }
+    
+    #navUser {
+        padding: 12px 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        margin-top: 10px;
+        width: 100%;
+    }
+    
+    .logout-btn {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .nav-container {
+        padding: 0 20px;
+    }
+    
+    /* Rest of mobile styles */
     .hero-content h1 {
         font-size: 2.5rem;
     }
@@ -574,6 +714,19 @@ body {
     
     .dashboard-grid {
         grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .dashboard {
+        padding: 80px 15px 30px;
+    }
+    
+    .dashboard-card {
+        padding: 20px;
+    }
+    
+    .dashboard-header h1 {
+        font-size: 1.75rem;
     }
 }
 
@@ -584,6 +737,63 @@ body {
 
     .hero-content p {
         font-size: 1rem;
+    }
+    
+    .dashboard-grid {
+        gap: 12px;
+    }
+    
+    .dashboard-card {
+        padding: 15px;
+    }
+    
+    .dashboard-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .btn {
+        padding: 12px 20px;
+        font-size: 0.95rem;
+    }
+}
+
+/* Touch-friendly improvements for mobile devices */
+@media (hover: none) and (pointer: coarse) {
+    /* Ensure all buttons and interactive elements have minimum touch targets */
+    .btn,
+    button,
+    .nav-link,
+    .hamburger,
+    .close-btn,
+    .modal-close {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Better touch feedback */
+    .btn:active,
+    button:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+    }
+    
+    /* Prevent iOS zoom on input focus */
+    input,
+    select,
+    textarea {
+        font-size: 16px;
+    }
+    
+    /* Customize tap highlight color */
+    * {
+        -webkit-tap-highlight-color: rgba(102, 126, 234, 0.2);
+    }
+    
+    /* Improve touch scrolling */
+    .modal-content,
+    .dashboard,
+    .container {
+        -webkit-overflow-scrolling: touch;
     }
 }
 /* Registration Form Styles */

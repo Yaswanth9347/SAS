@@ -1,6 +1,7 @@
 const Visit = require('../models/Visit');
 const Team = require('../models/Team');
 const School = require('../models/School');
+const { optimizePhoto, generateThumbnail } = require('../utils/imageOptimizer');
 
 // @desc    Get all visits
 // @route   GET /api/visits

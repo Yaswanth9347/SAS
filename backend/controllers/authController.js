@@ -2,6 +2,7 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { sendPasswordResetEmail, sendPasswordResetConfirmation } = require('../utils/emailService');
+const { optimizeAvatar } = require('../utils/imageOptimizer');
 
 // Generate JWT Token
 const sendTokenResponse = (user, statusCode, res) => {
@@ -475,6 +476,18 @@ exports.uploadAvatar = async (req, res, next) => {
         }
 
         const file = files[0];
+        
+        // Optimize avatar image (resize to 320x320, compress)
+        console.log('Optimizing avatar:', file.path);
+        const optimizeResult = await optimizeAvatar(file.path);
+        
+        if (!optimizeResult.success) {
+            console.error('Avatar optimization failed:', optimizeResult.error);
+            // Continue anyway with original file
+        } else {
+            console.log('Avatar optimized:', optimizeResult);
+        }
+        
         const path = require('path');
         const rel = path.relative(path.join(__dirname, '../uploads'), file.path).replace(/\\/g, '/');
         const url = `/uploads/${rel}`;
@@ -482,7 +495,18 @@ exports.uploadAvatar = async (req, res, next) => {
         const user = await User.findByIdAndUpdate(req.user.id, { profileImage: url }, { new: true }).select('-password');
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-        res.status(200).json({ success: true, message: 'Avatar uploaded', data: { profileImage: url } });
+        res.status(200).json({ 
+            success: true, 
+            message: 'Avatar uploaded and optimized', 
+            data: { 
+                profileImage: url,
+                optimization: optimizeResult.success ? {
+                    originalSize: optimizeResult.originalSize,
+                    optimizedSize: optimizeResult.optimizedSize,
+                    reduction: optimizeResult.reduction
+                } : null
+            } 
+        });
     } catch (error) {
         console.error('Avatar upload error:', error);
         res.status(500).json({ success: false, message: error.message });
