@@ -123,6 +123,130 @@ function initializeSchoolsPage() {
     return { street: parts[0] || '', city: parts[1] || '', state: parts[2] || '', pincode: parts[3] || '' };
   }
 
+  function openSchoolDetailsModal(school) {
+    // Close any existing details modal
+    const existingModal = document.querySelector('.school-details-modal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    const formatAddress = (addr) => {
+      if (!addr) return 'Not provided';
+      const parts = [addr.street, addr.city, addr.state, addr.pincode].filter(Boolean);
+      return parts.length > 0 ? parts.join(', ') : 'Not provided';
+    };
+
+    const formatDate = (date) => {
+      if (!date) return 'N/A';
+      return new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    };
+
+    const modal = document.createElement('div');
+    modal.className = 'school-details-modal';
+    modal.innerHTML = `
+      <div class="school-details-overlay"></div>
+      <div class="school-details-container">
+        <div class="details-header">
+          <h2>${escapeHtml(school.name)}</h2>
+          <button class="close-details" aria-label="Close">&times;</button>
+        </div>
+        <div class="details-body">
+          <div class="details-grid">
+            <!-- Left Column -->
+            <div class="details-section">
+              <h3>School Information</h3>
+              <div class="detail-item">
+                <span class="label">Address</span>
+                <span class="value">${escapeHtml(formatAddress(school.address))}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Status</span>
+                <span class="value"><span class="status-badge ${school.isActive ? 'active' : 'inactive'}">${school.isActive ? 'Active' : 'Inactive'}</span></span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Total Classes</span>
+                <span class="value"><span class="highlight-count">${Number(school.totalClasses ?? 0)}</span></span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Available Classes</span>
+                <span class="value"><span class="highlight-count ${Number(school.availableClasses ?? 0) === 0 ? 'warn' : ''}">${Number(school.availableClasses ?? 0)}</span></span>
+              </div>
+              ${school.grades && school.grades.length > 0 ? `
+              <div class="detail-item">
+                <span class="label">Grades</span>
+                <span class="value">${escapeHtml(school.grades.join(', '))}</span>
+              </div>` : ''}
+            </div>
+
+            <!-- Right Column -->
+            <div class="details-section">
+              <h3>Contact Information</h3>
+              <div class="detail-item">
+                <span class="label">Headmaster</span>
+                <span class="value">${escapeHtml(school.contactPerson?.name || 'N/A')}</span>
+              </div>
+              ${school.contactPerson?.position ? `
+              <div class="detail-item">
+                <span class="label">Position</span>
+                <span class="value">${escapeHtml(school.contactPerson.position)}</span>
+              </div>` : ''}
+              <div class="detail-item">
+                <span class="label">Phone 1</span>
+                <span class="value">${escapeHtml(school.contactPerson?.phone || 'N/A')}</span>
+              </div>
+              ${school.contactPerson?.phone2 ? `
+              <div class="detail-item">
+                <span class="label">Phone 2</span>
+                <span class="value">${escapeHtml(school.contactPerson.phone2)}</span>
+              </div>` : ''}
+              ${school.contactPerson?.email ? `
+              <div class="detail-item">
+                <span class="label">Email</span>
+                <span class="value">${escapeHtml(school.contactPerson.email)}</span>
+              </div>` : ''}
+            </div>
+          </div>
+
+          ${school.notes ? `
+          <div class="details-section full-width">
+            <h3>Additional Notes</h3>
+            <div class="notes-content">${escapeHtml(school.notes)}</div>
+          </div>` : ''}
+
+          <div class="details-footer">
+            <div class="timestamp">
+              <span>Created: ${formatDate(school.createdAt)}</span>
+              <span>Updated: ${formatDate(school.updatedAt)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Show modal with animation
+    requestAnimationFrame(() => {
+      modal.classList.add('open');
+    });
+
+    // Close handlers
+    const closeBtn = modal.querySelector('.close-details');
+    const overlay = modal.querySelector('.school-details-overlay');
+
+    const closeModal = () => {
+      modal.classList.remove('open');
+      setTimeout(() => modal.remove(), 300);
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', closeModal);
+  }
+
   async function loadSchools() {
     try {
       loading.show('schoolsList', 'Loading schools...');
@@ -137,9 +261,9 @@ function initializeSchoolsPage() {
         const personIcon = '<span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.7 0 4.88-2.18 4.88-4.88S14.7 2.24 12 2.24 7.12 4.42 7.12 7.12 9.3 12 12 12zm0 2.44c-3.26 0-9.76 1.64-9.76 4.88V22h19.52v-2.68c0-3.24-6.5-4.88-9.76-4.88z"/></svg></span>';
         const locationIcon = '<span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C8.14 2 5 5.14 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.86-3.14-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg></span>';
         data.data.forEach(s => {
-          const row = document.createElement('div');
-          row.className = 'school-row';
-          row.innerHTML = `
+          const card = document.createElement('div');
+          card.className = 'school-card';
+          card.innerHTML = `
             <div class="school-info">
               <div class="school-name">${escapeHtml(s.name)}</div>
               <div class="meta-row headmaster-name">${personIcon}<span>${escapeHtml(s.contactPerson?.name || 'N/A')}</span></div>
@@ -153,17 +277,25 @@ function initializeSchoolsPage() {
               <button class="icon-btn btn-edit" title="Edit" aria-label="Edit school" data-school-id="${s._id}">${editIcon}</button>
               <button class="icon-btn btn-delete" title="Delete" aria-label="Delete school" data-school-id="${s._id}">${deleteIcon}</button>
             </div>`;
-          document.getElementById('schoolsList').appendChild(row);
 
-          const editBtn = row.querySelector('.btn-edit');
-          editBtn.addEventListener('click', function() {
+          const editBtn = card.querySelector('.btn-edit');
+          editBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
             openSchoolModal(s);
           });
 
-          const deleteBtn = row.querySelector('.btn-delete');
-          deleteBtn.addEventListener('click', function() {
+          const deleteBtn = card.querySelector('.btn-delete');
+          deleteBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
             deleteSchool(s._id);
           });
+
+          // Open details modal by clicking the card
+          card.addEventListener('click', () => {
+            openSchoolDetailsModal(s);
+          });
+
+          document.getElementById('schoolsList').appendChild(card);
         });
       } else {
         renderNoData('schoolsList', 'No schools found. Add your first school!');
