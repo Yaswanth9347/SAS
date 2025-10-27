@@ -2,11 +2,44 @@ const Visit = require("../models/Visit");
 const Team = require("../models/Team");
 const School = require("../models/School");
 
+// Helper function to auto-update past scheduled visits to completed
+const updatePastVisits = async () => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
+
+    // Find all scheduled visits where date is before today
+    const result = await Visit.updateMany(
+      {
+        status: "scheduled",
+        date: { $lt: today },
+      },
+      {
+        $set: { status: "completed" },
+      }
+    );
+
+    if (result.modifiedCount > 0) {
+      console.log(
+        `Auto-updated ${result.modifiedCount} past scheduled visits to completed`
+      );
+    }
+
+    return result.modifiedCount;
+  } catch (error) {
+    console.error("Error updating past visits:", error);
+    return 0;
+  }
+};
+
 // @desc    Get all visits
 // @route   GET /api/visits
 // @access  Private
 exports.getVisits = async (req, res, next) => {
   try {
+    // Auto-update past scheduled visits to completed
+    await updatePastVisits();
+
     let query;
     const { status, month, year, team } = req.query;
 
@@ -556,6 +589,9 @@ exports.submitCompleteReport = async (req, res, next) => {
 // @access  Private
 exports.getAllGalleryMedia = async (req, res, next) => {
   try {
+    // Auto-update past scheduled visits to completed
+    await updatePastVisits();
+
     const {
       team,
       school,

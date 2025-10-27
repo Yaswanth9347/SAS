@@ -28,6 +28,7 @@ router.get('/:id/gallery', protect, getVisitGallery);
 router.post('/', protect, createVisit); // Both admin and volunteers can create visits
 router.post('/:id/upload', protect, debugUpload, uploadAnyFiles, handleFileUpload);
 router.put('/:id/submit', protect, submitVisitReport);
+router.get("/gallery/all", protect, getAllGalleryMedia); // Must be before /:id routes
 router.put('/:id', protect, updateVisit);
 router.delete('/:id', protect, deleteVisit);
 router.delete('/:id/media', protect, deleteMedia);
