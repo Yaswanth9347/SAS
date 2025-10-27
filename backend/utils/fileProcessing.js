@@ -1,5 +1,5 @@
-const path = require('path');
-const fs = require('fs').promises;
+const path = require("path");
+const fs = require("fs").promises;
 
 // ============================================
 // FILE PROCESSING UTILITIES
@@ -13,16 +13,36 @@ const fs = require('fs').promises;
  * @returns {Object} - File metadata object
  */
 function extractFileMetadata(file) {
-    return {
-        filename: file.filename,
-        originalName: file.originalname,
-        path: file.path,
-        size: file.size,
-        mimetype: file.mimetype,
-        uploadedAt: new Date(),
-        storageType: 'local',
-        processed: false
-    };
+  // Convert absolute file path to web-accessible relative path
+  // file.path is like: C:/Users/.../backend/uploads/photos/...
+  // We need: /uploads/photos/...
+  let webPath = file.path;
+
+  // Normalize path separators to forward slashes
+  webPath = webPath.replace(/\\/g, "/");
+
+  // Extract the path starting from /uploads
+  const uploadsIndex = webPath.indexOf("/uploads");
+  if (uploadsIndex !== -1) {
+    webPath = webPath.substring(uploadsIndex);
+  } else {
+    // Fallback: try to find uploads without leading slash
+    const uploadsIndexAlt = webPath.indexOf("uploads");
+    if (uploadsIndexAlt !== -1) {
+      webPath = "/" + webPath.substring(uploadsIndexAlt);
+    }
+  }
+
+  return {
+    filename: file.filename,
+    originalName: file.originalname,
+    path: webPath, // Now stores web-accessible path like /uploads/photos/...
+    size: file.size,
+    mimetype: file.mimetype,
+    uploadedAt: new Date(),
+    storageType: "local",
+    processed: false,
+  };
 }
 
 /**
@@ -33,14 +53,14 @@ function extractFileMetadata(file) {
  * @returns {Promise<Object>} - Processing results with metadata
  */
 async function processImage(filePath, options = {}) {
-    try {
-        // NOTE: Install sharp to enable this feature
-        // npm install sharp
-        
-        // For now, just return basic metadata without processing
-        // Uncomment below code after installing sharp
-        
-        /*
+  try {
+    // NOTE: Install sharp to enable this feature
+    // npm install sharp
+
+    // For now, just return basic metadata without processing
+    // Uncomment below code after installing sharp
+
+    /*
         const sharp = require('sharp');
         
         const defaults = {
@@ -78,23 +98,22 @@ async function processImage(filePath, options = {}) {
             processed: true
         };
         */
-        
-        // Temporary return without sharp
-        return {
-            width: null,
-            height: null,
-            format: path.extname(filePath).substring(1),
-            processed: false,
-            note: 'Install sharp for image processing: npm install sharp'
-        };
-        
-    } catch (error) {
-        console.error('Error processing image:', error);
-        return {
-            processed: false,
-            processingError: error.message
-        };
-    }
+
+    // Temporary return without sharp
+    return {
+      width: null,
+      height: null,
+      format: path.extname(filePath).substring(1),
+      processed: false,
+      note: "Install sharp for image processing: npm install sharp",
+    };
+  } catch (error) {
+    console.error("Error processing image:", error);
+    return {
+      processed: false,
+      processingError: error.message,
+    };
+  }
 }
 
 /**
@@ -105,15 +124,15 @@ async function processImage(filePath, options = {}) {
  * @returns {Promise<Object>} - Thumbnail info
  */
 async function generateVideoThumbnail(videoPath, options = {}) {
-    try {
-        // NOTE: Install fluent-ffmpeg to enable this feature
-        // npm install fluent-ffmpeg
-        // Also requires ffmpeg installed on your system
-        
-        // For now, return placeholder
-        // Uncomment below code after installing fluent-ffmpeg
-        
-        /*
+  try {
+    // NOTE: Install fluent-ffmpeg to enable this feature
+    // npm install fluent-ffmpeg
+    // Also requires ffmpeg installed on your system
+
+    // For now, return placeholder
+    // Uncomment below code after installing fluent-ffmpeg
+
+    /*
         const ffmpeg = require('fluent-ffmpeg');
         
         const defaults = {
@@ -145,22 +164,21 @@ async function generateVideoThumbnail(videoPath, options = {}) {
                 });
         });
         */
-        
-        // Temporary return without ffmpeg
-        return {
-            thumbnail: null,
-            processed: false,
-            note: 'Install fluent-ffmpeg for video processing: npm install fluent-ffmpeg'
-        };
-        
-    } catch (error) {
-        console.error('Error generating video thumbnail:', error);
-        return {
-            thumbnail: null,
-            processed: false,
-            processingError: error.message
-        };
-    }
+
+    // Temporary return without ffmpeg
+    return {
+      thumbnail: null,
+      processed: false,
+      note: "Install fluent-ffmpeg for video processing: npm install fluent-ffmpeg",
+    };
+  } catch (error) {
+    console.error("Error generating video thumbnail:", error);
+    return {
+      thumbnail: null,
+      processed: false,
+      processingError: error.message,
+    };
+  }
 }
 
 /**
@@ -170,11 +188,11 @@ async function generateVideoThumbnail(videoPath, options = {}) {
  * @returns {Promise<number>} - Duration in seconds
  */
 async function getVideoDuration(videoPath) {
-    try {
-        // NOTE: Install fluent-ffmpeg to enable this feature
-        // npm install fluent-ffmpeg
-        
-        /*
+  try {
+    // NOTE: Install fluent-ffmpeg to enable this feature
+    // npm install fluent-ffmpeg
+
+    /*
         const ffmpeg = require('fluent-ffmpeg');
         
         return new Promise((resolve, reject) => {
@@ -187,14 +205,13 @@ async function getVideoDuration(videoPath) {
             });
         });
         */
-        
-        // Temporary return
-        return null;
-        
-    } catch (error) {
-        console.error('Error getting video duration:', error);
-        return null;
-    }
+
+    // Temporary return
+    return null;
+  } catch (error) {
+    console.error("Error getting video duration:", error);
+    return null;
+  }
 }
 
 /**
@@ -204,38 +221,38 @@ async function getVideoDuration(videoPath) {
  * @returns {Promise<Array>} - Array of processed file metadata
  */
 async function processUploadedFiles(files, fileType) {
-    if (!files || files.length === 0) {
-        return [];
+  if (!files || files.length === 0) {
+    return [];
+  }
+
+  const processedFiles = [];
+
+  for (const file of files) {
+    try {
+      const metadata = extractFileMetadata(file);
+
+      // Process based on file type
+      if (fileType === "photos") {
+        const imageData = await processImage(file.path);
+        Object.assign(metadata, imageData);
+      } else if (fileType === "videos") {
+        const thumbnailData = await generateVideoThumbnail(file.path);
+        const duration = await getVideoDuration(file.path);
+        Object.assign(metadata, thumbnailData, { duration });
+      }
+
+      processedFiles.push(metadata);
+    } catch (error) {
+      console.error(`Error processing ${fileType} file:`, error);
+      // Still add the file with basic metadata
+      processedFiles.push({
+        ...extractFileMetadata(file),
+        processingError: error.message,
+      });
     }
+  }
 
-    const processedFiles = [];
-
-    for (const file of files) {
-        try {
-            const metadata = extractFileMetadata(file);
-
-            // Process based on file type
-            if (fileType === 'photos') {
-                const imageData = await processImage(file.path);
-                Object.assign(metadata, imageData);
-            } else if (fileType === 'videos') {
-                const thumbnailData = await generateVideoThumbnail(file.path);
-                const duration = await getVideoDuration(file.path);
-                Object.assign(metadata, thumbnailData, { duration });
-            }
-
-            processedFiles.push(metadata);
-        } catch (error) {
-            console.error(`Error processing ${fileType} file:`, error);
-            // Still add the file with basic metadata
-            processedFiles.push({
-                ...extractFileMetadata(file),
-                processingError: error.message
-            });
-        }
-    }
-
-    return processedFiles;
+  return processedFiles;
 }
 
 /**
@@ -244,15 +261,15 @@ async function processUploadedFiles(files, fileType) {
  * @returns {Promise<boolean>} - True if valid image
  */
 async function validateImage(filePath) {
-    try {
-        // Basic validation: check if file exists and has image extension
-        await fs.access(filePath);
-        const ext = path.extname(filePath).toLowerCase();
-        const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-        return validExtensions.includes(ext);
-    } catch (error) {
-        return false;
-    }
+  try {
+    // Basic validation: check if file exists and has image extension
+    await fs.access(filePath);
+    const ext = path.extname(filePath).toLowerCase();
+    const validExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
+    return validExtensions.includes(ext);
+  } catch (error) {
+    return false;
+  }
 }
 
 /**
@@ -261,23 +278,23 @@ async function validateImage(filePath) {
  * @returns {Promise<boolean>} - True if valid video
  */
 async function validateVideo(filePath) {
-    try {
-        // Basic validation: check if file exists and has video extension
-        await fs.access(filePath);
-        const ext = path.extname(filePath).toLowerCase();
-        const validExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mpeg'];
-        return validExtensions.includes(ext);
-    } catch (error) {
-        return false;
-    }
+  try {
+    // Basic validation: check if file exists and has video extension
+    await fs.access(filePath);
+    const ext = path.extname(filePath).toLowerCase();
+    const validExtensions = [".mp4", ".mov", ".avi", ".webm", ".mpeg"];
+    return validExtensions.includes(ext);
+  } catch (error) {
+    return false;
+  }
 }
 
 module.exports = {
-    extractFileMetadata,
-    processImage,
-    generateVideoThumbnail,
-    getVideoDuration,
-    processUploadedFiles,
-    validateImage,
-    validateVideo
+  extractFileMetadata,
+  processImage,
+  generateVideoThumbnail,
+  getVideoDuration,
+  processUploadedFiles,
+  validateImage,
+  validateVideo,
 };

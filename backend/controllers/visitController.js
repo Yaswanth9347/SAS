@@ -2,6 +2,37 @@ const Visit = require("../models/Visit");
 const Team = require("../models/Team");
 const School = require("../models/School");
 
+// Helper function to convert absolute file paths to web-accessible paths
+const normalizeFilePath = (filePath) => {
+  if (!filePath) return "";
+
+  let normalized = String(filePath);
+
+  // If it's already a web path (starts with /uploads or http), return as-is
+  if (normalized.startsWith("/uploads") || normalized.startsWith("http")) {
+    return normalized;
+  }
+
+  // Convert Windows backslashes to forward slashes
+  normalized = normalized.replace(/\\/g, "/");
+
+  // Extract path starting from /uploads
+  const uploadsIndex = normalized.indexOf("/uploads");
+  if (uploadsIndex !== -1) {
+    return normalized.substring(uploadsIndex);
+  }
+
+  // Try without leading slash
+  const uploadsIndexAlt = normalized.indexOf("uploads");
+  if (uploadsIndexAlt !== -1) {
+    return "/" + normalized.substring(uploadsIndexAlt);
+  }
+
+  // If we can't find uploads, return the original
+  console.warn("Could not normalize file path:", filePath);
+  return normalized;
+};
+
 // Helper function to auto-update past scheduled visits to completed
 const updatePastVisits = async () => {
   try {
@@ -658,8 +689,15 @@ exports.getAllGalleryMedia = async (req, res, next) => {
       // Process photos
       if (visit.photos && visit.photos.length > 0) {
         visit.photos.forEach((photo) => {
+          // Handle both object (with metadata) and string (legacy) formats
+          let photoUrl =
+            typeof photo === "object" ? photo.cloudUrl || photo.path : photo;
+
+          // Normalize the path (convert absolute paths to web paths)
+          photoUrl = normalizeFilePath(photoUrl);
+
           allMedia.push({
-            url: photo,
+            url: photoUrl,
             type: "photo",
             visitId: visit._id,
             visitName: visit.name || "",
@@ -683,8 +721,15 @@ exports.getAllGalleryMedia = async (req, res, next) => {
       // Process videos
       if (visit.videos && visit.videos.length > 0) {
         visit.videos.forEach((video) => {
+          // Handle both object (with metadata) and string (legacy) formats
+          let videoUrl =
+            typeof video === "object" ? video.cloudUrl || video.path : video;
+
+          // Normalize the path (convert absolute paths to web paths)
+          videoUrl = normalizeFilePath(videoUrl);
+
           allMedia.push({
-            url: video,
+            url: videoUrl,
             type: "video",
             visitId: visit._id,
             visitName: visit.name || "",

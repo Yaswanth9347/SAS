@@ -13,6 +13,7 @@ let allPhotos = [];
 // Initialize gallery
 async function initGallery() {
   console.log("Initializing gallery...");
+  setupLightboxHandlers(); // Setup lightbox before loading
   await loadFilterData();
   setupEventListeners();
   await loadGalleryPhotos();
@@ -260,12 +261,22 @@ async function loadGalleryPhotos() {
       let filterText = "";
       if (currentFilter === "recent") filterText = "from last 30 days";
       else if (currentFilter === "school" && currentSchool) {
+        const schoolSelect = document.getElementById("schoolFilter");
         const schoolName =
-          document.getElementById("schoolSelect").selectedOptions[0].text;
+          schoolSelect &&
+          schoolSelect.selectedOptions &&
+          schoolSelect.selectedOptions[0]
+            ? schoolSelect.selectedOptions[0].text
+            : "Selected School";
         filterText = `from ${schoolName}`;
       } else if (currentFilter === "team" && currentTeam) {
+        const teamSelect = document.getElementById("teamFilter");
         const teamName =
-          document.getElementById("teamSelect").selectedOptions[0].text;
+          teamSelect &&
+          teamSelect.selectedOptions &&
+          teamSelect.selectedOptions[0]
+            ? teamSelect.selectedOptions[0].text
+            : "Selected Team";
         filterText = `from ${teamName}`;
       } else filterText = "all time";
 
@@ -305,6 +316,9 @@ async function loadGalleryPhotos() {
 function displayPhotos(photos) {
   const galleryContent = document.getElementById("galleryContent");
 
+  // Get base URL for images (remove /api from API_BASE_URL)
+  const baseURL = CONFIG.API_BASE_URL.replace("/api", "");
+
   const html = photos
     .map((photo) => {
       const isNew = isWithinDays(photo.visitDate, 7);
@@ -312,14 +326,50 @@ function displayPhotos(photos) {
       const teamName = photo.team?.name || "Unknown Team";
       const date = formatDate(photo.visitDate);
 
+      // Ensure photo URL is valid and absolute
+      let photoUrl = photo.url || "";
+      if (typeof photoUrl === "object") {
+        // Handle if url is still an object (shouldn't happen, but safety check)
+        photoUrl = photoUrl.path || photoUrl.cloudUrl || "";
+      }
+
+      // Convert to string and make absolute URL
+      photoUrl = String(photoUrl);
+
+      // Make sure path has leading slash
+      if (
+        photoUrl &&
+        !photoUrl.startsWith("http") &&
+        !photoUrl.startsWith("/")
+      ) {
+        photoUrl = "/" + photoUrl;
+      }
+
+      // Prepend base URL if not already absolute
+      if (photoUrl && !photoUrl.startsWith("http")) {
+        photoUrl = `${baseURL}${photoUrl}`;
+      }
+
+      // Skip if no valid URL
+      if (!photoUrl) {
+        console.warn("Photo has no valid URL:", photo);
+        return "";
+      }
+
+      // Debug log to see the actual URL
+      console.log("Photo URL:", photoUrl);
+
       if (photo.type === "photo") {
+        // Escape quotes in URLs for onclick handlers
+        const escapedUrl = photoUrl.replace(/'/g, "\\'");
+
         return `
-        <div class="photo-card" onclick="openLightbox('${
-          photo.url
-        }', 'image', '${escapeHtml(schoolName)} - ${escapeHtml(date)}')">
+        <div class="photo-card" onclick="openLightbox('${escapedUrl}', 'image', '${escapeHtml(
+          schoolName
+        )} - ${escapeHtml(date)}')">
           ${isNew ? '<span class="new-badge">NEW</span>' : ""}
           <div class="photo-img">
-            <img src="${photo.url}" alt="Visit photo" loading="lazy" />
+            <img src="${photoUrl}" alt="Visit photo" loading="lazy" onerror="handleImageError(this)" />
           </div>
           <div class="photo-info">
             <div class="photo-meta">
@@ -332,14 +382,10 @@ function displayPhotos(photos) {
               <span class="meta-date">📅 ${escapeHtml(date)}</span>
             </div>
             <div class="photo-actions">
-              <button class="icon-btn" onclick="event.stopPropagation(); downloadPhoto('${
-                photo.url
-              }')" title="Download">
+              <button class="icon-btn" onclick="event.stopPropagation(); downloadPhoto('${escapedUrl}', 'photo')" title="Download">
                 📥
               </button>
-              <button class="icon-btn" onclick="event.stopPropagation(); toggleFavorite('${
-                photo.url
-              }')" title="Favorite">
+              <button class="icon-btn" onclick="event.stopPropagation(); toggleFavorite('${escapedUrl}')" title="Favorite">
                 ⭐
               </button>
             </div>
@@ -383,15 +429,52 @@ function formatDate(date) {
   });
 }
 
-// Download photo
-function downloadPhoto(url) {
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = url.split("/").pop();
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  notify.success("Download started!");
+// Download photo or video with proper extension
+function downloadPhoto(url, type = "photo") {
+  // Extract filename from URL
+  const urlParts = url.split("/");
+  const filename = urlParts[urlParts.length - 1];
+
+  // Determine file extension
+  let finalFilename = filename;
+  if (type === "photo") {
+    // Ensure it has .jpg extension
+    if (!filename.match(/\.(jpg|jpeg|png|gif)$/i)) {
+      finalFilename = filename.replace(/\.[^.]+$/, ".jpg");
+    }
+  } else if (type === "video") {
+    // Ensure it has .mp4 extension (not mpg, as modern browsers use mp4)
+    if (!filename.match(/\.(mp4|webm|mov)$/i)) {
+      finalFilename = filename.replace(/\.[^.]+$/, ".mp4");
+    }
+  }
+
+  // Download using fetch to avoid CORS issues
+  fetch(url)
+    .then((response) => response.blob())
+    .then((blob) => {
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = finalFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      notify.success("Download started!");
+    })
+    .catch((error) => {
+      console.error("Download error:", error);
+      // Fallback to direct download
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = finalFilename;
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      notify.success("Download started!");
+    });
 }
 
 // Toggle favorite (placeholder - needs backend implementation)
@@ -421,12 +504,33 @@ function openLightbox(src, type, caption = "") {
 
   // Enable keyboard navigation
   document.addEventListener("keydown", handleLightboxKeypress);
+
+  // Prevent body scroll
+  document.body.style.overflow = "hidden";
 }
 
 function closeLightbox() {
   const lightbox = document.getElementById("lightbox");
+  const video = document.getElementById("lightbox-video");
+
   lightbox.style.display = "none";
-  document.getElementById("lightbox-video").pause();
+
+  // Pause video if playing
+  if (video) {
+    video.pause();
+    video.src = "";
+  }
+
+  // Clear image
+  const img = document.getElementById("lightbox-image");
+  if (img) {
+    img.src = "";
+  }
+
+  // Re-enable body scroll
+  document.body.style.overflow = "";
+
+  // Remove keyboard listener
   document.removeEventListener("keydown", handleLightboxKeypress);
 }
 
@@ -435,6 +539,53 @@ function handleLightboxKeypress(e) {
     closeLightbox();
   }
   // TODO: Add arrow key navigation between photos
+}
+
+// Setup lightbox close button
+function setupLightboxHandlers() {
+  const closeBtn = document.querySelector(".close-lightbox");
+  const lightbox = document.getElementById("lightbox");
+
+  if (closeBtn) {
+    closeBtn.onclick = function (e) {
+      e.stopPropagation();
+      closeLightbox();
+    };
+  }
+
+  // Close when clicking outside the image
+  if (lightbox) {
+    lightbox.onclick = function (e) {
+      if (e.target === lightbox) {
+        closeLightbox();
+      }
+    };
+  }
+}
+
+// Helper: Escape HTML to prevent XSS
+function escapeHtml(text) {
+  if (!text) return "";
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Handle image loading error
+function handleImageError(img) {
+  console.error("Failed to load image:", img.src);
+  img.style.backgroundColor = "#f0f0f0";
+  img.style.padding = "20px";
+  img.alt = "Image not found";
+  // Set a simple placeholder
+  img.src =
+    "data:image/svg+xml," +
+    encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">' +
+        '<rect fill="#ddd" width="200" height="200"/>' +
+        '<text fill="#999" x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="Arial">Image not found</text>' +
+        "</svg>"
+    );
 }
 
 // Initialize when DOM is ready
