@@ -10,6 +10,7 @@ const {
     cancelVisit,
     uploadVisitFiles,
     handleFileUpload,
+    getAllGalleryMedia,
     submitCompleteReport,
     getVisitGallery,
     updateVisit,
