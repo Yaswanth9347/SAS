@@ -119,6 +119,7 @@ class APIManager {
   async register(userData) {
     return this.post('/auth/register', userData, { includeAuth: false });
   }
+  
 
   // ==================== VISITS ENDPOINTS ====================
   
@@ -153,6 +154,14 @@ class APIManager {
 
   async getVisitGallery(id) {
     return this.get(`/visits/${id}/gallery`);
+  }
+
+  async getAllGalleryMedia(filters = {}) {
+    const queryParams = new URLSearchParams(filters).toString();
+    const endpoint = queryParams
+      ? `/visits/gallery/all?${queryParams}`
+      : "/visits/gallery/all";
+    return this.get(endpoint);
   }
 
   async uploadVisitFiles(visitId, formData) {
