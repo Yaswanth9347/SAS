@@ -789,11 +789,32 @@ exports.getVisitGallery = async (req, res, next) => {
       });
     }
 
+    // Normalize photo and video paths
+    const normalizedPhotos = (visit.photos || []).map((photo) => {
+      if (typeof photo === "object" && photo !== null) {
+        return {
+          ...photo.toObject(),
+          path: normalizeFilePath(photo.cloudUrl || photo.path),
+        };
+      }
+      return normalizeFilePath(photo);
+    });
+
+    const normalizedVideos = (visit.videos || []).map((video) => {
+      if (typeof video === "object" && video !== null) {
+        return {
+          ...video.toObject(),
+          path: normalizeFilePath(video.cloudUrl || video.path),
+        };
+      }
+      return normalizeFilePath(video);
+    });
+
     res.status(200).json({
       success: true,
       data: {
-        photos: visit.photos || [],
-        videos: visit.videos || [],
+        photos: normalizedPhotos,
+        videos: normalizedVideos,
         school: visit.school,
         date: visit.date,
       },
