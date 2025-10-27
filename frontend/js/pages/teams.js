@@ -73,11 +73,12 @@ async function loadTeams() {
     loading.hide('teamsList');
 
     const teamsDiv = document.getElementById('teamsList');
-    if (!data.success) {
+    if (!data.success || !data.data) {
       renderError('teamsList', 'Failed to load teams');
       return;
     }
 
+    // Store teams in the global variable
     teams = data.data;
 
     if (data.data.length === 0) {
@@ -96,15 +97,56 @@ async function loadTeams() {
           ${t.members.length > 4 ? `<span class=\"member-tag more\" onclick=\"showAllMembers('${t._id}')\">+${t.members.length - 4} more</span>` : ''}
         </div>
         <div class="team-actions">
-          <button class="btn-schedule" onclick="scheduleVisit('${t._id}')" title="Schedule Visit"><i class="fa fa-calendar-plus"></i></button>
-          ${isAdmin ? `<button class=\"btn-delete\" onclick=\"deleteTeam('${t._id}')\" title=\"Delete Team\"><i class=\"fa fa-trash-alt\"></i></button>` : ''}
+          <button class="btn-view" data-team-id="${t._id}" title="View All Members" aria-label="View All Members"><i class="fa-solid fa-users"></i></button>
+          ${isAdmin ? `
+            <button class="btn-schedule" data-team-id="${t._id}" title="Schedule Visit" aria-label="Schedule Visit"><i class="fa-solid fa-calendar-plus"></i></button>
+            <button class=\"btn-delete\" data-team-id=\"${t._id}\" title=\"Delete Team\" aria-label=\"Delete Team\"><i class=\"fa-solid fa-trash\"></i></button>
+          ` : ''}
         </div>
       </div>
     `).join('');
+    // Attach handlers for buttons to comply with CSP (no inline event handlers)
+    attachTeamActionHandlers();
   } catch (err) {
     loading.hide('teamsList');
     renderError('teamsList', 'Failed to load teams');
   }
+}
+
+function attachTeamActionHandlers() {
+  // View members
+  document.querySelectorAll('.btn-view').forEach(btn => {
+    btn.removeEventListener('click', onViewMembersClick);
+    btn.addEventListener('click', onViewMembersClick);
+  });
+
+  // Schedule (admin only)
+  document.querySelectorAll('.btn-schedule').forEach(btn => {
+    btn.removeEventListener('click', onScheduleClick);
+    btn.addEventListener('click', onScheduleClick);
+  });
+
+  // Delete (admin only)
+  document.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.removeEventListener('click', onDeleteTeamClick);
+    btn.addEventListener('click', onDeleteTeamClick);
+  });
+}
+
+function onViewMembersClick(e) {
+  const teamId = e.currentTarget.getAttribute('data-team-id');
+  showAllMembers(teamId);
+}
+
+function onScheduleClick(e) {
+  const teamId = e.currentTarget.getAttribute('data-team-id');
+  scheduleVisit(teamId);
+}
+
+function onDeleteTeamClick(e) {
+  const teamId = e.currentTarget.getAttribute('data-team-id');
+  // call the deleteTeam flow which includes admin check
+  deleteTeam(teamId);
 }
 
 function deleteTeam(teamId) {
@@ -151,6 +193,7 @@ document.getElementById('teamForm').addEventListener('submit', async function(e)
 });
 
 function scheduleVisit(teamId) {
+  if (!isAdmin) { notify.error('Only admins can schedule team visits'); return; }
   const team = teams.find(t => t._id === teamId);
   if (!team) return;
   document.getElementById('selectedTeamId').value = teamId;
@@ -175,7 +218,7 @@ function showAllMembers(teamId) {
   const leaderId = team.teamLeader?._id || team.teamLeader;
   const membersBody = document.getElementById('teamMembersBody');
   membersBody.innerHTML = team.members.map(member => {
-    const isLeader = member._id === leaderId;
+    const isLeader = String(member._id) === String(leaderId);
     return `
       <div class="member-list-item ${isLeader ? 'leader' : ''}">
         <i class="fa fa-user"></i>

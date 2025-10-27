@@ -125,17 +125,116 @@ body {
 }
 
 .logout-btn {
+    /* default legacy style (overridden by .logoutButton below) */
     background: #f44336;
     color: white !important;
     padding: 8px 18px;
     border-radius: 6px;
     transition: all 0.3s ease;
     font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .logout-btn:hover {
     background: #d32f2f;
     transform: translateY(-2px);
+}
+
+/* --- Advanced animated logout button (door + figure) --- */
+/* Base component applied to the same anchor (#navLogout) */
+.logoutButton.logout-btn {
+    /* No background; integrate smoothly with navbar */
+    background: none !important;
+    color: #fff !important;
+    padding: 0 0 0 20px;
+    width: 130px;
+    height: 40px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* text at left, icons at right */
+    border-radius: 5px; /* for focus ring harmony */
+}
+
+/* Remove red background block */
+.logoutButton.logout-btn::before { display: none !important; }
+
+.logoutButton.logout-btn .button-text {
+    color: #ffffff;
+    font-weight: 500;
+    position: relative;
+    z-index: 10;
+    line-height: 1;
+    display: inline-block;
+}
+
+.logoutButton.logout-btn svg { display: block; position: absolute; }
+.logoutButton.logout-btn .figure {
+    bottom: 5px;
+    fill: #ffffff; /* figure color */
+    right: 18px;
+    transform: var(--transform-figure);
+    transition: transform calc(var(--figure-duration, 100) * 1ms) cubic-bezier(0.2, 0.1, 0.80, 0.9);
+    width: 30px;
+    z-index: 4;
+}
+
+.logoutButton.logout-btn .door,
+.logoutButton.logout-btn .doorway {
+    bottom: 4px;
+    fill: #ffffff;
+    right: 12px;
+    width: 32px;
+}
+
+.logoutButton.logout-btn .door {
+    transform: rotateY(20deg);
+    transform-origin: 100% 50%;
+    transform-style: preserve-3d;
+    transition: transform 200ms ease;
+    z-index: 5;
+}
+.logoutButton.logout-btn:hover .door { transform: rotateY(20deg); }
+.logoutButton.logout-btn:active .door { transform: rotateY(28deg); }
+.logoutButton.logout-btn.clicked .door { transform: rotateY(35deg); }
+.logoutButton.logout-btn.door-slammed .door { transform: none; transition: transform 100ms ease-in 250ms; }
+
+.logoutButton.logout-btn .bang { opacity: 0; }
+.logoutButton.logout-btn.falling { animation: lbtn-shake 200ms linear; }
+.logoutButton.logout-btn.falling .bang { animation: lbtn-flash 300ms linear; }
+
+/* walking motion controlled by CSS variables */
+.logoutButton.logout-btn .arm1, 
+.logoutButton.logout-btn .wrist1, 
+.logoutButton.logout-btn .arm2, 
+.logoutButton.logout-btn .wrist2, 
+.logoutButton.logout-btn .leg1, 
+.logoutButton.logout-btn .calf1, 
+.logoutButton.logout-btn .leg2, 
+.logoutButton.logout-btn .calf2 {
+    transition: transform calc(var(--walking-duration, 100) * 1ms) ease-in-out;
+}
+
+.logoutButton.logout-btn .arm1 { transform: var(--transform-arm1); transform-origin: 52% 45%; }
+.logoutButton.logout-btn .wrist1 { transform: var(--transform-wrist1); transform-origin: 59% 55%; }
+.logoutButton.logout-btn .arm2 { transform: var(--transform-arm2); transform-origin: 47% 43%; }
+.logoutButton.logout-btn .wrist2 { transform: var(--transform-wrist2); transform-origin: 35% 47%; }
+.logoutButton.logout-btn .leg1 { transform: var(--transform-leg1); transform-origin: 47% 64.5%; }
+.logoutButton.logout-btn .calf1 { transform: var(--transform-calf1); transform-origin: 55.5% 71.5%; }
+.logoutButton.logout-btn .leg2 { transform: var(--transform-leg2); transform-origin: 43% 63%; }
+.logoutButton.logout-btn .calf2 { transform: var(--transform-calf2); transform-origin: 41.5% 73%; }
+
+@keyframes lbtn-shake {
+  0% { transform: rotate(-1deg); }
+  50% { transform: rotate(2deg); }
+  100% { transform: rotate(-1deg); }
+}
+
+@keyframes lbtn-flash {
+  0% { opacity: 0.4; }
+  100% { opacity: 0; }
 }
 
 /* Navbar User Display with Avatar */
@@ -146,6 +245,37 @@ body {
     color: #fff;
     font-weight: 500;
 }
+
+/* Notification bell (animated when unread) */
+.notif-btn { position: relative; }
+.notif-btn .bell-svg { display:block; transform-origin: 24px 10px; }
+.notif-btn .clapper { transform-origin: 24px 36px; }
+
+@keyframes bell-ring {
+    0% { transform: rotate(0deg); }
+    10% { transform: rotate(-12deg); }
+    20% { transform: rotate(10deg); }
+    30% { transform: rotate(-8deg); }
+    40% { transform: rotate(6deg); }
+    50% { transform: rotate(-4deg); }
+    60% { transform: rotate(2deg); }
+    70% { transform: rotate(-1deg); }
+    100% { transform: rotate(0deg); }
+}
+
+@keyframes clapper-swing {
+    0% { transform: translateX(0px); }
+    10% { transform: translateX(-2px); }
+    20% { transform: translateX(2px); }
+    30% { transform: translateX(-2px); }
+    40% { transform: translateX(2px); }
+    50% { transform: translateX(-1px); }
+    60% { transform: translateX(1px); }
+    100% { transform: translateX(0px); }
+}
+
+.notif-btn.has-unread .bell-svg { animation: bell-ring 1s ease-in-out 0s 2; }
+.notif-btn.has-unread .clapper { animation: clapper-swing 1s ease-in-out 0s 2; }
 
 .nav-avatar {
     width: 36px;

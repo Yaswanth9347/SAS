@@ -203,24 +203,7 @@ async function saveProfile(){
   }catch(err){ loading.hideFullPage(); handleAPIError(err); }
 }
 
-// Change password handler
-async function changePassword(){
-  const cur = document.getElementById('cur_pwd').value;
-  const nw = document.getElementById('new_pwd').value;
-  const c = document.getElementById('confirm_pwd').value;
-  if(!cur || !nw){ notify.error('Please provide current and new password'); return; }
-  if(nw !== c){ notify.error('New password and confirmation do not match'); return; }
-
-  try{
-    loading.showFullPage('Changing password...');
-    const res = await api.changePassword({ currentPassword: cur, newPassword: nw });
-    loading.hideFullPage();
-    if(res.success){ notify.success('Password changed successfully'); document.getElementById('cur_pwd').value=''; document.getElementById('new_pwd').value=''; document.getElementById('confirm_pwd').value=''; }
-    else notify.error(res.message || 'Failed to change password');
-  }catch(err){ loading.hideFullPage(); handleAPIError(err); }
-}
-
-document.getElementById('changePwdBtn').addEventListener('click', changePassword);
+// Security functionality moved to Settings page (settings.html)
 
 // Initialize
 document.addEventListener('DOMContentLoaded', loadProfile);

@@ -73,6 +73,54 @@ const userSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    // Admin verification status for registrations/profile
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    verificationStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+    },
+    verificationNotes: {
+        type: String
+    },
+    // Per-user preferences / settings
+    userPreferences: {
+        theme: {
+            type: String,
+            enum: ['light', 'dark', 'system'],
+            default: 'system'
+        },
+        language: {
+            type: String,
+            default: 'en'
+        },
+        notifications: {
+            email: { type: Boolean, default: true },
+            app: { type: Boolean, default: true },
+            sms: { type: Boolean, default: false }
+        },
+        privacy: {
+            profileVisibility: { type: String, enum: ['public', 'team', 'private'], default: 'team' },
+            showEmail: { type: Boolean, default: false },
+            showPhone: { type: Boolean, default: false }
+        },
+        security: {
+            twoFactorEnabled: { type: Boolean, default: false }
+        },
+        // Accessibility
+        fontSize: {
+            type: String,
+            enum: ['small', 'medium', 'large', 'xlarge'],
+            default: 'medium'
+        },
+        highContrast: {
+            type: Boolean,
+            default: false
+        }
     }
 }, {
     timestamps: true

@@ -193,11 +193,14 @@ class APIManager {
   // ==================== TEAMS ENDPOINTS ====================
   
   async getTeams() {
-    return this.get('/admin/teams');
+    // Use the public endpoint for regular users, admin endpoint for admins
+    const endpoint = authManager.isAdmin() ? '/admin/teams' : '/teams';
+    return this.get(endpoint);
   }
 
   async getTeam(id) {
-    return this.get(`/admin/teams/${id}`);
+    const endpoint = authManager.isAdmin() ? `/admin/teams/${id}` : `/teams/${id}`;
+    return this.get(endpoint);
   }
 
   async createTeam(teamData) {
@@ -261,6 +264,15 @@ class APIManager {
     return this.get('/auth/stats');
   }
 
+  // User preferences / settings
+  async getUserPreferences() {
+    return this.get('/auth/preferences');
+  }
+
+  async updateUserPreferences(prefs) {
+    return this.put('/auth/preferences', prefs);
+  }
+
   // Password reset
   async forgotPassword(email) {
     return this.post('/auth/forgot-password', { email });
@@ -274,6 +286,41 @@ class APIManager {
   
   async getUsers() {
     return this.get('/admin/users');
+  }
+
+  // Admin - Users management
+  async getAdminUsers(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.get(`/admin/users${query ? '?' + query : ''}`);
+  }
+
+  async approveUser(userId, notes) {
+    return this.put(`/admin/users/${userId}/approve`, { notes });
+  }
+
+  async rejectUser(userId, reason) {
+    return this.put(`/admin/users/${userId}/reject`, { reason });
+  }
+
+  async updateUserRole(userId, role) {
+    return this.put(`/admin/users/${userId}/role`, { role });
+  }
+
+  async bulkUpdateUsers(payload) {
+    return this.put('/admin/users/bulk', payload);
+  }
+
+  async deleteUser(userId) {
+    return this.delete(`/admin/users/${userId}`);
+  }
+
+  async bulkDeleteUsers(userIds) {
+    return this.delete('/admin/users/bulk', { userIds });
+  }
+
+  async getActivityLogs(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.get(`/admin/activity${query ? '?' + query : ''}`);
   }
 
   async createBulkTeams(teamsData) {
@@ -336,6 +383,24 @@ class APIManager {
   // Admin - Bulk update contacts
   async bulkUpdateContacts(contactIds, status) {
     return this.put('/contact/admin/bulk-update', { contactIds, status });
+  }
+
+  // ==================== NOTIFICATIONS ====================
+  async getNotifications(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return this.get(`/notifications${q ? '?' + q : ''}`);
+  }
+
+  async markNotificationRead(id) {
+    return this.put(`/notifications/${id}/read`, {});
+  }
+
+  async markNotificationUnread(id) {
+    return this.put(`/notifications/${id}/unread`, {});
+  }
+
+  async markAllNotificationsRead() {
+    return this.put('/notifications/mark-all-read', {});
   }
 }
 

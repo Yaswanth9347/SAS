@@ -10,7 +10,9 @@ const {
     changePassword,
     getUserStats,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    getPreferences,
+    updatePreferences
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const { uploadAnyFiles, validateMimeType } = require('../middleware/upload');
@@ -52,6 +54,10 @@ router.put('/profile', protect, updateUserProfile);
 router.post('/profile/avatar', protect, uploadAnyFiles, validateMimeType, require('../controllers/authController').uploadAvatar);
 router.put('/change-password', protect, changePassword);
 router.get('/stats', protect, getUserStats);
+
+// Preferences / Settings
+router.get('/preferences', protect, getPreferences);
+router.put('/preferences', protect, updatePreferences);
 
 // Debug route for admin credentials
 router.get('/check-admin', async (req, res) => {

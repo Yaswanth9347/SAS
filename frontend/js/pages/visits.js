@@ -165,7 +165,7 @@ function renderVisitDetailsHtml(visit){
         <div class="media-gallery photos-gallery">
           ${visit.photos.map(p=>`
             <div class="media-item photo-item">
-              <img src="${p}" onclick="openLightbox('${p}','image')" alt="Visit photo" />
+              <img src="${p}" data-media-src="${p}" data-media-type="image" alt="Visit photo" />
             </div>
           `).join('')}
         </div>
@@ -177,7 +177,7 @@ function renderVisitDetailsHtml(visit){
         <h4>Videos (${visit.videos.length})</h4>
         <div class="media-gallery videos-gallery">
           ${visit.videos.map(v=>`
-            <div class="media-item video-item" onclick="openLightbox('${v}','video')">
+            <div class="media-item video-item" data-media-src="${v}" data-media-type="video">
               <div class="video-play-button">▶</div>
               <span>Play Video</span>
             </div>
@@ -245,6 +245,28 @@ function attachDetailsHandlers(){
   document.querySelectorAll('.upload-btn').forEach(btn=>{
     btn.removeEventListener('click', onUploadClick);
     btn.addEventListener('click', onUploadClick);
+  });
+
+  // Media click handlers (photos and videos) - use data attributes to avoid inline handlers
+  document.querySelectorAll('.media-item.photo-item img').forEach(img => {
+    // remove any previously attached listener by cloning
+    const newImg = img.cloneNode(true);
+    img.parentNode.replaceChild(newImg, img);
+    newImg.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const src = newImg.getAttribute('data-media-src') || newImg.src;
+      if (typeof window.openLightbox === 'function') window.openLightbox(src, 'image');
+    });
+  });
+
+  document.querySelectorAll('.media-item.video-item').forEach(div => {
+    const newDiv = div.cloneNode(true);
+    div.parentNode.replaceChild(newDiv, div);
+    newDiv.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const src = newDiv.getAttribute('data-media-src');
+      if (typeof window.openLightbox === 'function') window.openLightbox(src, 'video');
+    });
   });
 }
 

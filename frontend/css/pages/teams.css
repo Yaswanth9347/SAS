@@ -313,13 +313,31 @@ body {
 .member-tag.more:hover { background: linear-gradient(135deg, #475569, #334155); transform: translateY(-1px); }
 
 /* Team Actions */
-.team-actions { display: flex; gap: 0.5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); justify-content: flex-end; }
-.team-actions button { padding: 0.5rem 0.75rem; border: none; border-radius: 6px; font-weight: 500; font-size: 0.875rem; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 0.35rem; min-width: 36px; }
-.btn-schedule { background: var(--primary-color); color: white; }
-.btn-schedule:hover { background: var(--primary-dark); transform: translateY(-1px); }
-.btn-delete { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); }
-.btn-delete:hover { background: #ffebee; color: var(--danger-color); border-color: var(--danger-color); }
-.team-actions button i { font-size: 0.9rem; }
+.team-actions { display: flex; gap: 0.6rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); justify-content: flex-end; }
+.team-actions button { padding: 0.55rem 0.9rem; border: none; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.18s ease; display: flex; align-items: center; justify-content: center; gap: 0.4rem; min-width: 40px; box-shadow: var(--shadow-sm); outline: none; }
+.team-actions button:focus-visible { box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2), var(--shadow-md); }
+.btn-view { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); }
+.btn-view:hover { background: #eef2ff; color: var(--secondary-dark); border-color: var(--secondary-color); }
+.btn-schedule { 
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); 
+  color: #ffffff; 
+  border: 1px solid var(--primary-dark);
+}
+.btn-schedule:hover { 
+  transform: translateY(-1px);
+  filter: brightness(0.98);
+}
+.btn-delete { 
+  background: var(--danger-color); 
+  color: #ffffff; 
+  border: 1px solid var(--danger-color);
+}
+.btn-delete:hover { 
+  background: #d32f2f; /* slightly darker red for hover */
+  border-color: #d32f2f;
+  transform: translateY(-1px);
+}
+.team-actions button i { font-size: 1rem; }
 
 /* Form Styling */
 .form-group { margin-bottom: 1.5rem; }

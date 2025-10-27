@@ -15,7 +15,7 @@
       try { navbarManager.setupNavbar(); } catch (e) { console.warn('Navbar setup failed', e); }
 
       // For pages that require authentication, enforce login after navbar is ready
-      const authenticatedPages = [
+    const authenticatedPages = [
   'dashboard.html', 
   'visits.html', 
   'schools.html', 
@@ -24,7 +24,9 @@
   'schedule-visit.html', 
   'visit-report.html',
   'analytics.html', 
-  'reports.html'
+  'reports.html',
+  'admin-users.html',
+  'settings.html'
       ];
 
       const currentPage = window.location.pathname.split('/').pop();
@@ -37,6 +39,15 @@
         }
       }
     }
+
+    // Initialize accessibility utilities
+    try {
+      if (typeof a11y !== 'undefined') {
+        a11y.ensureSkipLink();
+        a11y.ensureMainLandmark();
+        a11y.ensureAriaLive();
+      }
+    } catch (e) { console.warn('A11y init failed', e); }
 
     // Add global error handler
     window.addEventListener('unhandledrejection', function(event) {
@@ -66,6 +77,33 @@
     }
 
     console.log('SAS App initialized successfully');
+
+    // Inject theme stylesheet (once) and apply saved theme and accessibility prefs
+    try {
+      const head = document.head || document.getElementsByTagName('head')[0];
+      if (!document.getElementById('themeStylesheet')) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'css/themes.css';
+        link.id = 'themeStylesheet';
+        head.appendChild(link);
+      }
+
+      // Apply theme from localStorage preferences
+      const prefsStr = localStorage.getItem(CONFIG.STORAGE_KEYS.PREFERENCES);
+      const prefs = prefsStr ? JSON.parse(prefsStr) : null;
+      const theme = prefs?.theme || 'system';
+      applyTheme(theme);
+      // Apply font size and high contrast
+      const fontSize = prefs?.fontSize || 'medium';
+      const highContrast = !!prefs?.highContrast;
+      if (typeof a11y !== 'undefined') {
+        a11y.applyFontSize(fontSize);
+        a11y.applyHighContrast(highContrast);
+      }
+    } catch (e) {
+      console.warn('Theme init failed', e);
+    }
   }
 
   // Initialize when DOM is ready
@@ -185,6 +223,22 @@
         ">Try Again</button>
       </div>
     `;
+  };
+
+  /**
+   * Apply theme to document root
+   */
+  window.applyTheme = function(theme) {
+    const root = document.documentElement;
+    const body = document.body;
+    body.classList.remove('theme-light', 'theme-dark');
+    if (theme === 'light') {
+      body.classList.add('theme-light');
+    } else if (theme === 'dark') {
+      body.classList.add('theme-dark');
+    } else {
+      // system: remove explicit class; CSS prefers defaults
+    }
   };
 
 })();

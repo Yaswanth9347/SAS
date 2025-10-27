@@ -13,7 +13,8 @@ const CONFIG = {
   // Storage Keys
   STORAGE_KEYS: {
     TOKEN: 'token',
-    USER: 'user'
+    USER: 'user',
+    PREFERENCES: 'preferences'
   },
   
   // Gallery Settings

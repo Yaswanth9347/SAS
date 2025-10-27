@@ -1,4 +1,5 @@
 const express = require('express');
+const { checkEmailConfig } = require('./utils/emailService');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
@@ -106,6 +107,17 @@ if (process.env.NODE_ENV !== 'test') {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/volunteers', require('./routes/volunteers'));
 app.use('/api/visits', require('./routes/visits'));
+app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/teams', require('./routes/teams'));
+// On startup, verify email config in staging/production
+try {
+    const check = checkEmailConfig();
+    if (!check.ok) {
+        console.warn('[startup] Email configuration incomplete. Emails may fail to send.');
+    }
+} catch (e) {
+    console.warn('[startup] Email configuration check failed:', e.message);
+}
 app.use('/api/schools', require('./routes/schools'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/analytics', require('./routes/analytics'));

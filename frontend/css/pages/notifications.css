@@ -1,0 +1,12 @@
+/* Notifications page */
+.notifications-page { padding: 100px 0 50px; }
+.notif-toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.notif-list-container { background:#fff; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.1); }
+.notif-item { display:flex; gap:12px; padding:14px 16px; border-bottom:1px solid #eee; }
+.notif-item:last-child { border-bottom:none; }
+.notif-item.read { opacity:.7; }
+.notif-meta { font-size:12px; color:#777; }
+.notif-actions { display:flex; gap:8px; }
+
+body.theme-dark .notif-list-container { background:#1e1e1e; }
+body.theme-dark .notif-item { border-bottom-color:#2b2b2b; }

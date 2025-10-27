@@ -14,6 +14,11 @@ const {
     getTeams,
     getTeam,
     getUsers,
+    approveUser,
+    rejectUser,
+    updateUserRole,
+    bulkUpdateUsers,
+    getActivityLogs,
     createTeam,
     deleteTeam,
     addTeamMembers,
@@ -21,7 +26,9 @@ const {
     changeTeamLeader,
     getTeamStats,
     getStorageStats,
-    cleanupStorage
+    cleanupStorage,
+    deleteUser,
+    bulkDeleteUsers
 } = require('../controllers/adminController');
 
 // Root endpoint for admin access verification
@@ -39,6 +46,13 @@ router.get('/', (req, res) => {
 router.get('/stats', getDashboardStats);
 router.post('/create-teams', createTeams);
 router.get('/users', getUsers);
+router.put('/users/:id/approve', approveUser);
+router.put('/users/:id/reject', rejectUser);
+router.put('/users/:id/role', updateUserRole);
+router.put('/users/bulk', bulkUpdateUsers);
+router.delete('/users/:id', deleteUser);
+router.delete('/users/bulk', bulkDeleteUsers);
+router.get('/activity', getActivityLogs);
 
 // Team routes
 router.get('/teams', getTeams);

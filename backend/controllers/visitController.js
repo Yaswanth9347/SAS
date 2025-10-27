@@ -145,7 +145,7 @@ exports.createVisit = async (req, res, next) => {
             classesVisited: req.body.classesVisited || 0 // Default classes visited
         };
         
-        const visit = await Visit.create(visitData);
+    const visit = await Visit.create(visitData);
 
         // Populate the created visit for response
         const populatedVisit = await Visit.findById(visit._id)
@@ -160,7 +160,24 @@ exports.createVisit = async (req, res, next) => {
         });
     } catch (error) {
         console.error('Error in createVisit:', error);
-        res.status(400).json({
+        // Notify team members about scheduled visit
+        try {
+            const populatedTeam = await Team.findById(visit.team).populate('members', '_id');
+            const memberIds = (populatedTeam?.members || []).map(m => m._id);
+            if (memberIds.length > 0) {
+                const { notifyUsers } = require('../utils/notificationService');
+                await notifyUsers(memberIds, {
+                    title: 'Visit Scheduled',
+                    message: `A visit has been scheduled on ${new Date(visit.date).toLocaleDateString()}`,
+                    type: 'visit',
+                    link: `/frontend/visits.html`,
+                    meta: { visitId: visit._id, date: visit.date, schoolName: visit.school?.name },
+                    emailTemplate: 'visitScheduled'
+                });
+            }
+        } catch (e) { console.warn('Notify visit schedule failed:', e.message); }
+
+        res.status(201).json({
             success: false,
             message: error.message
         });
