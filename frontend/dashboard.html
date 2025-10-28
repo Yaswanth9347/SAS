@@ -7,6 +7,76 @@
 
     <!-- Consolidated CSS -->
     <link rel="stylesheet" href="css/style.css" />
+    <!-- Inline styles for dashboard gallery slider (minimal, targeted) -->
+    <style>
+      .gallery-slider {
+        width: 100% !important;
+        min-height: 400px !important;
+        overflow: hidden !important;
+        border-radius: 10px !important;
+        background: #f5f5f5 !important;
+        position: relative !important;
+      }
+      .gallery-slides {
+        display: flex !important;
+        transition: transform 0.6s ease-in-out !important;
+        position: relative !important;
+      }
+      .gallery-slide {
+        min-width: 100% !important;
+        flex-shrink: 0 !important;
+        position: relative !important;
+        opacity: 1 !important;
+        display: block !important;
+      }
+      .gallery-slide img {
+        width: 100% !important;
+        height: 450px !important;
+        object-fit: contain !important;
+        display: block !important;
+        background: #fff !important;
+      }
+      .gallery-slide video {
+        width: 100% !important;
+        height: 450px !important;
+        object-fit: contain !important;
+        display: block !important;
+      }
+      .gallery-controls-horizontal {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 15px;
+      }
+      .gallery-btn-horizontal {
+        background: #2e6ad6;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .gallery-btn-horizontal:hover {
+        background: #1e4fb5;
+      }
+      .gallery-indicators {
+        text-align: center;
+        margin-top: 12px;
+      }
+      .gallery-indicators .indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #ccc;
+        margin: 0 5px;
+        cursor: pointer;
+      }
+      .gallery-indicators .indicator.active {
+        background: #2e6ad6;
+      }
+    </style>
   </head>
 
   <body>
@@ -40,6 +110,20 @@
           <p id="userInfo">Loading your information...</p>
         </div>
 
+        <!-- Latest Visit Gallery - Horizontal scrolling at top -->
+        <div class="dashboard-card gallery-card-horizontal">
+          <div class="gallery-header">
+            <h3>📸 Latest Visit Highlights</h3>
+            <p id="galleryInfo">Loading latest visit...</p>
+          </div>
+          <div id="galleryContainer">
+            <div class="no-gallery">
+              <div class="no-gallery-icon">🖼️</div>
+              <p>No completed visits with media yet</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Admin Stats Section (visible only for admins) -->
         <div class="admin-stats" id="adminStats" style="display: none">
           <div class="stat-card">
@@ -66,39 +150,25 @@
             <h3>Your Activity Summary</h3>
             <div class="quick-stats" id="quickStats">
               <div class="stat-item">
-                <span class="stat-number">0</span>
+                <span class="stat-number" id="totalVisitsCount">0</span>
                 <span class="stat-label">Total Visits</span>
               </div>
               <div class="stat-item">
-                <span class="stat-number">0</span>
+                <span class="stat-number" id="upcomingVisitsCount">0</span>
                 <span class="stat-label">Upcoming</span>
               </div>
               <div class="stat-item">
-                <span class="stat-number">0</span>
+                <span class="stat-number" id="completedVisitsCount">0</span>
                 <span class="stat-label">Completed</span>
               </div>
             </div>
           </div>
 
           <!-- Upcoming Visits -->
-          <div class="dashboard-card">
+          <div class="dashboard-card upcoming-visits-card">
             <h3>Upcoming Visits</h3>
-            <div class="visit-list" id="upcomingVisits">
+            <div class="visit-list-horizontal" id="upcomingVisits">
               <p>Loading visits...</p>
-            </div>
-          </div>
-
-          <!-- Latest Visit Gallery - Auto-scrolling media from latest completed visit -->
-          <div class="dashboard-card gallery-card">
-            <div class="gallery-header">
-              <h3>� Latest Visit Gallery</h3>
-              <p id="galleryInfo">Loading latest visit...</p>
-            </div>
-            <div id="galleryContainer">
-              <div class="no-gallery">
-                <div class="no-gallery-icon">�️</div>
-                <p>No completed visits with media yet</p>
-              </div>
             </div>
           </div>
         </div>
@@ -188,7 +258,7 @@
         }
       }
 
-      // Upcoming visits
+      // Upcoming visits - display horizontally
       async function loadUpcomingVisits() {
         try {
           const data = await api.getVisits();
@@ -199,15 +269,31 @@
             );
             const visitsContainer = document.getElementById("upcomingVisits");
 
+            // Update activity summary counts
+            const totalVisits = data.data.length;
+            const upcomingCount = upcoming.length;
+            const completedCount = data.data.filter(
+              (v) => v.status === "completed"
+            ).length;
+
+            document.getElementById("totalVisitsCount").textContent =
+              totalVisits;
+            document.getElementById("upcomingVisitsCount").textContent =
+              upcomingCount;
+            document.getElementById("completedVisitsCount").textContent =
+              completedCount;
+
             if (upcoming.length > 0) {
               visitsContainer.innerHTML = upcoming
                 .map(
                   (visit) => `
-              <div class="visit-item">
-                <h4>📅 ${utils.formatDate(visit.date)}</h4>
-                <p>🏫 ${visit.school?.name || "School"}</p>
-                <p>👥 Class: ${visit.assignedClass}</p>
-                <span class="status-badge upcoming">Scheduled</span>
+              <div class="visit-card-horizontal">
+                <div class="visit-card-content">
+                  <h4>📅 ${utils.formatDate(visit.date)}</h4>
+                  <p>🏫 ${visit.school?.name || "School"}</p>
+                  <p>👥 Class: ${visit.assignedClass}</p>
+                  <span class="status-badge upcoming">Scheduled</span>
+                </div>
               </div>
             `
                 )
@@ -227,6 +313,7 @@
       let galleryInterval = null;
       let currentSlide = 0;
       let galleryMedia = [];
+      const GALLERY_AUTO_MS = 2000; // Auto-scroll interval in ms (2s)
 
       async function loadLatestVisitGallery() {
         try {
@@ -239,12 +326,6 @@
             galleryResponse.data.length > 0
           ) {
             const baseURL = CONFIG.API_BASE_URL.replace("/api", "");
-
-            console.log(
-              "Dashboard Gallery - Fetched media items:",
-              galleryResponse.data.length
-            );
-            console.log("Dashboard Gallery - Base URL:", baseURL);
 
             // Group media by visit to get the latest visit
             const mediaByVisit = {};
@@ -275,13 +356,6 @@
             }
 
             const latestVisit = visits[0];
-            console.log(
-              "Latest visit:",
-              latestVisit.visitName,
-              "with",
-              latestVisit.media.length,
-              "items"
-            );
 
             // Prepare media array with proper URL construction
             galleryMedia = latestVisit.media.map((item) => {
@@ -296,8 +370,6 @@
                 // Prepend base URL
                 mediaUrl = baseURL + mediaUrl;
               }
-
-              console.log("Media URL:", mediaUrl);
 
               return {
                 type: item.type,
@@ -317,7 +389,6 @@
               showNoGallery();
             }
           } else {
-            console.log("No gallery data returned");
             showNoGallery();
           }
         } catch (error) {
@@ -332,61 +403,60 @@
 
         // Update header
         galleryInfo.innerHTML = `
-        <strong>${visit.school?.name || "School Visit"}</strong> - 
-        ${utils.formatDate(visit.visitDate)} - 
-        ${galleryMedia.length} ${galleryMedia.length === 1 ? "item" : "items"}
-      `;
+          <strong>${visit.school?.name || "School Visit"}</strong> - 
+          ${utils.formatDate(visit.visitDate)} - 
+          ${galleryMedia.length} ${galleryMedia.length === 1 ? "item" : "items"}
+        `;
 
-        // Create gallery HTML with error handling
+        // Build slides
         const slidesHTML = galleryMedia
           .map((media, index) => {
             if (media.type === "photo") {
-              return `
-            <div class="gallery-slide ${
-              index === 0 ? "active" : ""
-            }" data-index="${index}">
-              <img src="${media.url}" 
-                   alt="Visit photo ${index + 1}" 
-                   loading="lazy"
-                   onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-family=%22Arial%22 font-size=%2218%22%3EImage not found%3C/text%3E%3C/svg%3E';">
-            </div>
-          `;
-            } else {
-              return `
-            <div class="gallery-slide ${
-              index === 0 ? "active" : ""
-            }" data-index="${index}">
-              <video src="${media.url}" controls muted loop></video>
-            </div>
-          `;
+              return `<div class="gallery-slide"><img src="${
+                media.url
+              }" alt="Visit photo ${index + 1}"></div>`;
             }
+            return `<div class="gallery-slide"><video src="${media.url}" controls muted loop></video></div>`;
           })
           .join("");
 
-        const indicatorsHTML = galleryMedia
-          .map(
-            (_, index) =>
-              `<span class="indicator ${
-                index === 0 ? "active" : ""
-              }" onclick="goToSlide(${index})"></span>`
-          )
-          .join("");
-
+        // Render slider
         galleryContainer.innerHTML = `
-        <div class="gallery-slider">
-          ${slidesHTML}
-        </div>
-        <div class="gallery-indicators">
-          ${indicatorsHTML}
-        </div>
-        <div class="gallery-controls">
-          <button class="gallery-btn" onclick="prevSlide()">⬅️ Previous</button>
-          <button class="gallery-btn" onclick="toggleAutoScroll()" id="autoScrollBtn">⏸️ Pause</button>
-          <button class="gallery-btn" onclick="nextSlide()">Next ➡️</button>
-        </div>
-      `;
+          <div class="gallery-slider">
+            <div class="gallery-slides" id="gallerySlides">
+              ${slidesHTML}
+            </div>
+          </div>
+          <div class="gallery-indicators" id="galleryIndicators">
+            ${galleryMedia
+              .map(
+                (_, i) =>
+                  `<span class="indicator ${
+                    i === 0 ? "active" : ""
+                  }" data-index="${i}"></span>`
+              )
+              .join("")}
+          </div>
+          <div class="gallery-controls-horizontal">
+            <button class="gallery-btn-horizontal" id="prevBtn">⬅️ Prev</button>
+            <button class="gallery-btn-horizontal" id="autoScrollBtn">⏸️ Pause</button>
+            <button class="gallery-btn-horizontal" id="nextBtn">Next ➡️</button>
+          </div>
+        `;
 
+        // Setup handlers
         currentSlide = 0;
+        document.getElementById("prevBtn").onclick = () => moveToPrev();
+        document.getElementById("nextBtn").onclick = () => moveToNext();
+        document.getElementById("autoScrollBtn").onclick = () =>
+          toggleAutoScroll();
+
+        // Indicators click
+        document
+          .querySelectorAll("#galleryIndicators .indicator")
+          .forEach((ind) => {
+            ind.onclick = () => moveToSlide(Number(ind.dataset.index));
+          });
       }
 
       function showNoGallery() {
@@ -406,8 +476,8 @@
       function startAutoScroll() {
         if (galleryInterval) clearInterval(galleryInterval);
         galleryInterval = setInterval(() => {
-          nextSlide();
-        }, 5000); // Change slide every 15 seconds
+          moveToNext();
+        }, GALLERY_AUTO_MS); // Auto-scroll (configurable)
       }
 
       function stopAutoScroll() {
@@ -428,6 +498,34 @@
         }
       }
 
+      function moveToSlide(index) {
+        if (galleryMedia.length === 0) return;
+        const slidesEl = document.getElementById("gallerySlides");
+        const max = galleryMedia.length;
+        currentSlide = ((index % max) + max) % max; // wrap
+        const percent = -currentSlide * 100;
+        slidesEl.style.transform = `translateX(${percent}%)`;
+        updateIndicators();
+        updateVideoPlayback();
+      }
+
+      function moveToNext() {
+        moveToSlide(currentSlide + 1);
+      }
+
+      function moveToPrev() {
+        moveToSlide(currentSlide - 1);
+      }
+
+      function updateIndicators() {
+        const inds = document.querySelectorAll("#galleryIndicators .indicator");
+        inds.forEach((el, idx) => {
+          if (idx === currentSlide) el.classList.add("active");
+          else el.classList.remove("active");
+        });
+      }
+
+      // Old vertical carousel functions (keep for backward compatibility)
       function nextSlide() {
         if (galleryMedia.length === 0) return;
 
