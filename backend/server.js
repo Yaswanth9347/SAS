@@ -21,11 +21,16 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
+            scriptSrc: [
+                "'self'",
+                "'unsafe-inline'",
+                "https://unpkg.com",
+                "https://ga.jspm.io"
+            ],
             imgSrc: ["'self'", "data:", "blob:"],
             connectSrc: ["'self'"],
-            fontSrc: ["'self'"],
+            fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "data:"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'", "blob:"],
             frameSrc: ["'none'"],

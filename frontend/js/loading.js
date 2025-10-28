@@ -206,7 +206,7 @@ class LoadingManager {
       .loading-message {
         color: #666;
         font-size: 0.95rem;
-        font-family: 'Poppins', sans-serif;
+        font-family: inherit;
         margin: 0;
       }
 

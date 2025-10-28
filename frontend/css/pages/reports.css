@@ -12,7 +12,7 @@ body {
 
 /* ====== NAVIGATION ====== */
 .reports-section {
-  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-family: inherit;
   font-weight: 700;
   font-size: 1.75rem;
   letter-spacing: 0.6px;
@@ -41,16 +41,20 @@ body {
 }
 
 .logout-btn {
-  background: #f44336;
-  color: white !important;
-  padding: 8px 18px;
-  border-radius: 6px;
-  transition: all 0.3s ease;
+  /* Align with global navbar logout appearance to avoid flash */
+  background: none;
+  color: inherit !important;
+  padding: 0 0 0 20px;
+  border-radius: 5px;
+  transition: all 0.2s ease;
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .logout-btn:hover {
-  background: #d32f2f;
+  background: rgba(255,255,255,0.06);
   transform: translateY(-2px);
 }
 
@@ -128,7 +132,7 @@ body {
   background-color: #f9fafb;
   font-size: 1rem;
   transition: all 0.3s;
-  font-family: "Poppins", sans-serif;
+  font-family: inherit;
 }
 
 .form-group select:focus,

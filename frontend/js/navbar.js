@@ -270,14 +270,15 @@ class NavbarManager {
       return '<div class="nav-avatar"><span>?</span></div>';
     }
 
-    const avatarUrl = user.avatar;
-    
+    // Support both `profileImage` (server) and legacy `avatar` property
+    const avatarUrl = user.profileImage || user.avatar;
+
     if (avatarUrl) {
       // User has avatar - display image
       return `
         <div class="nav-avatar">
           <img src="${avatarUrl}" alt="${user.name || user.username}" 
-               onerror="this.parentElement.innerHTML='<span>${this.getInitials(user)}</span>'">
+               onerror="this.parentElement.innerHTML='<span>${this.getInitials(user)}</span>'" />
         </div>
       `;
     } else {

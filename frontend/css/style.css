@@ -19,8 +19,12 @@
 @import url("tables.css");
 
 /* ============================================
-   RESET & BASE STYLES
-   ============================================ */
+  RESET & BASE STYLES
+  ============================================ */
+:root {
+  /* Single, consistent font across the entire app */
+  --app-font-family: Arial, sans-serif;
+}
 * {
   margin: 0;
   padding: 0;
@@ -28,10 +32,18 @@
 }
 
 body {
-  font-family: "Poppins", sans-serif;
+  font-family: var(--app-font-family);
   line-height: 1.6;
   color: #333;
   background: #f4f6f8;
+}
+
+/* Ensure all major elements inherit the single font */
+input, select, textarea, button,
+h1, h2, h3, h4, h5, h6,
+.btn, .nav-link, .table, .modal, .drawer,
+.page-header, .login-card, .register-card {
+  font-family: inherit;
 }
 
 .container {
@@ -66,7 +78,7 @@ body {
 }
 
 .nav-logo h2 {
-  font-family: Georgia, "Times New Roman", Times, serif;
+  font-family: inherit;
   font-weight: 700;
   font-size: 1.75rem;
   letter-spacing: 0.6px;
@@ -126,20 +138,26 @@ body {
 }
 
 .logout-btn {
-    /* default legacy style (overridden by .logoutButton below) */
-    background: #f44336;
-    color: white !important;
-    padding: 8px 18px;
-    border-radius: 6px;
-    transition: all 0.3s ease;
-    font-weight: 500;
+    /* Default appearance: match final navbar/logoutButton style so the
+       element doesn't flash the legacy red color before JS runs. The
+       richer animated variant is still handled by .logoutButton.logout-btn.
+    */
+    background: none;
+    color: #fff !important;
+    padding: 0 0 0 20px;
+    width: 130px;
+    height: 40px;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    border-radius: 5px;
+    transition: all 0.2s ease;
+    font-weight: 500;
 }
 
 .logout-btn:hover {
-  background: #d32f2f;
+  /* Subtle hover to match navbar behavior (no red flash) */
+  background: rgba(255,255,255,0.06);
   transform: translateY(-2px);
 }
 

@@ -1,2 +1,39 @@
 /* Page-specific overrides for login; intentionally minimal for now.
    Keep this file to maintain page-named asset pattern for easier debugging. */
+
+/* Make the login card lightly transparent with a subtle glass effect */
+.login-card {
+  /* Lighter transparent glass (not white) */
+  background: rgba(255, 255, 255, 0.28) !important;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+/* Ensure text remains readable on translucent background */
+.login-card h2 { color: #1f2937; }
+.login-card p { color: #374151; }
+.login-card label { color: #333; }
+
+/* Make inputs slightly transparent too */
+.login-card .form-group input,
+.login-card .form-group select,
+.login-card .form-group textarea {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
+  color: #111827; /* slate-900 */
+}
+
+.login-card .form-group input::placeholder,
+.login-card .form-group textarea::placeholder {
+  color: rgba(55, 65, 81, 0.8); /* slate-700 */
+}
+
+.login-card .form-group input:focus,
+.login-card .form-group select:focus,
+.login-card .form-group textarea:focus {
+  background: rgba(255, 255, 255, 0.28) !important;
+  border-color: #3f51b5 !important; /* keep brand focus color */
+  outline: none;
+}

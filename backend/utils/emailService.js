@@ -52,7 +52,16 @@ const createTransporter = () => {
     const user = process.env.EMAIL_USER || (!isProdLike ? 'dev@example.com' : undefined);
     const pass = process.env.EMAIL_PASSWORD || (!isProdLike ? 'dev-password' : undefined);
 
-    if (isProdLike) {
+        // In development, if no real SMTP config is provided, use a no-op JSON transport that "succeeds"
+        if (!isProdLike) {
+            const hasRealSmtp = !!(process.env.EMAIL_HOST && process.env.EMAIL_PORT && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD);
+            if (!hasRealSmtp) {
+                console.warn('[email] Using development JSON transport (no real SMTP configured). Emails will be logged, not sent.');
+                return nodemailer.createTransport({ jsonTransport: true });
+            }
+        }
+
+        if (isProdLike) {
         // Enforce presence in prod/staging
         requireEnv('EMAIL_HOST');
         requireEnv('EMAIL_PORT');
@@ -165,7 +174,9 @@ const getPasswordResetEmailHTML = (resetUrl, name) => {
                     background: #2e7d32;
                     color: white;
                     text-decoration: none;
-                    border-radius: 5px;
+                            // Nodemailer jsonTransport provides message as JSON; still considered success
+                            console.log('Email sent:', info.messageId || '(dev-transport)');
+                            return { success: true, messageId: info.messageId || 'dev-transport' };
                     font-weight: bold;
                     margin: 20px 0;
                 }
@@ -273,12 +284,18 @@ This is an automated email. Please do not reply to this message.
 // Send password reset email
 const sendPasswordResetEmail = async (user, resetToken) => {
     // Create reset URL
-    const resetBase = process.env.FRONTEND_URL || (!isProdLike ? 'http://localhost:5001/frontend' : undefined);
+    // In dev, the frontend is served at the root (e.g., http://localhost:5001),
+    // so do NOT include "/frontend" in the URL path here.
+    const resetBase = process.env.FRONTEND_URL || (!isProdLike ? 'http://localhost:5001' : undefined);
     if (isProdLike && !resetBase) {
         throw new Error('Missing FRONTEND_URL for password reset link');
     }
     const resetUrl = `${resetBase}/reset-password.html?token=${resetToken}`;
     
+        if (!isProdLike) {
+            console.log('[email][dev] Password reset link for', String(user.email).replace(/(.{2}).+(@.+)/, '$1***$2'), '=>', resetUrl);
+        }
+
     const html = getPasswordResetEmailHTML(resetUrl, user.name);
     const text = getPasswordResetEmailText(resetUrl, user.name);
     

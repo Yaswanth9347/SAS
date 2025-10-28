@@ -50,8 +50,8 @@ class NotificationManager {
       alignItems: 'center',
       gap: '12px',
       minWidth: '300px',
-      fontSize: '0.95rem',
-      fontFamily: 'Poppins, sans-serif',
+  fontSize: '0.95rem',
+  fontFamily: 'inherit',
       animation: 'slideInRight 0.3s ease',
       cursor: 'pointer',
       transition: 'all 0.3s ease'
@@ -294,9 +294,9 @@ class NotificationManager {
     messageEl.textContent = message;
     messageEl.style.cssText = `
       margin: 0 0 25px 0;
-      font-size: 1.1rem;
-      color: #333;
-      font-family: Poppins, sans-serif;
+  font-size: 1.1rem;
+  color: #333;
+  font-family: inherit;
       line-height: 1.6;
     `;
 
@@ -315,8 +315,8 @@ class NotificationManager {
       background: #f5f5f5;
       color: #333;
       border-radius: 6px;
-      cursor: pointer;
-      font-family: Poppins, sans-serif;
+  cursor: pointer;
+  font-family: inherit;
       font-weight: 600;
       transition: all 0.2s;
     `;
@@ -331,8 +331,8 @@ class NotificationManager {
       background: #4caf50;
       color: white;
       border-radius: 6px;
-      cursor: pointer;
-      font-family: Poppins, sans-serif;
+  cursor: pointer;
+  font-family: inherit;
       font-weight: 600;
       transition: all 0.2s;
     `;

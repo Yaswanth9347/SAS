@@ -20,15 +20,26 @@ class APIManager {
       
       // Add auth headers first if not explicitly disabled
       if (options.includeAuth !== false) {
-        const authHeaders = options.isUpload 
-          ? authManager.getAuthHeadersForUpload()
-          : authManager.getAuthHeaders();
-        headers = { ...headers, ...authHeaders };
+        // Only include auth headers if authManager is available (not on public pages)
+        if (typeof authManager !== 'undefined' && authManager) {
+          const authHeaders = options.isUpload 
+            ? authManager.getAuthHeadersForUpload()
+            : authManager.getAuthHeaders();
+          headers = { ...headers, ...authHeaders };
+        }
       }
       
       // Then merge with any provided headers (allows override)
       if (options.headers) {
         headers = { ...headers, ...options.headers };
+      }
+
+      // Ensure JSON content-type for non-upload requests when not explicitly provided
+      if (!options.isUpload) {
+        const headerKeys = Object.keys(headers).map(k => k.toLowerCase());
+        if (!headerKeys.includes('content-type')) {
+          headers['Content-Type'] = 'application/json';
+        }
       }
       
       const config = {
@@ -284,11 +295,11 @@ class APIManager {
 
   // Password reset
   async forgotPassword(email) {
-    return this.post('/auth/forgot-password', { email });
+    return this.post('/auth/forgot-password', { email }, { includeAuth: false });
   }
 
   async resetPassword(resetToken, password) {
-    return this.put(`/auth/reset-password/${resetToken}`, { password });
+    return this.put(`/auth/reset-password/${resetToken}`, { password }, { includeAuth: false });
   }
 
   // ==================== ADMIN ENDPOINTS ====================

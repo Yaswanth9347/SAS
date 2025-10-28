@@ -1,7 +1,8 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { fileTypeFromBuffer } = require('file-type');
+// Note: Using file-type v16 API
+const FileType = require('file-type');
 
 // ============================================
 // HYBRID STORAGE APPROACH CONFIGURATION
@@ -185,63 +186,93 @@ const uploadAnyFiles = upload.any();
  */
 async function validateMimeType(req, res, next) {
     try {
-        if (!req.files || req.files.length === 0) {
-            return next(); // No files to validate
+        // Normalize req.files to an array (supports multer.any() -> array or fields -> object)
+        let filesList = [];
+        if (!req.files) return next();
+        if (Array.isArray(req.files)) filesList = req.files;
+        else if (typeof req.files === 'object') {
+            // multer.fields() returns object mapping fieldname->array
+            filesList = Object.values(req.files).flat();
         }
 
+        if (!filesList.length) return next();
+
+        const errors = [];
+
+        // Normalize common MIME aliases (e.g., image/jpg -> image/jpeg)
+        const normalizeMime = (m) => {
+            if (!m) return m;
+            const lower = String(m).toLowerCase();
+            if (lower === 'image/jpg') return 'image/jpeg';
+            return lower;
+        };
+
         // Validate each uploaded file
-        for (const file of req.files) {
-            const buffer = await fs.promises.readFile(file.path);
-            
-            // Get actual file type from content
-            const fileType = await fileTypeFromBuffer(buffer);
-            
-            if (!fileType) {
-                // Could not determine file type - delete and reject
-                await fs.promises.unlink(file.path);
-                return res.status(400).json({
-                    success: false,
-                    message: `Unable to verify file type for ${file.originalname}. File may be corrupted or unsupported.`
-                });
-            }
-            
-            // Verify MIME type matches
-            if (fileType.mime !== file.mimetype) {
-                // MIME type mismatch - potential attack
-                await fs.promises.unlink(file.path);
-                return res.status(400).json({
-                    success: false,
-                    message: `File type mismatch detected for ${file.originalname}. Declared: ${file.mimetype}, Actual: ${fileType.mime}. Upload rejected for security reasons.`
-                });
-            }
-            
-            // Additional validation: Check if detected type is in allowed types
-            const fieldName = file.fieldname;
-            const config = STORAGE_CONFIG[fieldName];
-            
-            if (config && !config.allowedTypes.includes(fileType.mime)) {
-                await fs.promises.unlink(file.path);
-                return res.status(400).json({
-                    success: false,
-                    message: `File type ${fileType.mime} is not allowed for ${fieldName}.`
-                });
+        for (const file of filesList) {
+            try {
+                const buffer = await fs.promises.readFile(file.path);
+                // Get actual file type from content
+                const fileType = await FileType.fromBuffer(buffer);
+
+                if (!fileType) {
+                    // Could not determine file type from content. Fall back to
+                    // the declared mimetype for common allowed image fields (avatar/photos).
+                    const fieldName = file.fieldname;
+                    const config = STORAGE_CONFIG[fieldName];
+
+                    if (config && file.mimetype && config.allowedTypes.includes(file.mimetype)) {
+                        console.warn(`Warning: content-type detection failed for ${file.originalname}, falling back to declared mimetype ${file.mimetype}`);
+                        continue; // accept this file
+                    }
+
+                    errors.push(`Unable to verify file type for ${file.originalname}.`);
+                    continue;
+                }
+
+                // Verify MIME type matches declared mime
+                const declared = normalizeMime(file.mimetype);
+                const detected = normalizeMime(fileType.mime);
+                if (detected !== declared) {
+                    errors.push(`File type mismatch for ${file.originalname}. Declared: ${declared}, Actual: ${detected}`);
+                    continue;
+                }
+
+                // Additional validation: Check if detected type is in allowed types
+                const fieldName = file.fieldname;
+                const config = STORAGE_CONFIG[fieldName];
+
+                if (config && !config.allowedTypes.map(normalizeMime).includes(detected)) {
+                    errors.push(`File type ${detected} is not allowed for ${fieldName} (file ${file.originalname}).`);
+                    continue;
+                }
+            } catch (fileErr) {
+                console.error('Error validating file', file?.originalname, fileErr);
+                errors.push(`Error validating ${file.originalname}`);
             }
         }
-        
+
+        // If any errors found, clean up uploaded files and return 400 with details
+        if (errors.length) {
+            // Try to delete uploaded files
+            for (const f of filesList) {
+                try { await fs.promises.unlink(f.path); } catch (e) { /* ignore */ }
+            }
+            return res.status(400).json({ success: false, message: errors.join(' ') });
+        }
+
         next();
     } catch (error) {
         console.error('MIME validation error:', error);
         
         // Clean up files on error
-        if (req.files) {
-            for (const file of req.files) {
-                try {
-                    await fs.promises.unlink(file.path);
-                } catch (unlinkError) {
-                    console.error('Error deleting file:', unlinkError);
-                }
+        try {
+            let filesList = [];
+            if (Array.isArray(req.files)) filesList = req.files;
+            else if (req.files && typeof req.files === 'object') filesList = Object.values(req.files).flat();
+            for (const file of filesList) {
+                try { await fs.promises.unlink(file.path); } catch (_) {}
             }
-        }
+        } catch (_) {}
         
         return res.status(500).json({
             success: false,

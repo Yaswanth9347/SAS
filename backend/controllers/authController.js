@@ -24,6 +24,8 @@ const sendTokenResponse = (user, statusCode, res) => {
     if (user.department) userData.department = user.department;
     if (user.year) userData.year = user.year;
     if (user.team) userData.team = user.team;
+    // Include profile image URL when available so frontend can render avatar immediately
+    if (user.profileImage) userData.profileImage = user.profileImage;
 
     res.status(statusCode).json({
         success: true,

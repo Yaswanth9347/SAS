@@ -1,4 +1,5 @@
 // Password visibility toggle with SVG icons
+const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 const togglePassword = document.getElementById("togglePassword");
 
@@ -10,6 +11,17 @@ togglePassword.addEventListener("click", () => {
   const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
   passwordInput.setAttribute("type", type);
   togglePassword.innerHTML = type === "password" ? eyeIcon : eyeSlashIcon;
+});
+
+// Proactively clear any browser autofill of demo/admin creds
+window.addEventListener('DOMContentLoaded', () => {
+  if (usernameInput) usernameInput.value = '';
+  if (passwordInput) passwordInput.value = '';
+  // double-clear in next tick for stubborn autofill
+  setTimeout(() => {
+    if (usernameInput && /admin/i.test(usernameInput.value)) usernameInput.value = '';
+    if (passwordInput && passwordInput.value.length) passwordInput.value = '';
+  }, 0);
 });
 
 // Login logic

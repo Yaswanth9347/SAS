@@ -219,7 +219,7 @@
           border: none;
           border-radius: 6px;
           cursor: pointer;
-          font-family: 'Poppins', sans-serif;
+          font-family: inherit;
         ">Try Again</button>
       </div>
     `;

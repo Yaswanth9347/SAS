@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard - Spread a Smile</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - Spread a Smile</title>
+  
+  <!-- Consolidated CSS -->
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Optional: add a page-specific stylesheet later if needed -->
+</head>
 
 <body>
+  <!-- Navbar -->
   <nav class="navbar">
     <div class="nav-container">
       <div class="nav-logo">
@@ -23,30 +29,6 @@
       </ul>
     </div>
   </nav>
-
-  <body>
-    <nav class="navbar">
-      <div class="nav-container">
-        <div class="nav-logo">
-          <h2>Spread A Smile</h2>
-        </div>
-        <ul class="nav-menu" id="navMenu">
-          <li>
-            <a href="dashboard.html" class="nav-link active">Dashboard</a>
-          </li>
-          <li><a href="visits.html" class="nav-link">Visits</a></li>
-          <li><a href="teams.html" class="nav-link">Teams</a></li>
-          <li><a href="visit-gallery.html" class="nav-link">Gallery</a></li>
-          <li><a href="profile.html" class="nav-link">Profile</a></li>
-          <li><a href="contact.html" class="nav-link">Contact</a></li>
-          <!-- Admin-only navigation items will be added dynamically -->
-          <li><span class="nav-link" id="navUser">Welcome, User</span></li>
-          <li>
-            <a href="#" class="nav-link logout-btn" id="navLogout">Logout</a>
-          </li>
-        </ul>
-      </div>
-    </nav>
 
     <section class="dashboard">
       <div class="container">
@@ -106,12 +88,12 @@
           <!-- Latest Visit Gallery - Auto-scrolling media from latest completed visit -->
           <div class="dashboard-card gallery-card">
             <div class="gallery-header">
-              <h3>� Latest Visit Gallery</h3>
+              <h3>Latest Visit Gallery</h3>
               <p id="galleryInfo">Loading latest visit...</p>
             </div>
             <div id="galleryContainer">
               <div class="no-gallery">
-                <div class="no-gallery-icon">�️</div>
+                <div class="no-gallery-icon"></div>
                 <p>No completed visits with media yet</p>
               </div>
             </div>

@@ -93,9 +93,10 @@ async function loadProfile(){
           notify.success('Avatar uploaded');
           // update local user
           const userLoc = authManager.getUser() || {};
-          userLoc.profileImage = up.data.profileImage;
+          const baseUrl = (up.data.profileImage || '').split('?')[0];
+          userLoc.profileImage = `${baseUrl}?t=${Date.now()}`;
           authManager.setAuth(authManager.getToken(), userLoc);
-          renderAvatar(up.data.profileImage, userLoc.name);
+          renderAvatar(userLoc.profileImage, userLoc.name);
           if(typeof navbarManager !== 'undefined') navbarManager.setupNavbar();
         } else {
           notify.error(up.message || 'Upload failed');
@@ -134,7 +135,14 @@ function renderAvatar(url, name){
   if(!wrapper) return;
   wrapper.innerHTML = '';
   if(url){
-    const img = document.createElement('img'); img.src = url; img.alt = 'Avatar'; wrapper.appendChild(img);
+    const img = document.createElement('img');
+    // Cache-bust local uploads to ensure the latest image shows after an update
+    const cacheUrl = (typeof url === 'string' && url.includes('/uploads/'))
+      ? `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`
+      : url;
+    img.src = cacheUrl;
+    img.alt = 'Avatar';
+    wrapper.appendChild(img);
   } else {
     // show initials
     const initials = (name || authManager.getUser()?.name || '').split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase() || 'U';

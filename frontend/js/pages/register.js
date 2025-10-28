@@ -2,6 +2,21 @@
 // Mirrors previous js/register.js logic, moved to page-named location for consistency.
 
 (() => {
+  // Proactively clear any browser autofill of demo/admin creds on register
+  window.addEventListener('DOMContentLoaded', () => {
+    const u = document.getElementById('username');
+    const p = document.getElementById('password');
+    const c = document.getElementById('confirmPassword');
+    if (u) u.value = '';
+    if (p) p.value = '';
+    if (c) c.value = '';
+    // double-clear in next tick for stubborn autofill
+    setTimeout(() => {
+      if (u && /admin/i.test(u.value)) u.value = '';
+      if (p && p.value.length) p.value = '';
+      if (c && c.value.length) c.value = '';
+    }, 0);
+  });
   // Modal elements
   const termsLink = document.getElementById("termsLink");
   const termsModal = document.getElementById("termsModal");
@@ -302,7 +317,8 @@
       const data = await response.json().catch(() => ({ success: false, message: "Invalid server response" }));
 
       if (response.ok && data.success) {
-        alert("Registration successful! Please login.");
+        // Show celebration (~4s) with 3D confetti if available; fallback to 2D
+        await showCelebrationPreferThree(4000);
         window.location.href = "/login.html";
         return;
       }
@@ -317,6 +333,123 @@
       card.classList.remove("loading");
     }
   });
+
+  // --- Celebration Animation Prefer 3D (fallback to 2D) ---
+  async function showCelebrationPreferThree(durationMs = 4000) {
+    try {
+      const overlay = document.getElementById('celebration');
+      if (overlay) {
+        overlay.setAttribute('aria-hidden', 'false');
+        overlay.classList.add('show');
+      }
+      const mod = await import('/js/celebrations/three-confetti.js');
+      const mountEl = overlay || document.body;
+      await mod.runThreeConfetti(mountEl, durationMs);
+      if (overlay) {
+        overlay.classList.remove('show');
+        overlay.setAttribute('aria-hidden', 'true');
+      }
+      return;
+    } catch (e) {
+      // Fallback to 2D if three.js path fails or CSP/network blocks
+      return showCelebration2D(durationMs);
+    }
+  }
+
+  // 2D canvas fallback (lightweight)
+  function showCelebration2D(durationMs = 4000) {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById('celebration');
+      const canvas = document.getElementById('confettiCanvas');
+      if (!overlay || !canvas) return resolve();
+
+      let rafId;
+      const ctx = canvas.getContext('2d');
+      const colors = ['#ef5350', '#ab47bc', '#5c6bc0', '#29b6f6', '#26a69a', '#66bb6a', '#ffee58', '#ffa726'];
+      const pieces = [];
+      const W = () => (canvas.width = window.innerWidth);
+      const H = () => (canvas.height = window.innerHeight);
+      W(); H();
+      const gravity = 0.15;
+      const drag = 0.005;
+      const terminalVelocity = 4.5;
+      const spawnRate = 8; // per frame during first phase
+      const start = performance.now();
+
+      function spawn(n) {
+        for (let i = 0; i < n; i++) {
+          pieces.push({
+            x: Math.random() * canvas.width,
+            y: -20,
+            w: 8 + Math.random() * 6,
+            h: 4 + Math.random() * 3,
+            color: colors[(Math.random() * colors.length) | 0],
+            tilt: Math.random() * Math.PI,
+            tiltSpeed: (Math.random() - 0.5) * 0.2,
+            vx: (Math.random() - 0.5) * 6,
+            vy: 2 + Math.random() * 2,
+            rot: Math.random() * Math.PI,
+            rotSpeed: (Math.random() - 0.5) * 0.2,
+          });
+        }
+      }
+
+      function drawPiece(p) {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+
+      function updatePiece(p) {
+        p.vy += (gravity - p.vy * drag);
+        if (p.vy > terminalVelocity) p.vy = terminalVelocity;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.rotSpeed;
+        if (p.x < -20) p.x = canvas.width + 20;
+        if (p.x > canvas.width + 20) p.x = -20;
+      }
+
+      function frame(now) {
+        const elapsed = now - start;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Spawn for first ~60% of duration
+        if (elapsed < durationMs * 0.6) spawn(spawnRate);
+
+        for (let i = pieces.length - 1; i >= 0; i--) {
+          const p = pieces[i];
+          updatePiece(p);
+          drawPiece(p);
+          if (p.y > canvas.height + 30) pieces.splice(i, 1);
+        }
+
+        if (elapsed >= durationMs && pieces.length === 0) {
+          end();
+          return;
+        }
+        rafId = requestAnimationFrame(frame);
+      }
+
+      function end() {
+        cancelAnimationFrame(rafId);
+        overlay.classList.remove('show');
+        overlay.setAttribute('aria-hidden', 'true');
+        window.removeEventListener('resize', onResize);
+        resolve();
+      }
+
+      function onResize() { W(); H(); }
+      window.addEventListener('resize', onResize);
+
+      overlay.setAttribute('aria-hidden', 'false');
+      overlay.classList.add('show');
+      rafId = requestAnimationFrame(frame);
+    });
+  }
 
   // Password visibility toggles
   const passwordInput = document.getElementById('password');

@@ -1,1 +1,87 @@
 /* Page-specific styles for register. Keep minimal; shared styles in css/style.css */
+
+/* Celebration overlay */
+.celebration {
+	position: fixed;
+	inset: 0;
+	z-index: 2000; /* above nav and modals */
+	display: none;
+	opacity: 0;
+	transition: opacity 300ms ease;
+	pointer-events: none; /* don't block user input */
+}
+
+.celebration.show {
+	display: block;
+	opacity: 1;
+}
+
+#confettiCanvas {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+}
+
+.celebration-message {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	background: rgba(255, 255, 255, 0.92);
+	color: #2e7d32;
+	border-radius: 12px;
+	padding: 18px 22px;
+	box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+	text-align: center;
+	min-width: 260px;
+	pointer-events: none; /* allow clicks to pass through */
+}
+
+.celebration-message .title {
+	font-weight: 700;
+	font-size: 1.2rem;
+	margin-bottom: 6px;
+}
+
+.celebration-message .subtitle {
+	font-weight: 500;
+	font-size: 0.95rem;
+	color: #1b5e20;
+}
+
+/* Make the register card lightly transparent with a subtle glass effect */
+.register-card {
+	background: rgba(255, 255, 255, 0.28) !important; /* override solid white */
+	-webkit-backdrop-filter: blur(12px);
+	backdrop-filter: blur(12px);
+	border: 1px solid rgba(255, 255, 255, 0.25);
+	box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+/* Ensure text remains readable on translucent background */
+.register-card h2 { color: #1f2937; }
+.register-card > p { color: #374151; }
+.register-card label { color: #333; }
+
+/* Make inputs slightly transparent too */
+.register-card .form-group input,
+.register-card .form-group select,
+.register-card .form-group textarea {
+	background: rgba(255, 255, 255, 0.22) !important;
+	border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
+	color: #111827; /* slate-900 */
+}
+
+.register-card .form-group input::placeholder,
+.register-card .form-group textarea::placeholder {
+	color: rgba(55, 65, 81, 0.8); /* slate-700 */
+}
+
+.register-card .form-group input:focus,
+.register-card .form-group select:focus,
+.register-card .form-group textarea:focus {
+	background: rgba(255, 255, 255, 0.28) !important;
+	border-color: #3f51b5 !important; /* keep brand focus color */
+	outline: none;
+}
