@@ -99,15 +99,97 @@ class AuthManager {
   }
 
   /**
+   * Logout with a short visual delay (allows button animation)
+   */
+  logoutWithDelay(delayMs = 220) {
+    this.clearAuth();
+    setTimeout(() => {
+      window.location.href = 'login.html';
+    }, Math.max(0, delayMs));
+  }
+
+  /**
    * Handle logout button click
    */
   setupLogoutButton(buttonId = 'navLogout') {
     const logoutBtn = document.getElementById(buttonId);
     if (logoutBtn) {
+      // Ensure initial state variables for animation
+      const applyState = (state) => {
+        if (!state) return;
+        for (const key in state) {
+          logoutBtn.style.setProperty(key, state[key]);
+        }
+      };
+
+      const STATES = {
+        'default': {
+          '--figure-duration': '100', '--transform-figure': 'none', '--walking-duration': '100',
+          '--transform-arm1': 'none', '--transform-wrist1': 'none', '--transform-arm2': 'none', '--transform-wrist2': 'none',
+          '--transform-leg1': 'none', '--transform-calf1': 'none', '--transform-leg2': 'none', '--transform-calf2': 'none'
+        },
+        'hover': {
+          '--figure-duration': '100', '--transform-figure': 'translateX(1.5px)', '--walking-duration': '100',
+          '--transform-arm1': 'rotate(-5deg)', '--transform-wrist1': 'rotate(-15deg)', '--transform-arm2': 'rotate(5deg)', '--transform-wrist2': 'rotate(6deg)',
+          '--transform-leg1': 'rotate(-10deg)', '--transform-calf1': 'rotate(5deg)', '--transform-leg2': 'rotate(20deg)', '--transform-calf2': 'rotate(-20deg)'
+        },
+        'walking1': {
+          '--figure-duration': '300', '--transform-figure': 'translateX(11px)', '--walking-duration': '300',
+          '--transform-arm1': 'translateX(-4px) translateY(-2px) rotate(120deg)', '--transform-wrist1': 'rotate(-5deg)',
+          '--transform-arm2': 'translateX(4px) rotate(-110deg)', '--transform-wrist2': 'rotate(-5deg)', '--transform-leg1': 'translateX(-3px) rotate(80deg)',
+          '--transform-calf1': 'rotate(-30deg)', '--transform-leg2': 'translateX(4px) rotate(-60deg)', '--transform-calf2': 'rotate(20deg)'
+        },
+        'walking2': {
+          '--figure-duration': '400', '--transform-figure': 'translateX(17px)', '--walking-duration': '300',
+          '--transform-arm1': 'rotate(60deg)', '--transform-wrist1': 'rotate(-15deg)', '--transform-arm2': 'rotate(-45deg)', '--transform-wrist2': 'rotate(6deg)',
+          '--transform-leg1': 'rotate(-5deg)', '--transform-calf1': 'rotate(10deg)', '--transform-leg2': 'rotate(10deg)', '--transform-calf2': 'rotate(-20deg)'
+        },
+        'falling1': {
+          '--figure-duration': '1600', '--walking-duration': '400', '--transform-arm1': 'rotate(-60deg)', '--transform-wrist1': 'none',
+          '--transform-arm2': 'rotate(30deg)', '--transform-wrist2': 'rotate(120deg)', '--transform-leg1': 'rotate(-30deg)', '--transform-calf1': 'rotate(-20deg)', '--transform-leg2': 'rotate(20deg)'
+        },
+        'falling2': {
+          '--walking-duration': '300', '--transform-arm1': 'rotate(-100deg)', '--transform-arm2': 'rotate(-60deg)', '--transform-wrist2': 'rotate(60deg)',
+          '--transform-leg1': 'rotate(80deg)', '--transform-calf1': 'rotate(20deg)', '--transform-leg2': 'rotate(-60deg)'
+        },
+        'falling3': {
+          '--walking-duration': '500', '--transform-arm1': 'rotate(-30deg)', '--transform-wrist1': 'rotate(40deg)', '--transform-arm2': 'rotate(50deg)', '--transform-wrist2': 'none',
+          '--transform-leg1': 'rotate(-30deg)', '--transform-leg2': 'rotate(20deg)', '--transform-calf2': 'none'
+        }
+      };
+
+      // Hover state updates (purely visual)
+      logoutBtn.addEventListener('mouseenter', () => applyState(STATES['hover']));
+      logoutBtn.addEventListener('mouseleave', () => applyState(STATES['default']));
+
       logoutBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        this.logout();
-      });
+        // Start animation sequence only once
+        if (!logoutBtn.dataset.animating) {
+          logoutBtn.dataset.animating = '1';
+
+          // Sequence: walking1 -> walking2 -> falling1 -> falling2 -> falling3
+          logoutBtn.classList.add('clicked');
+          applyState(STATES['walking1']);
+          setTimeout(() => {
+            logoutBtn.classList.add('door-slammed');
+            applyState(STATES['walking2']);
+            setTimeout(() => {
+              logoutBtn.classList.add('falling');
+              applyState(STATES['falling1']);
+              setTimeout(() => {
+                applyState(STATES['falling2']);
+                setTimeout(() => {
+                  applyState(STATES['falling3']);
+                }, parseInt(STATES['falling2']['--walking-duration']) || 300);
+              }, parseInt(STATES['falling1']['--walking-duration']) || 400);
+            }, parseInt(STATES['walking2']['--figure-duration']) || 400);
+          }, parseInt(STATES['walking1']['--figure-duration']) || 300);
+
+          // Clear auth immediately for correctness/tests; redirect after ~1200ms so animation is visible
+          this.logoutWithDelay(1200);
+        }
+      }, { passive: false });
     }
   }
 

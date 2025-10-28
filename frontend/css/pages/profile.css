@@ -52,8 +52,45 @@
 @media (max-width: 900px){
   .stats-grid { grid-template-columns: repeat(2,1fr) }
   .form-grid { grid-template-columns: 1fr }
-}
-@media (max-width: 520px){
-  .stats-grid { grid-template-columns: 1fr }
+  .profile-hero { flex-direction: column; text-align: center; }
+  .hero-info { align-items: center; }
+  .hero-title-row { flex-direction: column; gap: 8px; }
+  .contact-line { justify-content: center; }
+  .hero-actions { justify-content: center; width: 100%; }
 }
 
+@media (max-width: 768px) {
+  .profile-hero { margin-top: 90px; padding: 16px; }
+  .avatar-large { width: 80px; height: 80px; font-size: 28px; }
+  .hero-title-row h1 { font-size: 1.5rem; }
+  .profile-tabs { flex-wrap: wrap; }
+  .tab-btn { flex: 1; min-width: 120px; padding: 12px 10px; font-size: 0.9rem; }
+  .form-actions { flex-direction: column; }
+  .form-actions .btn { width: 100%; padding: 12px; }
+  .profile-card { padding: 16px; }
+}
+
+@media (max-width: 520px){
+  .stats-grid { grid-template-columns: 1fr; gap: 10px; }
+  .stat-card { padding: 12px; }
+  .stat-value { font-size: 1.3rem; }
+  .profile-hero { padding: 12px; }
+  .avatar-large { width: 70px; height: 70px; font-size: 24px; }
+  .hero-title-row h1 { font-size: 1.3rem; }
+  .role-badge { font-size: 0.75rem; padding: 4px 8px; }
+  .contact-line { font-size: 0.9rem; flex-direction: column; gap: 4px; align-items: center; }
+  .contact-line .dot { display: none; }
+  .tab-btn { min-width: 100px; font-size: 0.85rem; padding: 10px 8px; }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+  .btn, .tab-btn, .avatar-large { 
+    min-height: 44px; /* iOS recommended touch target */
+    -webkit-tap-highlight-color: transparent;
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 44px;
+  }
+}

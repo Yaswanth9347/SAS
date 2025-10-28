@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - User Management</title>
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+
+  <!-- Global CSS -->
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- Page CSS -->
+  <link rel="stylesheet" href="css/pages/admin-users.css" />
+</head>
+
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">Spread A Smile</div>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+        <li><a href="visits.html" class="nav-link">Visits</a></li>
+        <li><a href="teams.html" class="nav-link">Teams</a></li>
+        <li><a href="visit-gallery.html" class="nav-link">Gallery</a></li>
+        <li><a href="profile.html" class="nav-link">Profile</a></li>
+        <li><span id="navUser" class="nav-link">Welcome, User</span></li>
+        <li><a href="#" id="navLogout" class="nav-link logout-btn">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header class="page-header">
+      <h1>User Management</h1>
+      <p>Manage volunteers, approve requests, and track user activity</p>
+    </header>
+
+    <!-- Filters -->
+    <section class="filters-section">
+      <div class="filter-grid filters">
+        <input type="search" id="searchUsers" placeholder="Search by name, username, or email" />
+        <select id="filterRole">
+          <option value="">All Roles</option>
+          <option value="volunteer">Volunteer</option>
+          <option value="admin">Admin</option>
+        </select>
+        <select id="filterStatus">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <select id="filterVerified">
+          <option value="">All</option>
+          <option value="true">Verified</option>
+          <option value="false">Unverified</option>
+        </select>
+        <div class="filter-buttons">
+          <button id="applyFilters" class="btn btn-primary icon-btn" aria-label="Apply filters" title="Apply filters">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M3 4h18l-7 8v6l-4-2v-4L3 4z"></path>
+            </svg>
+          </button>
+          <button id="resetFilters" class="btn btn-secondary icon-btn" aria-label="Reset filters" title="Reset filters">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M12 6V3L7 8l5 5V10a4 4 0 11-3.46 2l-1.74 1A6 6 0 1012 6z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- User Table -->
+    <section class="table-section">
+      <div class="users-table-wrapper">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAll" /></th>
+              <th>User</th>
+              <th>Contact</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Verified</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTbody">
+            <tr><td colspan="8" class="loading">Loading users...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="pagination" class="pagination"></div>
+    </section>
+  </main>
+
+  <!-- Reject Modal -->
+  <div id="rejectModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>Reject User</h3>
+      <p>Please provide a reason (optional)</p>
+      <textarea id="rejectReason" rows="3" placeholder="Reason for rejection..."></textarea>
+      <div class="modal-actions">
+        <button id="confirmReject" class="btn btn-danger">Reject</button>
+        <button id="cancelReject" class="btn btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity Modal -->
+  <div id="activityModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>Activity Log</h3>
+      <div id="activityList" class="activity-list"></div>
+      <div class="modal-actions">
+        <button id="closeActivity" class="btn btn-secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/a11y.js"></script>
+  <script src="js/navbar.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/loading.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/pages/admin-users.js"></script>
+</body>
+</html>
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/navbar.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/loading.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- Page-specific JavaScript -->
+  <script src="js/pages/admin-users.js"></script>
+</body>
+</html>

@@ -1,21 +1,304 @@
 const User = require('../models/User');
 const Team = require('../models/Team');
+const ActivityLog = require('../models/ActivityLog');
 
 // @desc    Get all users (for team creation UI)
 // @route   GET /api/admin/users
 // @access  Private/Admin
 exports.getUsers = async (req, res, next) => {
     try {
-        // Return basic user info used by the frontend (id and username/name)
-        const users = await User.find({}, '_id username name role').sort({ username: 1 });
+        const { role, status, verified, search, page = 1, limit = 50 } = req.query;
+        const query = {};
+
+        if (role) query.role = role;
+        if (status) query.verificationStatus = status; // 'pending' | 'approved' | 'rejected'
+        if (verified !== undefined) query.isVerified = verified === 'true';
+
+        if (search) {
+            query.$or = [
+                { name: new RegExp(search, 'i') },
+                { username: new RegExp(search, 'i') },
+                { email: new RegExp(search, 'i') }
+            ];
+        }
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const [users, total] = await Promise.all([
+            User.find(query, '_id username name email role department year isActive isVerified verificationStatus createdAt updatedAt')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(parseInt(limit)),
+            User.countDocuments(query)
+        ]);
 
         res.status(200).json({
             success: true,
             count: users.length,
+            total,
+            page: parseInt(page),
+            pages: Math.ceil(total / parseInt(limit)),
             data: users
         });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Approve a user registration/profile
+// @route   PUT /api/admin/users/:id/approve
+// @access  Private/Admin
+exports.approveUser = async (req, res) => {
+    try {
+        const user = await User.findByIdAndUpdate(
+            req.params.id,
+            { isVerified: true, verificationStatus: 'approved', verificationNotes: req.body?.notes },
+            { new: true }
+        );
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        await ActivityLog.create({
+            actor: req.user.id,
+            user: user._id,
+            action: 'user.approve',
+            targetType: 'User',
+            targetId: user._id,
+            metadata: { notes: req.body?.notes },
+            ip: req.ip
+        });
+
+        res.json({ success: true, message: 'User approved', data: { id: user._id, isVerified: user.isVerified, verificationStatus: user.verificationStatus } });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Reject a user registration/profile
+// @route   PUT /api/admin/users/:id/reject
+// @access  Private/Admin
+exports.rejectUser = async (req, res) => {
+    try {
+        const user = await User.findByIdAndUpdate(
+            req.params.id,
+            { isVerified: false, verificationStatus: 'rejected', verificationNotes: req.body?.reason },
+            { new: true }
+        );
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        await ActivityLog.create({
+            actor: req.user.id,
+            user: user._id,
+            action: 'user.reject',
+            targetType: 'User',
+            targetId: user._id,
+            metadata: { reason: req.body?.reason },
+            ip: req.ip
+        });
+
+        res.json({ success: true, message: 'User rejected', data: { id: user._id, isVerified: user.isVerified, verificationStatus: user.verificationStatus } });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Update user role
+// @route   PUT /api/admin/users/:id/role
+// @access  Private/Admin
+exports.updateUserRole = async (req, res) => {
+    try {
+        const { role } = req.body;
+        if (!['admin', 'volunteer'].includes(role)) {
+            return res.status(400).json({ success: false, message: 'Invalid role' });
+        }
+
+        const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true });
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        await ActivityLog.create({
+            actor: req.user.id,
+            user: user._id,
+            action: 'user.role.change',
+            targetType: 'User',
+            targetId: user._id,
+            metadata: { role },
+            ip: req.ip
+        });
+
+        res.json({ success: true, message: 'Role updated', data: { id: user._id, role: user.role } });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Bulk user operations (approve, reject, role)
+// @route   PUT /api/admin/users/bulk
+// @access  Private/Admin
+exports.bulkUpdateUsers = async (req, res) => {
+    try {
+        const { action, userIds = [], role, reason, notes } = req.body;
+        if (!Array.isArray(userIds) || userIds.length === 0) {
+            return res.status(400).json({ success: false, message: 'userIds array is required' });
+        }
+
+        let result = { matched: userIds.length, modified: 0 };
+        if (action === 'approve') {
+            const r = await User.updateMany({ _id: { $in: userIds } }, { isVerified: true, verificationStatus: 'approved', verificationNotes: notes });
+            result.modified = r.modifiedCount;
+        } else if (action === 'reject') {
+            const r = await User.updateMany({ _id: { $in: userIds } }, { isVerified: false, verificationStatus: 'rejected', verificationNotes: reason });
+            result.modified = r.modifiedCount;
+        } else if (action === 'role') {
+            if (!['admin', 'volunteer'].includes(role)) return res.status(400).json({ success: false, message: 'Invalid role' });
+            const r = await User.updateMany({ _id: { $in: userIds } }, { role });
+            result.modified = r.modifiedCount;
+        } else {
+            return res.status(400).json({ success: false, message: 'Invalid action' });
+        }
+
+        await ActivityLog.create({
+            actor: req.user.id,
+            action: `user.bulk.${action}`,
+            targetType: 'User',
+            metadata: { userIds, role, reason, notes },
+            ip: req.ip
+        });
+
+        res.json({ success: true, message: 'Bulk operation completed', data: result });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Delete a user (with safety checks)
+// @route   DELETE /api/admin/users/:id
+// @access  Private/Admin
+exports.deleteUser = async (req, res) => {
+    try {
+        const userId = req.params.id;
+
+        // Prevent self-deletion
+        if (String(userId) === String(req.user.id)) {
+            return res.status(400).json({ success: false, message: 'You cannot delete your own account.' });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        // If admin, ensure at least one other admin remains
+        if (user.role === 'admin') {
+            const adminsCount = await User.countDocuments({ role: 'admin', _id: { $ne: userId } });
+            if (adminsCount === 0) {
+                return res.status(400).json({ success: false, message: 'Cannot delete the last admin account.' });
+            }
+        }
+
+        // If the user is a team leader of any team, block deletion (leader is required)
+        const leaderTeams = await Team.find({ teamLeader: userId }).select('_id name');
+        if (leaderTeams.length > 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Cannot delete user: they are leader of ${leaderTeams.length} team(s). Change team leader first.`
+            });
+        }
+
+        // Remove from team members where present
+        await Team.updateMany(
+            { members: userId },
+            { $pull: { members: userId } }
+        );
+
+        // Finally, delete the user
+        await User.findByIdAndDelete(userId);
+
+        await ActivityLog.create({
+            actor: req.user.id,
+            user: userId,
+            action: 'user.delete',
+            targetType: 'User',
+            targetId: userId,
+            metadata: { username: user.username, role: user.role },
+            ip: req.ip
+        });
+
+        res.json({ success: true, message: 'User deleted successfully' });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Bulk delete users (with safety checks)
+// @route   DELETE /api/admin/users/bulk
+// @access  Private/Admin
+exports.bulkDeleteUsers = async (req, res) => {
+    try {
+        const { userIds = [] } = req.body || {};
+        if (!Array.isArray(userIds) || userIds.length === 0) {
+            return res.status(400).json({ success: false, message: 'userIds array is required' });
+        }
+
+        const results = [];
+        for (const id of userIds) {
+            // Skip self
+            if (String(id) === String(req.user.id)) {
+                results.push({ id, ok: false, reason: 'self' });
+                continue;
+            }
+
+            const user = await User.findById(id);
+            if (!user) { results.push({ id, ok: false, reason: 'not-found' }); continue; }
+
+            if (user.role === 'admin') {
+                const adminsCount = await User.countDocuments({ role: 'admin', _id: { $ne: id } });
+                if (adminsCount === 0) { results.push({ id, ok: false, reason: 'last-admin' }); continue; }
+            }
+
+            const leaderTeams = await Team.find({ teamLeader: id }).select('_id');
+            if (leaderTeams.length > 0) { results.push({ id, ok: false, reason: 'team-leader' }); continue; }
+
+            await Team.updateMany({ members: id }, { $pull: { members: id } });
+            await User.findByIdAndDelete(id);
+            results.push({ id, ok: true });
+        }
+
+        await ActivityLog.create({
+            actor: req.user.id,
+            action: 'user.bulk.delete',
+            targetType: 'User',
+            metadata: { userIds, results },
+            ip: req.ip
+        });
+
+        const deleted = results.filter(r => r.ok).length;
+        res.json({ success: true, message: `Deleted ${deleted} user(s).`, data: { results, deleted } });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Get activity logs (optionally filter by user)
+// @route   GET /api/admin/activity
+// @access  Private/Admin
+exports.getActivityLogs = async (req, res) => {
+    try {
+        const { userId, action, page = 1, limit = 50 } = req.query;
+        const query = {};
+        if (userId) query.user = userId;
+        if (action) query.action = action;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const [logs, total] = await Promise.all([
+            ActivityLog.find(query)
+                .populate('actor', 'name username role')
+                .populate('user', 'name username role')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(parseInt(limit)),
+            ActivityLog.countDocuments(query)
+        ]);
+
+        res.json({ success: true, total, page: parseInt(page), pages: Math.ceil(total / parseInt(limit)), data: logs });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
     }
 };
 
@@ -151,6 +434,7 @@ exports.createTeams = async (req, res, next) => {
             data: teams
         });
     } catch (error) {
+            // Notify members of team assignment
         res.status(400).json({
             success: false,
             message: error.message

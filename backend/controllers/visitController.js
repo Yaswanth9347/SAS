@@ -1,67 +1,7 @@
-const Visit = require("../models/Visit");
-const Team = require("../models/Team");
-const School = require("../models/School");
-
-// Helper function to convert absolute file paths to web-accessible paths
-const normalizeFilePath = (filePath) => {
-  if (!filePath) return "";
-
-  let normalized = String(filePath);
-
-  // If it's already a web path (starts with /uploads or http), return as-is
-  if (normalized.startsWith("/uploads") || normalized.startsWith("http")) {
-    return normalized;
-  }
-
-  // Convert Windows backslashes to forward slashes
-  normalized = normalized.replace(/\\/g, "/");
-
-  // Extract path starting from /uploads
-  const uploadsIndex = normalized.indexOf("/uploads");
-  if (uploadsIndex !== -1) {
-    return normalized.substring(uploadsIndex);
-  }
-
-  // Try without leading slash
-  const uploadsIndexAlt = normalized.indexOf("uploads");
-  if (uploadsIndexAlt !== -1) {
-    return "/" + normalized.substring(uploadsIndexAlt);
-  }
-
-  // If we can't find uploads, return the original
-  console.warn("Could not normalize file path:", filePath);
-  return normalized;
-};
-
-// Helper function to auto-update past scheduled visits to completed
-const updatePastVisits = async () => {
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Start of today
-
-    // Find all scheduled visits where date is before today
-    const result = await Visit.updateMany(
-      {
-        status: "scheduled",
-        date: { $lt: today },
-      },
-      {
-        $set: { status: "completed" },
-      }
-    );
-
-    if (result.modifiedCount > 0) {
-      console.log(
-        `Auto-updated ${result.modifiedCount} past scheduled visits to completed`
-      );
-    }
-
-    return result.modifiedCount;
-  } catch (error) {
-    console.error("Error updating past visits:", error);
-    return 0;
-  }
-};
+const Visit = require('../models/Visit');
+const Team = require('../models/Team');
+const School = require('../models/School');
+const { optimizePhoto, generateThumbnail } = require('../utils/imageOptimizer');
 
 // @desc    Get all visits
 // @route   GET /api/visits
@@ -152,12 +92,98 @@ exports.getVisit = async (req, res, next) => {
 const mongoose = require("mongoose");
 
 exports.createVisit = async (req, res, next) => {
-  try {
-    // Validate required fields
-    if (!req.body.team || !mongoose.Types.ObjectId.isValid(req.body.team)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid or missing team ID" });
+    try {
+        // Validate required fields
+        if (!req.body.team || !mongoose.Types.ObjectId.isValid(req.body.team)) {
+            return res.status(400).json({ success: false, message: 'Invalid or missing team ID' });
+        }
+        if (!req.body.school || !mongoose.Types.ObjectId.isValid(req.body.school)) {
+            return res.status(400).json({ success: false, message: 'Invalid or missing school ID' });
+        }
+        if (!req.body.date) {
+            return res.status(400).json({ success: false, message: 'Visit date is required' });
+        }
+        if (!req.body.assignedClass) {
+            return res.status(400).json({ success: false, message: 'Assigned class is required' });
+        }
+
+        // Ensure referenced team and school exist
+        const teamExists = await Team.findById(req.body.team).select('_id name');
+        if (!teamExists) {
+            return res.status(404).json({ success: false, message: 'Team not found' });
+        }
+        
+        const schoolExists = await School.findById(req.body.school).select('_id name');
+        if (!schoolExists) {
+            return res.status(404).json({ success: false, message: 'School not found' });
+        }
+
+        // All users can create visits for any team (removed role-based restrictions)
+
+        // Check if team is available on that date (prevent double booking)
+        const visitDate = new Date(req.body.date);
+        const startOfDay = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate());
+        const endOfDay = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate(), 23, 59, 59);
+        
+        const existingVisit = await Visit.findOne({
+            team: req.body.team,
+            date: { $gte: startOfDay, $lte: endOfDay },
+            status: { $in: ['scheduled', 'completed'] }
+        });
+
+        if (existingVisit) {
+            return res.status(400).json({
+                success: false,
+                message: 'Team already has a visit scheduled on this date'
+            });
+        }
+
+        // Create the visit with proper default values
+        const visitData = {
+            ...req.body,
+            status: req.body.status || 'scheduled', // Ensure default status
+            submittedBy: req.user.id, // Track who created the visit
+            childrenCount: req.body.childrenCount || 30, // Default expected children
+            totalClasses: req.body.totalClasses || 1, // Default total classes
+            classesVisited: req.body.classesVisited || 0 // Default classes visited
+        };
+        
+    const visit = await Visit.create(visitData);
+
+        // Populate the created visit for response
+        const populatedVisit = await Visit.findById(visit._id)
+            .populate('school', 'name address contactPerson')
+            .populate('team', 'name')
+            .populate('submittedBy', 'name role');
+
+        res.status(201).json({
+            success: true,
+            data: populatedVisit,
+            message: `Visit created successfully and assigned to ${teamExists.name}`
+        });
+    } catch (error) {
+        console.error('Error in createVisit:', error);
+        // Notify team members about scheduled visit
+        try {
+            const populatedTeam = await Team.findById(visit.team).populate('members', '_id');
+            const memberIds = (populatedTeam?.members || []).map(m => m._id);
+            if (memberIds.length > 0) {
+                const { notifyUsers } = require('../utils/notificationService');
+                await notifyUsers(memberIds, {
+                    title: 'Visit Scheduled',
+                    message: `A visit has been scheduled on ${new Date(visit.date).toLocaleDateString()}`,
+                    type: 'visit',
+                    link: `/frontend/visits.html`,
+                    meta: { visitId: visit._id, date: visit.date, schoolName: visit.school?.name },
+                    emailTemplate: 'visitScheduled'
+                });
+            }
+        } catch (e) { console.warn('Notify visit schedule failed:', e.message); }
+
+        res.status(201).json({
+            success: false,
+            message: error.message
+        });
     }
     if (!req.body.school || !mongoose.Types.ObjectId.isValid(req.body.school)) {
       return res

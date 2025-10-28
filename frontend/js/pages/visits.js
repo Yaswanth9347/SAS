@@ -127,9 +127,13 @@ async function aSYNC_loadVisits(){
         });
       }
 
-      // Toggle details by clicking the card
+      // Toggle details behavior: for scheduled visits, open a centered modal with info and uploads
       card.addEventListener('click', ()=>{
-        details.style.display = details.style.display === 'none' ? 'block' : 'none';
+        if (sClass === 'scheduled') {
+          openVisitInfoModal(visit);
+        } else {
+          details.style.display = details.style.display === 'none' ? 'block' : 'none';
+        }
       });
 
       const wrapper = document.createElement('div');
@@ -161,7 +165,7 @@ function renderVisitDetailsHtml(visit){
         <div class="media-gallery photos-gallery">
           ${visit.photos.map(p=>`
             <div class="media-item photo-item">
-              <img src="${p}" onclick="openLightbox('${p}','image')" alt="Visit photo" />
+              <img src="${p}" data-media-src="${p}" data-media-type="image" alt="Visit photo" />
             </div>
           `).join('')}
         </div>
@@ -173,7 +177,7 @@ function renderVisitDetailsHtml(visit){
         <h4>Videos (${visit.videos.length})</h4>
         <div class="media-gallery videos-gallery">
           ${visit.videos.map(v=>`
-            <div class="media-item video-item" onclick="openLightbox('${v}','video')">
+            <div class="media-item video-item" data-media-src="${v}" data-media-type="video">
               <div class="video-play-button">▶</div>
               <span>Play Video</span>
             </div>
@@ -241,6 +245,28 @@ function attachDetailsHandlers(){
   document.querySelectorAll('.upload-btn').forEach(btn=>{
     btn.removeEventListener('click', onUploadClick);
     btn.addEventListener('click', onUploadClick);
+  });
+
+  // Media click handlers (photos and videos) - use data attributes to avoid inline handlers
+  document.querySelectorAll('.media-item.photo-item img').forEach(img => {
+    // remove any previously attached listener by cloning
+    const newImg = img.cloneNode(true);
+    img.parentNode.replaceChild(newImg, img);
+    newImg.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const src = newImg.getAttribute('data-media-src') || newImg.src;
+      if (typeof window.openLightbox === 'function') window.openLightbox(src, 'image');
+    });
+  });
+
+  document.querySelectorAll('.media-item.video-item').forEach(div => {
+    const newDiv = div.cloneNode(true);
+    div.parentNode.replaceChild(newDiv, div);
+    newDiv.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const src = newDiv.getAttribute('data-media-src');
+      if (typeof window.openLightbox === 'function') window.openLightbox(src, 'video');
+    });
   });
 }
 
@@ -438,3 +464,43 @@ async function deleteMedia(visitId, url){
   });
 }
 window.deleteMedia = deleteMedia;
+
+// =============== Centered Visit Info Modal (for scheduled visits) ===============
+(function ensureVisitInfoModal(){
+  if (document.getElementById('visit_info_overlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'visit_info_overlay';
+  overlay.className = 'modal-overlay';
+
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.id = 'visit_info_modal';
+  modal.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <h2 style="margin:0;">Visit Information</h2>
+      <button class="close-btn" id="visit_info_close" aria-label="Close">×</button>
+    </div>
+    <div id="visit_info_body" style="margin-top:12px;max-height:70vh;overflow:auto;"></div>
+  `;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.classList.remove('open');
+  overlay.addEventListener('click', (e)=>{ if (e.target === overlay) close(); });
+  modal.querySelector('#visit_info_close').addEventListener('click', close);
+  document.addEventListener('keydown', (e)=>{ if (overlay.classList.contains('open') && e.key === 'Escape') close(); });
+})();
+
+function openVisitInfoModal(visit){
+  const overlay = document.getElementById('visit_info_overlay');
+  const body = document.getElementById('visit_info_body');
+  if (!overlay || !body) return;
+
+  // Inject visit details + upload controls
+  body.innerHTML = renderVisitDetailsHtml(visit);
+  // Wire upload handlers in the injected content
+  attachDetailsHandlers();
+
+  overlay.classList.add('open');
+}

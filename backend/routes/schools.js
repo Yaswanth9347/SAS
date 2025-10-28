@@ -9,9 +9,11 @@ const { protect, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
-// All school routes require admin access
-router.get('/', protect, adminOnly, getSchools);
-router.get('/:id', protect, adminOnly, getSchool);
+// View routes - all authenticated users can view schools
+router.get('/', protect, getSchools);
+router.get('/:id', protect, getSchool);
+
+// Modify routes - admin only
 router.post('/', protect, adminOnly, createSchool);
 router.put('/:id', protect, adminOnly, updateSchool);
 router.delete('/:id', protect, adminOnly, require('../controllers/schoolController').deleteSchool);

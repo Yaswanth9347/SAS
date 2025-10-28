@@ -160,14 +160,25 @@ body.page-raised .container {
   transition: transform 0.35s ease;
 }
 
-footer.footer {
-  transition: transform 0.35s ease, opacity 0.25s ease;
-}
-
 /* ============================================
    RESPONSIVE DRAWER
    ============================================ */
+@media (max-width: 1024px) {
+  .modal {
+    max-width: 85%;
+  }
+  
+  .drawer {
+    height: 80vh;
+  }
+}
+
 @media (max-width: 900px) {
+  .modal {
+    max-width: 90%;
+    padding: 22px;
+  }
+  
   .drawer {
     height: 85vh;
   }
@@ -180,14 +191,65 @@ footer.footer {
 
 @media (max-width: 768px) {
   .modal {
-    max-width: 90%;
+    max-width: 95%;
     padding: 20px;
+  }
+  
+  .modal h2 {
+    font-size: 1.35rem;
+  }
+  
+  .modal h3 {
+    font-size: 1.1rem;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .modal-actions button {
+    width: 100%;
+    padding: 12px 14px;
   }
   
   .drawer {
     height: 90vh;
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal {
+    max-width: 98%;
+    padding: 18px;
+  }
+  
+  .modal h2 {
+    font-size: 1.25rem;
+  }
+  
+  .drawer {
+    height: 93vh;
+  }
+}
+
+/* Touch-friendly improvements for modals */
+@media (hover: none) and (pointer: coarse) {
+  .close-btn {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1.75rem;
+  }
+  
+  .modal-actions button {
+    min-height: 44px;
+  }
+  
+  .close-btn:active {
+    transform: scale(0.95);
+    opacity: 0.8;
   }
 }
 

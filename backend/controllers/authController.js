@@ -2,6 +2,7 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { sendPasswordResetEmail, sendPasswordResetConfirmation } = require('../utils/emailService');
+const { optimizeAvatar } = require('../utils/imageOptimizer');
 
 // Generate JWT Token
 const sendTokenResponse = (user, statusCode, res) => {
@@ -343,6 +344,80 @@ exports.getUserStats = async (req, res, next) => {
     }
 };
 
+// @desc    Get user preferences/settings
+// @route   GET /api/auth/preferences
+// @access  Private
+exports.getPreferences = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id).select('userPreferences');
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        return res.status(200).json({ success: true, data: user.userPreferences || {} });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Update user preferences/settings
+// @route   PUT /api/auth/preferences
+// @access  Private
+exports.updatePreferences = async (req, res, next) => {
+    try {
+        const allowed = {};
+        const body = req.body || {};
+
+        // Validate and whitelist fields
+        if (body.theme && ['light', 'dark', 'system'].includes(body.theme)) {
+            allowed['userPreferences.theme'] = body.theme;
+        }
+        if (body.language && typeof body.language === 'string') {
+            allowed['userPreferences.language'] = body.language;
+        }
+        if (body.notifications && typeof body.notifications === 'object') {
+            const n = body.notifications;
+            if (typeof n.email === 'boolean') allowed['userPreferences.notifications.email'] = n.email;
+            if (typeof n.app === 'boolean') allowed['userPreferences.notifications.app'] = n.app;
+            if (typeof n.sms === 'boolean') allowed['userPreferences.notifications.sms'] = n.sms;
+        }
+        if (body.privacy && typeof body.privacy === 'object') {
+            const p = body.privacy;
+            if (p.profileVisibility && ['public', 'team', 'private'].includes(p.profileVisibility)) {
+                allowed['userPreferences.privacy.profileVisibility'] = p.profileVisibility;
+            }
+            if (typeof p.showEmail === 'boolean') allowed['userPreferences.privacy.showEmail'] = p.showEmail;
+            if (typeof p.showPhone === 'boolean') allowed['userPreferences.privacy.showPhone'] = p.showPhone;
+        }
+        if (body.security && typeof body.security === 'object') {
+            const s = body.security;
+            if (typeof s.twoFactorEnabled === 'boolean') {
+                allowed['userPreferences.security.twoFactorEnabled'] = s.twoFactorEnabled;
+            }
+        }
+        // Accessibility
+        if (body.fontSize && ['small','medium','large','xlarge'].includes(body.fontSize)) {
+            allowed['userPreferences.fontSize'] = body.fontSize;
+        }
+        if (typeof body.highContrast === 'boolean') {
+            allowed['userPreferences.highContrast'] = body.highContrast;
+        }
+
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { $set: allowed },
+            { new: true, runValidators: true, select: '-password' }
+        );
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        return res.status(200).json({ success: true, message: 'Preferences updated', data: user.userPreferences || {} });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 // @desc    Forgot password
 // @route   POST /api/auth/forgot-password
 // @access  Public
@@ -475,6 +550,18 @@ exports.uploadAvatar = async (req, res, next) => {
         }
 
         const file = files[0];
+        
+        // Optimize avatar image (resize to 320x320, compress)
+        console.log('Optimizing avatar:', file.path);
+        const optimizeResult = await optimizeAvatar(file.path);
+        
+        if (!optimizeResult.success) {
+            console.error('Avatar optimization failed:', optimizeResult.error);
+            // Continue anyway with original file
+        } else {
+            console.log('Avatar optimized:', optimizeResult);
+        }
+        
         const path = require('path');
         const rel = path.relative(path.join(__dirname, '../uploads'), file.path).replace(/\\/g, '/');
         const url = `/uploads/${rel}`;
@@ -482,7 +569,18 @@ exports.uploadAvatar = async (req, res, next) => {
         const user = await User.findByIdAndUpdate(req.user.id, { profileImage: url }, { new: true }).select('-password');
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-        res.status(200).json({ success: true, message: 'Avatar uploaded', data: { profileImage: url } });
+        res.status(200).json({ 
+            success: true, 
+            message: 'Avatar uploaded and optimized', 
+            data: { 
+                profileImage: url,
+                optimization: optimizeResult.success ? {
+                    originalSize: optimizeResult.originalSize,
+                    optimizedSize: optimizeResult.optimizedSize,
+                    reduction: optimizeResult.reduction
+                } : null
+            } 
+        });
     } catch (error) {
         console.error('Avatar upload error:', error);
         res.status(500).json({ success: false, message: error.message });

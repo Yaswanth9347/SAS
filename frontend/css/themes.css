@@ -1,0 +1,115 @@
+/* Theme overrides (light/dark). Default styles remain from style.css */
+
+/* Light mode explicit (optional, mostly default) */
+body.theme-light {
+  color: #333;
+  background: #f4f6f8;
+}
+
+/* Dark mode (beta) */
+body.theme-dark {
+  color: #e0e0e0;
+  background: #121212;
+}
+
+body.theme-dark .navbar {
+  background: linear-gradient(90deg, #263238, #1b2226);
+}
+
+body.theme-dark .nav-link {
+  color: #e0e0e0;
+}
+
+body.theme-dark .nav-link:hover,
+body.theme-dark .nav-link.active {
+  color: #b2dfdb;
+}
+
+body.theme-dark .dashboard-card,
+body.theme-dark .register-card,
+body.theme-dark .login-card,
+body.theme-dark .feature-card,
+body.theme-dark .teams-section .dashboard-card,
+body.theme-dark .modal-content,
+body.theme-dark .terms-modal__content {
+  background: #1e1e1e;
+  color: #e0e0e0;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.6);
+}
+
+body.theme-dark input,
+body.theme-dark select,
+body.theme-dark textarea {
+  background: #111;
+  color: #e0e0e0;
+  border-color: #333;
+}
+
+body.theme-dark .btn-primary,
+body.theme-dark .btn-submit {
+  background: #2e7d32;
+  color: #fff;
+}
+
+body.theme-dark .features { background: #0f1416; }
+body.theme-dark .page-header { background: #0f1416; }
+
+/* Tables */
+body.theme-dark table { color: #e0e0e0; }
+body.theme-dark th { background: #212121; }
+body.theme-dark tr { background: #1a1a1a; }
+body.theme-dark tr:nth-child(even) { background: #151515; }
+
+/* Status badges keep their colors; optional subtle tune */
+body.theme-dark .status-badge { filter: brightness(0.9); }
+
+/* Notifications */
+body.theme-dark .notification { background: #1e1e1e; color: #e0e0e0; }
+
+/* High Contrast Mode */
+body.theme-high-contrast {
+  color: #000;
+  background: #fff !important;
+}
+
+body.theme-high-contrast .navbar {
+  background: #000 !important;
+}
+
+body.theme-high-contrast .nav-link { color: #fff !important; }
+body.theme-high-contrast .nav-link:hover,
+body.theme-high-contrast .nav-link.active { color: #ff0 !important; background: #000; }
+
+body.theme-high-contrast .dashboard-card,
+body.theme-high-contrast .register-card,
+body.theme-high-contrast .login-card,
+body.theme-high-contrast .feature-card,
+body.theme-high-contrast .modal-content,
+body.theme-high-contrast .terms-modal__content,
+body.theme-high-contrast .settings-card,
+body.theme-high-contrast .table,
+body.theme-high-contrast .form-group input,
+body.theme-high-contrast .form-group select,
+body.theme-high-contrast .form-group textarea {
+  background: #fff !important;
+  color: #000 !important;
+  border: 2px solid #000 !important;
+}
+
+body.theme-high-contrast .btn,
+body.theme-high-contrast .logout-btn {
+  background: #000 !important;
+  color: #fff !important;
+  border: 2px solid #000 !important;
+}
+
+body.theme-high-contrast .status-badge { border: 2px solid #000; filter: none; }
+
+/* Focus styles */
+body.theme-high-contrast :focus { outline: 3px solid #ff0 !important; outline-offset: 2px; }
+
+/* Font size scaling */
+body.text-size-small { font-size: 14px; }
+body.text-size-medium { font-size: 16px; }
+body.text-size-large { font-size: 18px; }
+body.text-size-xlarge { font-size: 20px; }

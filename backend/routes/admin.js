@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 
-// Require authentication middleware (removed role-checking)
+// Require authentication middleware
 const auth = require('../middleware/auth');
 
-// Apply authentication middleware for all routes (removed role restriction)
+// Apply authentication and admin authorization for all routes
 router.use(auth.protect);
+router.use(auth.authorize('admin'));
 
 const { 
     getDashboardStats,
@@ -13,6 +14,11 @@ const {
     getTeams,
     getTeam,
     getUsers,
+    approveUser,
+    rejectUser,
+    updateUserRole,
+    bulkUpdateUsers,
+    getActivityLogs,
     createTeam,
     deleteTeam,
     addTeamMembers,
@@ -20,12 +26,33 @@ const {
     changeTeamLeader,
     getTeamStats,
     getStorageStats,
-    cleanupStorage
+    cleanupStorage,
+    deleteUser,
+    bulkDeleteUsers
 } = require('../controllers/adminController');
+
+// Root endpoint for admin access verification
+router.get('/', (req, res) => {
+    res.status(200).json({
+        success: true,
+        message: 'Admin access confirmed',
+        user: {
+            id: req.user.id,
+            role: req.user.role
+        }
+    });
+});
 
 router.get('/stats', getDashboardStats);
 router.post('/create-teams', createTeams);
 router.get('/users', getUsers);
+router.put('/users/:id/approve', approveUser);
+router.put('/users/:id/reject', rejectUser);
+router.put('/users/:id/role', updateUserRole);
+router.put('/users/bulk', bulkUpdateUsers);
+router.delete('/users/:id', deleteUser);
+router.delete('/users/bulk', bulkDeleteUsers);
+router.get('/activity', getActivityLogs);
 
 // Team routes
 router.get('/teams', getTeams);

@@ -1,544 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Visit Gallery - Spread a Smile</title>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
-    />
-
-    <!-- Consolidated CSS -->
-    <link rel="stylesheet" href="css/style.css" />
-
-    <!-- Page-specific CSS -->
-    <style>
-      body {
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-        background: #f5f7fa;
-      }
-
-      .dashboard {
-        flex: 1;
-        padding: 100px 0 60px;
-      }
-
-      /* ========= ENHANCED HEADER WITH STATS ========= */
-      .dashboard-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 30px;
-        background: white;
-        padding: 30px 40px;
-        border-radius: 16px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-      }
-
-      .header-content h1 {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin: 0 0 8px 0;
-        color: #2e7d32;
-      }
-
-      .header-content p {
-        margin: 0;
-        color: #666;
-        font-size: 1.1rem;
-      }
-
-      .gallery-stats {
-        display: flex;
-        gap: 30px;
-      }
-
-      .stat-item {
-        text-align: center;
-        background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-        padding: 15px 25px;
-        border-radius: 12px;
-        border: 2px solid #4caf50;
-      }
-
-      .stat-number {
-        display: block;
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 5px;
-        color: #2e7d32;
-      }
-
-      .stat-label {
-        display: block;
-        font-size: 0.9rem;
-        color: #558b2f;
-        font-weight: 600;
-      }
-
-      /* ========= GALLERY TOOLBAR ========= */
-      .gallery-toolbar {
-        background: white;
-        padding: 25px;
-        border-radius: 16px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-        margin-bottom: 25px;
-      }
-
-      .search-section {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-      }
-
-      .search-input {
-        flex: 1;
-        padding: 12px 20px;
-        border: 2px solid #e0e0e0;
-        border-radius: 10px;
-        font-size: 1rem;
-        transition: all 0.3s ease;
-      }
-
-      .search-input:focus {
-        outline: none;
-        border-color: #4caf50;
-        box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
-      }
-
-      .btn-search {
-        padding: 12px 30px;
-        background: #4caf50;
-        color: white;
-        border: none;
-        border-radius: 10px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-      }
-
-      .btn-search:hover {
-        background: #43a047;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-      }
-
-      .filter-section {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        flex-wrap: wrap;
-        margin-bottom: 15px;
-      }
-
-      .filter-group {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .filter-group label {
-        font-weight: 600;
-        color: #2e7d32;
-      }
-
-      .filter-btn {
-        padding: 10px 20px;
-        border: 2px solid #e0e0e0;
-        background: white;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 600;
-        color: #666;
-        transition: all 0.3s ease;
-      }
-
-      .filter-btn:hover {
-        border-color: #4caf50;
-        color: #2e7d32;
-      }
-
-      .filter-btn.active {
-        background: linear-gradient(135deg, #4caf50, #66bb6a);
-        color: white;
-        border-color: #4caf50;
-        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-      }
-
-      .filter-dropdown {
-        flex: 1;
-        min-width: 200px;
-      }
-
-      .filter-select {
-        width: 100%;
-        padding: 10px 15px;
-        border: 2px solid #e0e0e0;
-        border-radius: 8px;
-        font-size: 1rem;
-        cursor: pointer;
-      }
-
-      .view-options {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-left: auto;
-      }
-
-      .view-options label {
-        font-weight: 600;
-        color: #2e7d32;
-      }
-
-      .view-btn {
-        width: 40px;
-        height: 40px;
-        border: 2px solid #e0e0e0;
-        background: white;
-        border-radius: 8px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s ease;
-      }
-
-      .view-btn:hover {
-        border-color: #4caf50;
-      }
-
-      .view-btn.active {
-        background: #4caf50;
-        border-color: #4caf50;
-        color: white;
-      }
-
-      .grid-icon {
-        font-size: 1.2rem;
-      }
-
-      /* ========= RESULTS BAR ========= */
-      .results-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 15px 25px;
-        background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-        border-radius: 12px;
-        margin-bottom: 25px;
-        border-left: 4px solid #4caf50;
-      }
-
-      .results-text {
-        display: flex;
-        gap: 15px;
-        font-weight: 600;
-        color: #2e7d32;
-      }
-
-      #resultsCount {
-        font-size: 1.1rem;
-      }
-
-      #resultsFilter {
-        color: #558b2f;
-      }
-
-      .btn-clear {
-        padding: 8px 16px;
-        background: white;
-        border: 2px solid #4caf50;
-        color: #2e7d32;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-      }
-
-      .btn-clear:hover {
-        background: #4caf50;
-        color: white;
-      }
-
-      /* ========= GALLERY GRID ========= */
-      .gallery-grid {
-        display: grid;
-        gap: 20px;
-        margin-bottom: 30px;
-      }
-
-      .small-grid {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      }
-
-      .medium-grid {
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      }
-
-      .large-grid {
-        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-      }
-
-      /* ========= PHOTO CARDS ========= */
-      .photo-card {
-        background: white;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        transition: all 0.3s ease;
-        cursor: pointer;
-        position: relative;
-      }
-
-      .photo-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 12px 24px rgba(76, 175, 80, 0.2);
-      }
-
-      .new-badge {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: linear-gradient(135deg, #ff5722, #ff6f00);
-        color: white;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        z-index: 10;
-        box-shadow: 0 2px 8px rgba(255, 87, 34, 0.4);
-      }
-
-      .photo-img {
-        position: relative;
-        width: 100%;
-        padding-top: 75%; /* 4:3 aspect ratio */
-        background: #f5f5f5;
-        overflow: hidden;
-      }
-
-      .photo-img img {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.3s ease;
-      }
-
-      .photo-card:hover .photo-img img {
-        transform: scale(1.05);
-      }
-
-      .photo-info {
-        padding: 15px;
-      }
-
-      .photo-meta {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        margin-bottom: 12px;
-      }
-
-      .photo-meta span {
-        font-size: 0.85rem;
-        padding: 4px 8px;
-        border-radius: 6px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .meta-school {
-        background: #e3f2fd;
-        color: #1976d2;
-        font-weight: 600;
-      }
-
-      .meta-team {
-        background: #fff3e0;
-        color: #f57c00;
-        font-weight: 600;
-      }
-
-      .meta-date {
-        background: #f3e5f5;
-        color: #7b1fa2;
-        font-weight: 600;
-      }
-
-      .photo-actions {
-        display: flex;
-        gap: 8px;
-        justify-content: flex-end;
-      }
-
-      .icon-btn {
-        width: 32px;
-        height: 32px;
-        border: none;
-        background: #f5f5f5;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: all 0.2s ease;
-      }
-
-      .icon-btn:hover {
-        background: #4caf50;
-        transform: scale(1.1);
-      }
-
-      /* ========= LOADING & EMPTY STATES ========= */
-      .loading-state,
-      .empty-state {
-        text-align: center;
-        padding: 80px 20px;
-        background: white;
-        border-radius: 16px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-      }
-
-      .spinner {
-        width: 50px;
-        height: 50px;
-        border: 4px solid #e0e0e0;
-        border-top-color: #4caf50;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-        margin: 0 auto 20px;
-      }
-
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
-      .empty-icon {
-        font-size: 4rem;
-        margin-bottom: 20px;
-      }
-
-      .empty-state h3 {
-        color: #2e7d32;
-        font-size: 1.6rem;
-        margin-bottom: 10px;
-      }
-
-      .empty-state p {
-        color: #666;
-        font-size: 1.1rem;
-      }
-
-      /* ========= PAGINATION ========= */
-      .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 20px;
-        padding: 20px;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-      }
-
-      .btn-page {
-        padding: 10px 24px;
-        background: #4caf50;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-      }
-
-      .btn-page:hover:not(:disabled) {
-        background: #43a047;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-      }
-
-      .btn-page:disabled {
-        background: #ccc;
-        cursor: not-allowed;
-        opacity: 0.5;
-      }
-
-      #pageInfo {
-        font-weight: 600;
-        color: #2e7d32;
-        font-size: 1.05rem;
-      }
-
-      /* ========= LIGHTBOX ========= */
-      .lightbox {
-        position: fixed;
-        z-index: 2000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.9);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        padding: 20px;
-      }
-
-      .close-lightbox {
-        position: absolute;
-        top: 20px;
-        right: 30px;
-        color: white;
-        font-size: 40px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s;
-        z-index: 2001;
-        background: rgba(0, 0, 0, 0.5);
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-      }
-
-      .close-lightbox:hover {
-        background: #4caf50;
-        transform: scale(1.1);
-        color: white;
-      }
-
-      .lightbox-content {
-        max-width: 85%;
-        max-height: 85%;
-        background: white;
-        padding: 10px;
-        border-radius: 8px;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
-      }
-
-      .lightbox-content img,
-      .lightbox-content video {
-        max-width: 100%;
-        max-height: 80vh;
-        width: auto;
-        height: auto;
-        display: block;
-        border-radius: 4px;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visit Gallery - Spread a Smile</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+  
+  <!-- Consolidated CSS -->
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- Page-specific CSS -->
+  <link rel="stylesheet" href="css/pages/visit-gallery.css">
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <h2>Spread A Smile</h2>
+      </div>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+        <li><a href="visits.html" class="nav-link">Visits</a></li>
+        <li><a href="teams.html" class="nav-link">Teams</a></li>
+        <li><a href="visit-gallery.html" class="nav-link active">Gallery</a></li>
+        <li><a href="profile.html" class="nav-link">Profile</a></li>
+        <!-- Admin-only navigation items will be added dynamically -->
+        <li><span class="nav-link" id="navUser">Welcome, User</span></li>
+        <li><a href="#" class="nav-link logout-btn" id="navLogout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
 
       .lightbox-caption {
         color: white;
@@ -548,213 +40,49 @@
         font-weight: 500;
       }
 
-      /* ========= RESPONSIVE ========= */
-      @media (max-width: 968px) {
-        .dashboard-header {
-          flex-direction: column;
-          text-align: center;
-        }
-
-        .gallery-stats {
-          margin-top: 20px;
-        }
-
-        .filter-section {
-          flex-direction: column;
-          align-items: stretch;
-        }
-
-        .view-options {
-          margin-left: 0;
-          justify-content: center;
-        }
-      }
-
-      @media (max-width: 768px) {
-        .header-content h1 {
-          font-size: 1.8rem;
-        }
-
-        .gallery-stats {
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .small-grid,
-        .medium-grid,
-        .large-grid {
-          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        }
-
-        .results-bar {
-          flex-direction: column;
-          gap: 10px;
-        }
-      }
-    </style>
-  </head>
-
-  <body>
-    <nav class="navbar">
-      <div class="nav-container">
-        <div class="nav-logo">
-          <h2>Spread A Smile</h2>
-        </div>
-        <ul class="nav-menu" id="navMenu">
-          <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
-          <li><a href="visits.html" class="nav-link">Visits</a></li>
-          <li><a href="teams.html" class="nav-link">Teams</a></li>
-          <li>
-            <a href="visit-gallery.html" class="nav-link active">Gallery</a>
-          </li>
-          <li><a href="profile.html" class="nav-link">Profile</a></li>
-          <li><a href="contact.html" class="nav-link">Contact</a></li>
-          <!-- Admin-only navigation items will be added dynamically -->
-          <li><span class="nav-link" id="navUser">Welcome, User</span></li>
-          <li>
-            <a href="#" class="nav-link logout-btn" id="navLogout">Logout</a>
-          </li>
-        </ul>
-      </div>
-    </nav>
-
-    <section class="dashboard">
-      <div class="container">
-        <!-- Enhanced Header with Stats -->
-        <div class="dashboard-header">
-          <div class="header-content">
-            <h1>📸 SAS Visit Gallery</h1>
-            <p>Explore memories from our school visits</p>
-          </div>
-          <div class="gallery-stats">
-            <div class="stat-item">
-              <span class="stat-number" id="totalPhotos">0</span>
-              <span class="stat-label">Total Photos</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number" id="recentPhotos">0</span>
-              <span class="stat-label">Recent (7 Days)</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Gallery Toolbar -->
-        <div class="gallery-toolbar">
-          <!-- Search Section -->
-          <div class="search-section">
-            <input
-              type="text"
-              id="searchInput"
-              class="search-input"
-              placeholder="Search by school name or team name..."
-            />
-            <button id="searchBtn" class="btn-search">🔍 Search</button>
-          </div>
-
-          <!-- Filter Section -->
-          <div class="filter-section">
-            <div class="filter-group">
-              <label>Filter:</label>
-              <button class="filter-btn active" data-filter="all">
-                📷 All
-              </button>
-              <button class="filter-btn" data-filter="recent">🕒 Recent</button>
-              <button class="filter-btn" data-filter="school">🏫 School</button>
-              <button class="filter-btn" data-filter="team">👥 Team</button>
-            </div>
-
-            <!-- Team Dropdown (shows when "Team" filter active) -->
-            <div
-              class="filter-dropdown"
-              id="teamDropdown"
-              style="display: none"
-            >
-              <select id="teamFilter" class="filter-select">
-                <option value="">Select Team...</option>
-              </select>
-            </div>
-
-            <!-- School Dropdown (shows when "School" filter active) -->
-            <div
-              class="filter-dropdown"
-              id="schoolDropdown"
-              style="display: none"
-            >
-              <select id="schoolFilter" class="filter-select">
-                <option value="">Select School...</option>
-              </select>
-            </div>
-
-            <!-- View Options -->
-            <div class="view-options">
-              <label>Grid Size:</label>
-              <button
-                class="view-btn active"
-                data-size="medium"
-                title="Medium Grid"
-              >
-                <span class="grid-icon">◼◼</span>
-              </button>
-              <button class="view-btn" data-size="small" title="Small Grid">
-                <span class="grid-icon">▪▪▪</span>
-              </button>
-              <button class="view-btn" data-size="large" title="Large Grid">
-                <span class="grid-icon">◼</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Results Bar -->
-        <div class="results-bar" id="resultsBar" style="display: none">
-          <div class="results-text">
-            <span id="resultsCount">0 photos found</span>
-            <span id="resultsFilter"></span>
-          </div>
-          <button id="clearFilters" class="btn-clear">Clear Filters</button>
-        </div>
-
-        <!-- Gallery Grid -->
-        <div id="galleryContent" class="gallery-grid medium-grid">
-          <div class="loading-state">
-            <div class="spinner"></div>
-            <h3>Loading gallery...</h3>
-            <p>Please wait while we fetch your photos</p>
-          </div>
-        </div>
-
-        <!-- Pagination -->
-        <div id="pagination" class="pagination" style="display: none">
-          <button id="prevPage" class="btn-page" disabled>← Previous</button>
-          <span id="pageInfo">Page 1 of 1</span>
-          <button id="nextPage" class="btn-page" disabled>Next →</button>
+      <div class="gallery-controls">
+        <div class="form-group">
+          <label for="visitSelect">Select Visit</label>
+          <select id="visitSelect">
+            <option value="">Loading visits...</option>
+          </select>
         </div>
       </div>
-    </section>
 
-    <!-- Lightbox Modal -->
-    <div id="lightbox" class="lightbox" style="display: none">
-      <span class="close-lightbox">&times;</span>
-      <div class="lightbox-content">
-        <img id="lightbox-image" src="" alt="Full size" />
-        <video id="lightbox-video" controls style="display: none">
-          Your browser does not support the video tag.
-        </video>
+      <div id="galleryContent" class="gallery-content">
+        <div class="empty-gallery">
+          <h3>Select a visit to view photos and videos</h3>
+          <p>Choose from your completed visits to see the gallery.</p>
+        </div>
       </div>
-      <div class="lightbox-caption" id="lightbox-caption"></div>
     </div>
+  </section>
 
-    <!-- Shared JavaScript Modules -->
-    <script src="js/config.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/navbar.js"></script>
-    <script src="js/notifications.js"></script>
-    <script src="js/loading.js"></script>
-    <script src="js/app.js"></script>
+  <!-- Lightbox Modal -->
+  <div id="lightbox" class="lightbox" style="display: none;">
+    <span class="close-lightbox">&times;</span>
+    <button class="lightbox-nav prev" id="lightbox-prev" onclick="showPreviousMedia()" aria-label="Previous">‹</button>
+    <button class="lightbox-nav next" id="lightbox-next" onclick="showNextMedia()" aria-label="Next">›</button>
+    <div class="lightbox-content">
+      <img id="lightbox-image" src="" alt="Full size" />
+      <video id="lightbox-video" controls style="display: none;">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+    <div class="lightbox-caption" id="lightbox-caption"></div>
+  </div>
 
-    <!-- Gallery Page Script -->
-    <script src="js/pages/gallery.js"></script>
-  </body>
+  <!-- Shared JavaScript Modules -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/navbar.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/loading.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- Page-specific JavaScript -->
+  <script src="js/pages/visit-gallery.js"></script>
+</body>
 </html>

@@ -80,6 +80,37 @@ body {
   align-items: center;
 }
 
+/* Hamburger Menu - Hidden by default on desktop */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+    padding: 8px;
+    z-index: 1001;
+}
+
+.hamburger span {
+    width: 25px;
+    height: 3px;
+    background: #fff;
+    margin: 3px 0;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+/* Hamburger animation when active */
+.hamburger.active span:nth-child(1) {
+    transform: rotate(45deg) translate(7px, 7px);
+}
+
+.hamburger.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -7px);
+}
+
 .nav-link {
   text-decoration: none;
   color: #fff;
@@ -95,17 +126,204 @@ body {
 }
 
 .logout-btn {
-  background: #f44336;
-  color: white !important;
-  padding: 8px 18px;
-  border-radius: 6px;
-  transition: all 0.3s ease;
-  font-weight: 500;
+    /* default legacy style (overridden by .logoutButton below) */
+    background: #f44336;
+    color: white !important;
+    padding: 8px 18px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .logout-btn:hover {
   background: #d32f2f;
   transform: translateY(-2px);
+}
+
+/* --- Advanced animated logout button (door + figure) --- */
+/* Base component applied to the same anchor (#navLogout) */
+.logoutButton.logout-btn {
+    /* No background; integrate smoothly with navbar */
+    background: none !important;
+    color: #fff !important;
+    padding: 0 0 0 20px;
+    width: 130px;
+    height: 40px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* text at left, icons at right */
+    border-radius: 5px; /* for focus ring harmony */
+}
+
+/* Remove red background block */
+.logoutButton.logout-btn::before { display: none !important; }
+
+.logoutButton.logout-btn .button-text {
+    color: #ffffff;
+    font-weight: 500;
+    position: relative;
+    z-index: 10;
+    line-height: 1;
+    display: inline-block;
+}
+
+.logoutButton.logout-btn svg { display: block; position: absolute; }
+.logoutButton.logout-btn .figure {
+    bottom: 5px;
+    fill: #ffffff; /* figure color */
+    right: 18px;
+    transform: var(--transform-figure);
+    transition: transform calc(var(--figure-duration, 100) * 1ms) cubic-bezier(0.2, 0.1, 0.80, 0.9);
+    width: 30px;
+    z-index: 4;
+}
+
+.logoutButton.logout-btn .door,
+.logoutButton.logout-btn .doorway {
+    bottom: 4px;
+    fill: #ffffff;
+    right: 12px;
+    width: 32px;
+}
+
+.logoutButton.logout-btn .door {
+    transform: rotateY(20deg);
+    transform-origin: 100% 50%;
+    transform-style: preserve-3d;
+    transition: transform 200ms ease;
+    z-index: 5;
+}
+.logoutButton.logout-btn:hover .door { transform: rotateY(20deg); }
+.logoutButton.logout-btn:active .door { transform: rotateY(28deg); }
+.logoutButton.logout-btn.clicked .door { transform: rotateY(35deg); }
+.logoutButton.logout-btn.door-slammed .door { transform: none; transition: transform 100ms ease-in 250ms; }
+
+.logoutButton.logout-btn .bang { opacity: 0; }
+.logoutButton.logout-btn.falling { animation: lbtn-shake 200ms linear; }
+.logoutButton.logout-btn.falling .bang { animation: lbtn-flash 300ms linear; }
+
+/* walking motion controlled by CSS variables */
+.logoutButton.logout-btn .arm1, 
+.logoutButton.logout-btn .wrist1, 
+.logoutButton.logout-btn .arm2, 
+.logoutButton.logout-btn .wrist2, 
+.logoutButton.logout-btn .leg1, 
+.logoutButton.logout-btn .calf1, 
+.logoutButton.logout-btn .leg2, 
+.logoutButton.logout-btn .calf2 {
+    transition: transform calc(var(--walking-duration, 100) * 1ms) ease-in-out;
+}
+
+.logoutButton.logout-btn .arm1 { transform: var(--transform-arm1); transform-origin: 52% 45%; }
+.logoutButton.logout-btn .wrist1 { transform: var(--transform-wrist1); transform-origin: 59% 55%; }
+.logoutButton.logout-btn .arm2 { transform: var(--transform-arm2); transform-origin: 47% 43%; }
+.logoutButton.logout-btn .wrist2 { transform: var(--transform-wrist2); transform-origin: 35% 47%; }
+.logoutButton.logout-btn .leg1 { transform: var(--transform-leg1); transform-origin: 47% 64.5%; }
+.logoutButton.logout-btn .calf1 { transform: var(--transform-calf1); transform-origin: 55.5% 71.5%; }
+.logoutButton.logout-btn .leg2 { transform: var(--transform-leg2); transform-origin: 43% 63%; }
+.logoutButton.logout-btn .calf2 { transform: var(--transform-calf2); transform-origin: 41.5% 73%; }
+
+@keyframes lbtn-shake {
+  0% { transform: rotate(-1deg); }
+  50% { transform: rotate(2deg); }
+  100% { transform: rotate(-1deg); }
+}
+
+@keyframes lbtn-flash {
+  0% { opacity: 0.4; }
+  100% { opacity: 0; }
+}
+
+/* Navbar User Display with Avatar */
+#navUser {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+    font-weight: 500;
+}
+
+/* Notification bell (animated when unread) */
+.notif-btn { position: relative; }
+.notif-btn .bell-svg { display:block; transform-origin: 24px 10px; }
+.notif-btn .clapper { transform-origin: 24px 36px; }
+
+@keyframes bell-ring {
+    0% { transform: rotate(0deg); }
+    10% { transform: rotate(-12deg); }
+    20% { transform: rotate(10deg); }
+    30% { transform: rotate(-8deg); }
+    40% { transform: rotate(6deg); }
+    50% { transform: rotate(-4deg); }
+    60% { transform: rotate(2deg); }
+    70% { transform: rotate(-1deg); }
+    100% { transform: rotate(0deg); }
+}
+
+@keyframes clapper-swing {
+    0% { transform: translateX(0px); }
+    10% { transform: translateX(-2px); }
+    20% { transform: translateX(2px); }
+    30% { transform: translateX(-2px); }
+    40% { transform: translateX(2px); }
+    50% { transform: translateX(-1px); }
+    60% { transform: translateX(1px); }
+    100% { transform: translateX(0px); }
+}
+
+.notif-btn.has-unread .bell-svg { animation: bell-ring 1s ease-in-out 0s 2; }
+.notif-btn.has-unread .clapper { animation: clapper-swing 1s ease-in-out 0s 2; }
+
+.nav-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    flex-shrink: 0;
+}
+
+.nav-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.nav-avatar span {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.nav-user-name {
+    white-space: nowrap;
+}
+
+/* Responsive navbar user */
+@media (max-width: 768px) {
+    .nav-user-name {
+        display: none;
+    }
+    
+    .nav-avatar {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .nav-avatar span {
+        font-size: 12px;
+    }
 }
 
 /* Hero Section */
@@ -486,22 +704,6 @@ body {
   color: #004085;
 }
 
-/* Footer */
-.footer {
-  background: #2e7d32;
-  color: white;
-  text-align: center;
-  padding: 25px 0;
-  border-top-left-radius: 50px;
-  border-top-right-radius: 50px;
-  margin-top: 60px;
-}
-
-.footer p {
-  font-size: 0.9rem;
-  opacity: 0.9;
-}
-
 /* Login Section */
 .login-section {
   padding: 100px 0;
@@ -685,36 +887,117 @@ body {
 }
 
 /* Responsive Design */
+/* Tablet & Mobile Responsive */
+@media (max-width: 900px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+    
+    .dashboard {
+        padding: 90px 0 40px;
+    }
+}
+
 @media (max-width: 768px) {
-  .nav-menu {
-    display: none;
-  }
+    /* Mobile Navigation */
+    .hamburger {
+        display: flex;
+    }
+    
+    .nav-menu {
+        position: fixed;
+        right: -100%;
+        top: 70px;
+        width: 280px;
+        height: calc(100vh - 70px);
+        background: linear-gradient(180deg, #4caf50, #2e7d32);
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 30px 20px;
+        gap: 0;
+        transition: right 0.3s ease-in-out;
+        box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+        overflow-y: auto;
+    }
+    
+    .nav-menu.active {
+        right: 0;
+    }
+    
+    .nav-menu li {
+        width: 100%;
+        margin: 8px 0;
+    }
+    
+    .nav-link {
+        display: block;
+        width: 100%;
+        padding: 12px 16px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    
+    .nav-link:hover, .nav-link.active {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+    }
+    
+    #navUser {
+        padding: 12px 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        margin-top: 10px;
+        width: 100%;
+    }
+    
+    .logout-btn {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .nav-container {
+        padding: 0 20px;
+    }
+    
+    /* Rest of mobile styles */
+    .hero-content h1 {
+        font-size: 2.5rem;
+    }
+    
+    .hero-content p {
+        font-size: 1.1rem;
+    }
+    
+    .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
 
-  .hero-content h1 {
-    font-size: 2.5rem;
-  }
-
-  .hero-content p {
-    font-size: 1.1rem;
-  }
-
-  .hero-buttons {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .btn {
-    width: 100%;
-    max-width: 300px;
-  }
-
-  .features-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
+    .btn {
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .dashboard {
+        padding: 80px 15px 30px;
+    }
+    
+    .dashboard-card {
+        padding: 20px;
+    }
+    
+    .dashboard-header h1 {
+        font-size: 1.75rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -722,9 +1005,66 @@ body {
     font-size: 2rem;
   }
 
-  .hero-content p {
-    font-size: 1rem;
-  }
+    .hero-content p {
+        font-size: 1rem;
+    }
+    
+    .dashboard-grid {
+        gap: 12px;
+    }
+    
+    .dashboard-card {
+        padding: 15px;
+    }
+    
+    .dashboard-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .btn {
+        padding: 12px 20px;
+        font-size: 0.95rem;
+    }
+}
+
+/* Touch-friendly improvements for mobile devices */
+@media (hover: none) and (pointer: coarse) {
+    /* Ensure all buttons and interactive elements have minimum touch targets */
+    .btn,
+    button,
+    .nav-link,
+    .hamburger,
+    .close-btn,
+    .modal-close {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Better touch feedback */
+    .btn:active,
+    button:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+    }
+    
+    /* Prevent iOS zoom on input focus */
+    input,
+    select,
+    textarea {
+        font-size: 16px;
+    }
+    
+    /* Customize tap highlight color */
+    * {
+        -webkit-tap-highlight-color: rgba(102, 126, 234, 0.2);
+    }
+    
+    /* Improve touch scrolling */
+    .modal-content,
+    .dashboard,
+    .container {
+        -webkit-overflow-scrolling: touch;
+    }
 }
 /* Registration Form Styles */
 .register-section {

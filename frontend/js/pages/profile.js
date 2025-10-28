@@ -61,7 +61,13 @@ async function loadProfile(){
     const avatarWrapper = document.getElementById('profileAvatarWrapper');
 
     changeBtn.addEventListener('click', ()=> avatarInput.click());
-    avatarWrapper.addEventListener('click', ()=> avatarInput.click());
+    // Clicking the avatar now opens a viewer (not the file picker)
+    avatarWrapper.addEventListener('click', ()=> {
+      const imgEl = avatarWrapper.querySelector('img');
+      const src = imgEl ? imgEl.src : null;
+      if(!src){ return; }
+      openAvatarLightbox(src);
+    });
     avatarInput.addEventListener('change', async (e)=>{
       const file = e.target.files[0];
       if(!file) return;
@@ -136,6 +142,42 @@ function renderAvatar(url, name){
   }
 }
 
+// Simple lightbox for viewing avatar in large size
+function openAvatarLightbox(src){
+  // Prevent duplicates
+  let overlay = document.getElementById('avatarLightbox');
+  if(overlay){
+    const img = overlay.querySelector('img');
+    if(img) img.src = src;
+  } else {
+    overlay = document.createElement('div');
+    overlay.id = 'avatarLightbox';
+    overlay.style.cssText = `
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 11000;
+      display: flex; align-items: center; justify-content: center; padding: 24px; cursor: zoom-out;
+    `;
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = 'Profile photo';
+    img.style.cssText = `
+      max-width: 90vw; max-height: 85vh; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      background: #111;
+    `;
+    overlay.appendChild(img);
+
+    // Close on click or ESC
+    overlay.addEventListener('click', ()=> close());
+    document.addEventListener('keydown', escHandler);
+
+    function escHandler(e){ if(e.key==='Escape'){ close(); } }
+    function close(){
+      document.removeEventListener('keydown', escHandler);
+      if(overlay && overlay.parentNode){ overlay.parentNode.removeChild(overlay); }
+    }
+  }
+  document.body.appendChild(overlay);
+}
+
 async function saveProfile(){
   const name = document.getElementById('p_name').value.trim();
   const phone = document.getElementById('p_phone').value.trim();
@@ -161,24 +203,7 @@ async function saveProfile(){
   }catch(err){ loading.hideFullPage(); handleAPIError(err); }
 }
 
-// Change password handler
-async function changePassword(){
-  const cur = document.getElementById('cur_pwd').value;
-  const nw = document.getElementById('new_pwd').value;
-  const c = document.getElementById('confirm_pwd').value;
-  if(!cur || !nw){ notify.error('Please provide current and new password'); return; }
-  if(nw !== c){ notify.error('New password and confirmation do not match'); return; }
-
-  try{
-    loading.showFullPage('Changing password...');
-    const res = await api.changePassword({ currentPassword: cur, newPassword: nw });
-    loading.hideFullPage();
-    if(res.success){ notify.success('Password changed successfully'); document.getElementById('cur_pwd').value=''; document.getElementById('new_pwd').value=''; document.getElementById('confirm_pwd').value=''; }
-    else notify.error(res.message || 'Failed to change password');
-  }catch(err){ loading.hideFullPage(); handleAPIError(err); }
-}
-
-document.getElementById('changePwdBtn').addEventListener('click', changePassword);
+// Security functionality moved to Settings page (settings.html)
 
 // Initialize
 document.addEventListener('DOMContentLoaded', loadProfile);
