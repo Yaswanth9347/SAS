@@ -52,6 +52,7 @@
 
 .user-cell { display: flex; align-items: center; gap: 12px; }
 .user-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #b2dfdb, #a5d6a7); color: #0d4d43; display:flex; align-items:center; justify-content:center; font-weight:800; box-shadow: inset 0 0 0 1px rgba(0,0,0,.04); }
+.user-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
 .user-name { font-weight: 700; color: #1f2937; }
 .user-username { color: #667085; font-size: .9rem; }
 

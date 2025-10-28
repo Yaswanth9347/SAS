@@ -160,11 +160,17 @@ class APIManager {
   }
 
   async submitVisitReport(id, reportData) {
-    return this.post(`/visits/${id}/report`, reportData);
+    // Legacy method (not used by current UI). Backend uses PUT /:id/submit or /:id/complete-report
+    return this.put(`/visits/${id}/submit`, reportData);
   }
 
   async getVisitGallery(id) {
     return this.get(`/visits/${id}/gallery`);
+  }
+
+  // Complete visit report (uploads done separately). Matches backend route PUT /api/visits/:id/complete-report
+  async completeVisitReport(id, reportData) {
+    return this.put(`/visits/${id}/complete-report`, reportData);
   }
 
   async getAllGalleryMedia(filters = {}) {

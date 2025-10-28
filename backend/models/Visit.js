@@ -110,6 +110,12 @@ const visitSchema = new mongoose.Schema(
     challengesFaced: String,
     suggestions: String,
 
+  // Upload window control (UTC instants computed from IST local noon)
+  uploadWindowStartUtc: { type: Date },
+  uploadWindowEndUtc: { type: Date },
+  timezone: { type: String, default: 'Asia/Kolkata' },
+  uploadVisibility: { type: String, enum: ['public', 'private'], default: 'public' },
+
     // Enhanced file storage with full metadata (Hybrid Approach)
     photos: {
       type: [fileMetadataSchema],

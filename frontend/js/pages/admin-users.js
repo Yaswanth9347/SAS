@@ -151,12 +151,24 @@ class AdminUsersManager {
     const created = new Date(u.createdAt).toLocaleDateString();
 
     const isSelf = (authManager.getUser()?.id || authManager.getUser()?._id) === u._id;
+
+    // Avatar: show profile photo if available, else initials; cache-bust local uploads
+    const rawAvatar = u.profileImage;
+    const cacheBusted = (url) => {
+      if (!url) return url;
+      const hasQuery = url.includes('?');
+      const ts = (u.updatedAt ? new Date(u.updatedAt).getTime() : Date.now());
+      return url.includes('/uploads/') ? `${url}${hasQuery ? '&' : '?'}t=${ts}` : url;
+    };
+    const avatarHtml = rawAvatar
+      ? `<div class="user-avatar"><img src="${cacheBusted(rawAvatar)}" alt="${escapeHtml(u.name || u.username || 'User')}" /></div>`
+      : `<div class="user-avatar">${initials}</div>`;
     return `
       <tr>
         <td><input type="checkbox" data-id="${u._id}"></td>
         <td>
           <div class="user-cell">
-            <div class="user-avatar">${initials}</div>
+            ${avatarHtml}
             <div>
               <div class="user-name">${escapeHtml(u.name || '-')}</div>
               <div class="user-username">@${escapeHtml(u.username || '')}</div>

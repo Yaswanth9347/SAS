@@ -86,6 +86,42 @@ exports.getVisit = async (req, res, next) => {
   }
 };
 
+// Helpers for IST window
+function computeIstUploadWindow(date) {
+  // date: JS Date assumed UTC instant of the scheduled visit date/time
+  // We want windowStart at 12:00 PM IST on that visit's calendar day, and windowEnd +48h
+  // IST offset is +5:30 hours, no DST.
+  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+  const utcMs = new Date(date).getTime();
+  const istMs = utcMs + IST_OFFSET_MS;
+  const ist = new Date(istMs);
+  const y = ist.getUTCFullYear();
+  const m = ist.getUTCMonth();
+  const d = ist.getUTCDate();
+  // Midnight IST in UTC = 00:00 IST -> subtract offset from UTC midnight
+  const midnightIstUtcMs = Date.UTC(y, m, d, 0, 0, 0) - IST_OFFSET_MS;
+  const windowStartUtc = new Date(midnightIstUtcMs + 12 * 60 * 60 * 1000); // 12:00 IST in UTC
+  const windowEndUtc = new Date(windowStartUtc.getTime() + 48 * 60 * 60 * 1000);
+  return { windowStartUtc, windowEndUtc };
+}
+
+function isWithinUploadWindow(visit, now = new Date()) {
+  if (!visit.uploadWindowStartUtc || !visit.uploadWindowEndUtc) return false;
+  const n = now.getTime();
+  return n >= new Date(visit.uploadWindowStartUtc).getTime() && n <= new Date(visit.uploadWindowEndUtc).getTime();
+}
+
+async function requireTeamMemberOrAdmin(req, visit) {
+  if (req.user?.role === 'admin') return true;
+  try {
+    const team = await Team.findById(visit.team).select('members');
+    const userId = String(req.user.id);
+    return team && Array.isArray(team.members) && team.members.map(String).includes(userId);
+  } catch (_) {
+    return false;
+  }
+}
+
 // @desc    Create new visit
 // @route   POST /api/visits
 // @access  Private (Both admin and volunteer with appropriate validation)
@@ -171,7 +207,15 @@ exports.createVisit = async (req, res, next) => {
       classesVisited: req.body.classesVisited || 0,
     };
 
-    const visit = await Visit.create(visitData);
+    // Compute upload window based on scheduled date (12:00 IST -> +48h)
+    const win = computeIstUploadWindow(visitData.date);
+    const visit = await Visit.create({
+      ...visitData,
+      uploadWindowStartUtc: win.windowStartUtc,
+      uploadWindowEndUtc: win.windowEndUtc,
+      uploadVisibility: 'public',
+      timezone: 'Asia/Kolkata'
+    });
 
     // Populate the created visit for response
     const populatedVisit = await Visit.findById(visit._id)
@@ -179,20 +223,20 @@ exports.createVisit = async (req, res, next) => {
       .populate("team", "name")
       .populate("submittedBy", "name role");
 
-    // Best-effort notifications to team members
+    // Notify: broadcast to all users as per requirement
     try {
-      if (Array.isArray(teamExists.members) && teamExists.members.length > 0) {
-        const { notifyUsers } = require("../utils/notificationService");
-        const memberIds = teamExists.members.map((m) => m.toString());
-        await notifyUsers(memberIds, {
-          title: "Visit Scheduled",
-          message: `A visit has been scheduled on ${new Date(visit.date).toLocaleDateString()}`,
-          type: "visit",
-          link: `/frontend/visits.html`,
-          meta: { visitId: visit._id, date: visit.date, schoolName: schoolExists.name },
-          emailTemplate: "visitScheduled",
-        });
-      }
+      const { notifyUsers } = require("../utils/notificationService");
+      const User = require('../models/User');
+      const allUsers = await User.find({}).select('_id');
+      const allIds = allUsers.map(u => u._id.toString());
+      await notifyUsers(allIds, {
+        title: "New Visit Scheduled",
+        message: `${schoolExists.name}: ${new Date(visit.date).toLocaleDateString()} (uploads open 12:00 PM IST on visit day)`,
+        type: "visit",
+        link: `/frontend/visits.html`,
+        meta: { visitId: visit._id, date: visit.date, schoolName: schoolExists.name },
+        emailTemplate: "visitScheduled",
+      });
     } catch (e) {
       console.warn("Notify visit schedule failed:", e.message);
     }
@@ -225,7 +269,19 @@ exports.submitVisitReport = async (req, res, next) => {
       });
     }
 
-    // All users can submit reports (removed role-based restrictions)
+    // Enforce window and membership for submit
+    if (!visit.uploadWindowStartUtc || !visit.uploadWindowEndUtc) {
+      const win = computeIstUploadWindow(visit.date);
+      visit.uploadWindowStartUtc = win.windowStartUtc;
+      visit.uploadWindowEndUtc = win.windowEndUtc;
+      await visit.save();
+    }
+    const isMember = await requireTeamMemberOrAdmin(req, visit);
+    if (!isMember) return res.status(403).json({ success: false, message: 'Only assigned team members or admins can submit report.' });
+    if (new Date() > new Date(visit.uploadWindowEndUtc)) {
+      const end = new Date(visit.uploadWindowEndUtc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      return res.status(403).json({ success: false, message: `Uploads and edits closed at ${end}.` });
+    }
 
     const reportData = {
       ...req.body,
@@ -406,7 +462,28 @@ exports.handleFileUpload = async (req, res, next) => {
       });
     }
 
-    // All users can upload files (removed role-based restrictions)
+    // Enforce upload window and membership
+    if (!visit.uploadWindowStartUtc || !visit.uploadWindowEndUtc) {
+      const win = computeIstUploadWindow(visit.date);
+      visit.uploadWindowStartUtc = win.windowStartUtc;
+      visit.uploadWindowEndUtc = win.windowEndUtc;
+      await visit.save();
+    }
+
+    const within = isWithinUploadWindow(visit);
+    const isMember = await requireTeamMemberOrAdmin(req, visit);
+    if (!isMember) {
+      return res.status(403).json({ success: false, message: 'Only assigned team members or admins can upload files for this visit.' });
+    }
+    if (!within) {
+      const now = new Date();
+      const start = new Date(visit.uploadWindowStartUtc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      const end = new Date(visit.uploadWindowEndUtc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      const msg = now < new Date(visit.uploadWindowStartUtc)
+        ? `Uploads open at 12:00 PM IST on the visit date (${start}).`
+        : `Uploads closed at ${end} (48 hours after start).`;
+      return res.status(403).json({ success: false, message: msg });
+    }
 
     const fileData = {
       photos: [],
@@ -535,7 +612,19 @@ exports.submitCompleteReport = async (req, res, next) => {
       });
     }
 
-    // All users can submit reports (removed role-based restrictions)
+    // Only team members/admins may submit; enforce time window
+    if (!visit.uploadWindowStartUtc || !visit.uploadWindowEndUtc) {
+      const win = computeIstUploadWindow(visit.date);
+      visit.uploadWindowStartUtc = win.windowStartUtc;
+      visit.uploadWindowEndUtc = win.windowEndUtc;
+      await visit.save();
+    }
+    const isMember = await requireTeamMemberOrAdmin(req, visit);
+    if (!isMember) return res.status(403).json({ success: false, message: 'Only assigned team members or admins can submit report.' });
+    if (new Date() > new Date(visit.uploadWindowEndUtc)) {
+      const end = new Date(visit.uploadWindowEndUtc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      return res.status(403).json({ success: false, message: `Uploads and edits closed at ${end}.` });
+    }
 
     const reportData = {
       ...req.body,
@@ -590,9 +679,8 @@ exports.getAllGalleryMedia = async (req, res, next) => {
       sortBy = "recent",
     } = req.query;
 
-    // Build query for completed visits with media
+    // Build query for visits (any status) with media so media is visible to all authenticated users
     let query = Visit.find({
-      status: "completed",
       $or: [
         { photos: { $exists: true, $not: { $size: 0 } } },
         { videos: { $exists: true, $not: { $size: 0 } } },
@@ -794,7 +882,17 @@ exports.updateVisit = async (req, res, next) => {
         .status(404)
         .json({ success: false, message: "Visit not found" });
 
-    // All users can update all visits (removed role-based restrictions)
+    // Enforce window for edits (block after windowEnd)
+    if (!visit.uploadWindowStartUtc || !visit.uploadWindowEndUtc) {
+      const win = computeIstUploadWindow(visit.date);
+      visit.uploadWindowStartUtc = win.windowStartUtc;
+      visit.uploadWindowEndUtc = win.windowEndUtc;
+      await visit.save();
+    }
+    if (new Date() > new Date(visit.uploadWindowEndUtc)) {
+      const end = new Date(visit.uploadWindowEndUtc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      return res.status(403).json({ success: false, message: `Edits are closed for this visit as of ${end}.` });
+    }
 
     // If team or school are provided in update, validate them
     if (req.body.team && !mongoose.Types.ObjectId.isValid(req.body.team)) {
@@ -822,7 +920,15 @@ exports.updateVisit = async (req, res, next) => {
           .json({ success: false, message: "School not found" });
     }
 
-    const updated = await Visit.findByIdAndUpdate(req.params.id, req.body, {
+    // Recompute window if date is updated
+    let body = { ...req.body };
+    if (req.body.date) {
+      const win = computeIstUploadWindow(req.body.date);
+      body.uploadWindowStartUtc = win.windowStartUtc;
+      body.uploadWindowEndUtc = win.windowEndUtc;
+    }
+
+    const updated = await Visit.findByIdAndUpdate(req.params.id, body, {
       new: true,
       runValidators: true,
     })
@@ -879,7 +985,19 @@ exports.deleteMedia = async (req, res, next) => {
         .status(404)
         .json({ success: false, message: "Visit not found" });
 
-    // All users can delete media (removed role-based restrictions)
+    // Enforce window and membership for delete
+    if (!visit.uploadWindowStartUtc || !visit.uploadWindowEndUtc) {
+      const win = computeIstUploadWindow(visit.date);
+      visit.uploadWindowStartUtc = win.windowStartUtc;
+      visit.uploadWindowEndUtc = win.windowEndUtc;
+      await visit.save();
+    }
+    const isMember = await requireTeamMemberOrAdmin(req, visit);
+    if (!isMember) return res.status(403).json({ success: false, message: 'Only assigned team members or admins can modify media.' });
+    if (new Date() > new Date(visit.uploadWindowEndUtc)) {
+      const end = new Date(visit.uploadWindowEndUtc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      return res.status(403).json({ success: false, message: `Edits are closed as of ${end}.` });
+    }
 
     const removeFrom = (arr) => {
       if (!arr) return false;

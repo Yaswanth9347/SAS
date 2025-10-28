@@ -638,15 +638,7 @@ class VisitReportManager {
 
         try {
           uploadProgress.textContent = 'Submitting report data...';
-          
-          const reportResponse = await api.completeVisitReport(this.selectedVisitId, reportData);
-          
-          if (!reportResponse.success) {
-            throw new Error(reportResponse.message || 'Report submission failed');
-          }
-
-          const reportResult = await reportResponse.json();
-
+          const reportResult = await api.completeVisitReport(this.selectedVisitId, reportData);
           if (reportResult && reportResult.success) {
             loadingModal.style.display = 'none';
             notify.success('Visit report submitted successfully!');
@@ -655,7 +647,7 @@ class VisitReportManager {
               window.location.href = 'dashboard.html';
             }, 2000);
           } else {
-            throw new Error(reportResult.message || 'Report submission failed without specific error message');
+            throw new Error(reportResult?.message || 'Report submission failed');
           }
         } catch (reportError) {
           console.error('Report submission error:', reportError);

@@ -132,7 +132,6 @@ const storage = multer.diskStorage({
 // Enhanced file filter with detailed validation
 const fileFilter = (req, file, cb) => {
     const fieldName = file.fieldname;
-    const fileSize = parseInt(req.headers['content-length']);
     
     // Check if field is valid
     if (!STORAGE_CONFIG[fieldName]) {
@@ -146,11 +145,7 @@ const fileFilter = (req, file, cb) => {
         return cb(new Error(`Invalid file type for ${fieldName}: ${file.mimetype}. Allowed types: ${config.allowedTypes.join(', ')}`), false);
     }
     
-    // Check file size (rough estimate from headers)
-    if (fileSize && fileSize > config.maxSize) {
-        const maxSizeMB = (config.maxSize / (1024 * 1024)).toFixed(2);
-        return cb(new Error(`File too large for ${fieldName}. Maximum size: ${maxSizeMB}MB`), false);
-    }
+    // Don't attempt per-file size check here (headers reflect total payload). We'll enforce per-file size during post-upload validation.
     
     cb(null, true);
 };
@@ -245,6 +240,16 @@ async function validateMimeType(req, res, next) {
                     errors.push(`File type ${detected} is not allowed for ${fieldName} (file ${file.originalname}).`);
                     continue;
                 }
+
+                // Per-file size check using actual file size (enforce field-specific maxSize)
+                try {
+                    const stat = await fs.promises.stat(file.path);
+                    if (config && config.maxSize && stat.size > config.maxSize) {
+                        const maxSizeMB = (config.maxSize / (1024 * 1024)).toFixed(2);
+                        errors.push(`File ${file.originalname} exceeds maximum size for ${fieldName} (${maxSizeMB}MB).`);
+                        continue;
+                    }
+                } catch (_) { /* ignore stat errors */ }
             } catch (fileErr) {
                 console.error('Error validating file', file?.originalname, fileErr);
                 errors.push(`Error validating ${file.originalname}`);
