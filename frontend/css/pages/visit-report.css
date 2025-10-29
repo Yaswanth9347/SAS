@@ -127,6 +127,54 @@ body {
   font-size: 1.05rem;
 }
 
+/* ====== UPLOAD WINDOW STATUS ====== */
+.window-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f1f8e9;
+  border: 1px solid #dcedc8;
+  border-left: 4px solid #8bc34a;
+  color: #2e7d32;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin: 10px 0 15px;
+}
+
+.window-status .badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.badge-open { background: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; }
+.badge-soon { background: #fff8e1; color: #bf360c; border: 1px solid #ffe0b2; }
+.badge-closed { background: #ffebee; color: #b71c1c; border: 1px solid #ffcdd2; }
+
+.window-status .status-message { font-weight: 600; }
+.window-status .countdown { font-family: monospace; color: #1b5e20; }
+
+/* Disabled states */
+.upload-disabled .upload-label,
+.upload-disabled .upload-label:hover {
+  background: #bdbdbd !important;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.upload-disabled .file-input { pointer-events: none; }
+.upload-disabled .preview-grid { opacity: 0.6; }
+
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(0.2);
+}
+
 /* ====== VISIT/TEAM DETAILS ====== */
 .visit-details,
 .team-details {

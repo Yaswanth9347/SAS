@@ -8,6 +8,7 @@
     "dev": "nodemon server.js",
     "test": "node run-tests.js",
     "verify:email": "node scripts/verify-email-env.js",
+    "migrate:windows": "node scripts/backfill-upload-windows.js",
     "test:api": "npx jest tests/api.test.js --verbose",
     "test:integration": "npx jest tests/integration.test.js --verbose",
     "test:comprehensive": "npx jest tests/comprehensive.test.js --verbose",

@@ -17,10 +17,12 @@ A comprehensive web application to manage volunteer visits to schools, enabling 
   - [Installation](#installation)
   - [Environment Variables](#environment-variables)
   - [Running the Application](#running-the-application)
+    - [Background Notifications](#background-notifications)
 - [API Documentation](#api-documentation)
 - [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
+  - [One-off migration: backfill upload windows](#one-off-migration-backfill-upload-windows)
 
 ## 🌟 Overview
 
@@ -223,6 +225,51 @@ npm run dev
    - Open your browser and navigate to `http://localhost:5001`
    - The API endpoints are available at `http://localhost:5001/api/`
    - Health check endpoint: `http://localhost:5001/api/health`
+
+### Background Notifications
+
+A lightweight worker sends reminders and upload-window alerts to team members:
+
+- Reminders for upcoming visits (next 24h)
+- Report submission reminders for recently completed visits
+- Upload window alerts for scheduled visits:
+  - When uploads open (12:00 PM IST on visit date)
+  - 1 hour before the upload window closes
+  - When uploads close (48 hours after open)
+
+Run it on a schedule (e.g., every 10–15 minutes) with your process manager or cron. It reads the same environment as the backend and connects via `MONGODB_URI`:
+
+```bash
+# example (cron, every 15 minutes)
+*/15 * * * * cd /path/to/SAS/backend && /usr/bin/node scripts/notification-worker.js >> /var/log/sas-worker.log 2>&1
+```
+
+The worker is idempotent and uses flags on each Visit to avoid duplicate notifications.
+
+### One-off migration: backfill upload windows
+
+If your database contains legacy visits created before the upload window feature, run the backfill to compute and store per-visit upload windows and safe defaults:
+
+- Computes uploadWindowStartUtc (12:00 PM IST on the visit date) and uploadWindowEndUtc (+48 hours)
+- Ensures timezone='Asia/Kolkata' and uploadVisibility='public' if missing
+- Sets notification flags to prevent spamming users for old visits:
+  - For completed/cancelled or already-closed windows: marks all window flags true
+  - For currently-open windows: marks windowOpenNotified true (so no immediate "open now" blast)
+  - For future windows: keeps flags false so the worker can notify later
+
+Run a dry-run first to review the changes, then run the actual update:
+
+```bash
+# From the backend folder
+node scripts/backfill-upload-windows.js --dry-run
+node scripts/backfill-upload-windows.js
+
+# Or via npm script
+npm run migrate:windows -- --dry-run
+npm run migrate:windows
+```
+
+Environment variables: use MONGODB_URI (or MONGO_URI) and optional DB_NAME to target the correct database.
 
 ## 📚 API Documentation
 

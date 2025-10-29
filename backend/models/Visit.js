@@ -115,6 +115,10 @@ const visitSchema = new mongoose.Schema(
   uploadWindowEndUtc: { type: Date },
   timezone: { type: String, default: 'Asia/Kolkata' },
   uploadVisibility: { type: String, enum: ['public', 'private'], default: 'public' },
+  // Notification flags to avoid duplicate worker sends
+  windowOpenNotified: { type: Boolean, default: false },
+  windowClosingNotified: { type: Boolean, default: false },
+  windowClosedNotified: { type: Boolean, default: false },
 
     // Enhanced file storage with full metadata (Hybrid Approach)
     photos: {

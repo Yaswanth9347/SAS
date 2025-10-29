@@ -12,6 +12,9 @@ class VisitReportManager {
       photos: [],
       videos: []
     };
+    this.serverOffsetMs = 0; // serverTime - clientTime
+    this.countdownInterval = null;
+    this.currentVisitWindow = null; // { start: Date, end: Date }
     this.init();
   }
 
@@ -32,14 +35,35 @@ class VisitReportManager {
       navUser.innerHTML = `<i class="fas fa-user-circle"></i> Welcome, ${this.user.name || 'User'}`;
     }
     
-    // Setup file upload handlers
+  // Setup file upload handlers
     this.setupFileUploadHandlers();
     
     // Setup form submission
     this.setupFormSubmission();
     
+    // Kick off server time sync in background
+    this.syncServerTime().catch(()=>{});
+
     // Load teams
     this.loadTeams();
+  }
+
+  /**
+   * Sync approximate server time to avoid client clock drift
+   */
+  async syncServerTime() {
+    try {
+      const before = Date.now();
+      const health = await api.get('/health');
+      const after = Date.now();
+      // Approximate mid-point to reduce network latency skew
+      const clientMid = (before + after) / 2;
+      const serverTs = new Date(health.timestamp).getTime();
+      this.serverOffsetMs = serverTs - clientMid;
+    } catch (e) {
+      console.warn('Failed to sync server time, using client clock:', e.message);
+      this.serverOffsetMs = 0;
+    }
   }
 
   /**
@@ -323,6 +347,9 @@ class VisitReportManager {
         reportForm.style.display = 'block';
         
         console.log('Visit details displayed successfully');
+
+        // Load visit to determine upload window and update UI state
+        this.loadVisitWindow(visitId);
       } catch (error) {
         console.error('Error displaying visit details:', error);
         visitDetails.innerHTML = `
@@ -339,6 +366,134 @@ class VisitReportManager {
       visitDetails.style.display = 'none';
       reportForm.style.display = 'none';
       console.log('No visit selected, hiding details');
+    }
+  }
+
+  /**
+   * Load visit details and set upload window UI state
+   */
+  async loadVisitWindow(visitId) {
+    try {
+      // Ensure we have server time offset at least once
+      if (this.serverOffsetMs === 0) {
+        await this.syncServerTime().catch(()=>{});
+      }
+      const { data } = await api.getVisit(visitId);
+      const start = data.uploadWindowStartUtc ? new Date(data.uploadWindowStartUtc) : null;
+      const end = data.uploadWindowEndUtc ? new Date(data.uploadWindowEndUtc) : null;
+      this.currentVisitWindow = start && end ? { start, end } : null;
+      this.applyWindowState();
+      this.startCountdown();
+    } catch (e) {
+      console.error('Failed to load visit window:', e);
+      // Fallback: enable uploads (server will still enforce)
+      this.setUploadControlsDisabled(false);
+      this.renderWindowBanner(null, 'Unable to determine upload window. You may attempt to upload; the server will enforce policy.', 'info');
+    }
+  }
+
+  /**
+   * Compute state and update UI controls
+   */
+  applyWindowState() {
+    const bannerEl = document.getElementById('uploadWindowStatus');
+    if (!this.currentVisitWindow) {
+      if (bannerEl) bannerEl.style.display = 'none';
+      this.setUploadControlsDisabled(false);
+      return;
+    }
+    const now = new Date(Date.now() + this.serverOffsetMs);
+    const { start, end } = this.currentVisitWindow;
+    if (now < start) {
+      this.setUploadControlsDisabled(true);
+      this.renderWindowBanner({ state: 'before', start, end });
+    } else if (now > end) {
+      this.setUploadControlsDisabled(true);
+      this.renderWindowBanner({ state: 'after', start, end });
+    } else {
+      this.setUploadControlsDisabled(false);
+      this.renderWindowBanner({ state: 'open', start, end });
+    }
+  }
+
+  /**
+   * Start or restart live countdown
+   */
+  startCountdown() {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+    }
+    const countdownEl = document.getElementById('uploadWindowCountdown');
+    if (!this.currentVisitWindow || !countdownEl) return;
+    const tick = () => {
+      const now = new Date(Date.now() + this.serverOffsetMs);
+      const { start, end } = this.currentVisitWindow;
+      let target, prefix;
+      if (now < start) { target = start; prefix = 'Opens in'; }
+      else if (now <= end) { target = end; prefix = 'Closes in'; }
+      else { countdownEl.textContent = ''; return; }
+      const diffMs = Math.max(0, target.getTime() - now.getTime());
+      const hh = Math.floor(diffMs / 3600000);
+      const mm = Math.floor((diffMs % 3600000) / 60000);
+      const ss = Math.floor((diffMs % 60000) / 1000);
+      countdownEl.textContent = `${prefix} ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    };
+    tick();
+    this.countdownInterval = setInterval(() => {
+      this.applyWindowState();
+      tick();
+    }, 1000);
+  }
+
+  /**
+   * Enable/disable upload controls and submit button
+   */
+  setUploadControlsDisabled(disabled) {
+    const photoInput = document.getElementById('photoUpload');
+    const videoInput = document.getElementById('videoUpload');
+    const submitBtn = document.getElementById('submitBtn');
+    const uploadSections = document.querySelectorAll('.upload-section');
+    if (photoInput) photoInput.disabled = disabled;
+    if (videoInput) videoInput.disabled = disabled;
+    if (submitBtn) submitBtn.disabled = disabled;
+    uploadSections.forEach(sec => {
+      if (disabled) sec.classList.add('upload-disabled');
+      else sec.classList.remove('upload-disabled');
+    });
+  }
+
+  /**
+   * Render window banner with state and message
+   */
+  renderWindowBanner(info, fallbackMsg = null, level = 'info') {
+    const statusEl = document.getElementById('uploadWindowStatus');
+    if (!statusEl) return;
+    const badgeEl = document.getElementById('uploadWindowBadge');
+    const msgEl = document.getElementById('uploadWindowMessage');
+    const countdownEl = document.getElementById('uploadWindowCountdown');
+    statusEl.style.display = 'flex';
+    // Reset classes
+    badgeEl.className = 'badge';
+    countdownEl.textContent = '';
+    if (!info) {
+      badgeEl.textContent = 'Info';
+      msgEl.textContent = fallbackMsg || 'Upload window information unavailable.';
+      return;
+    }
+    const { state, start, end } = info;
+    if (state === 'before') {
+      badgeEl.textContent = 'Not open yet';
+      badgeEl.classList.add('badge-soon');
+      msgEl.textContent = `Uploads open at 12:00 PM IST on ${start.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`;
+    } else if (state === 'after') {
+      badgeEl.textContent = 'Closed';
+      badgeEl.classList.add('badge-closed');
+      msgEl.textContent = `Uploads closed at ${end.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`;
+    } else {
+      badgeEl.textContent = 'Open';
+      badgeEl.classList.add('badge-open');
+      msgEl.textContent = 'You can upload photos and videos now.';
     }
   }
 
