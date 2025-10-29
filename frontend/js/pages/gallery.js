@@ -382,11 +382,8 @@ function displayPhotos(photos) {
               <span class="meta-date">📅 ${escapeHtml(date)}</span>
             </div>
             <div class="photo-actions">
-              <button class="icon-btn" onclick="event.stopPropagation(); downloadPhoto('${escapedUrl}', 'photo')" title="Download">
-                📥
-              </button>
-              <button class="icon-btn" onclick="event.stopPropagation(); toggleFavorite('${escapedUrl}')" title="Favorite">
-                ⭐
+              <button class="download-btn" onclick="event.stopPropagation(); downloadPhoto('${escapedUrl}', 'photo')" title="Download">
+                ↓
               </button>
             </div>
           </div>
@@ -475,11 +472,6 @@ function downloadPhoto(url, type = "photo") {
       document.body.removeChild(link);
       notify.success("Download started!");
     });
-}
-
-// Toggle favorite (placeholder - needs backend implementation)
-function toggleFavorite(url) {
-  notify.info("Favorite feature coming soon!");
 }
 
 // Lightbox functions (enhanced with keyboard navigation)

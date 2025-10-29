@@ -19,7 +19,7 @@
       }
       .gallery-slides {
         display: flex !important;
-        transition: transform 0.6s ease-in-out !important;
+        transition: transform 0.2s ease !important;
         position: relative !important;
       }
       .gallery-slide {
@@ -35,6 +35,9 @@
         object-fit: contain !important;
         display: block !important;
         background: #fff !important;
+        -webkit-backface-visibility: hidden !important;
+        backface-visibility: hidden !important;
+        will-change: transform !important;
       }
       .gallery-slide video {
         width: 100% !important;
@@ -66,15 +69,22 @@
       }
       .gallery-indicators .indicator {
         display: inline-block;
-        width: 10px;
-        height: 10px;
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
-        background: #ccc;
-        margin: 0 5px;
+        background: #ddd;
+        margin: 0 6px;
         cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+      }
+      .gallery-indicators .indicator:hover {
+        background: #bbb;
       }
       .gallery-indicators .indicator.active {
         background: #2e6ad6;
+        border-color: #fff;
+        transform: scale(1.2);
       }
     </style>
   </head>
@@ -313,7 +323,7 @@
       let galleryInterval = null;
       let currentSlide = 0;
       let galleryMedia = [];
-      const GALLERY_AUTO_MS = 2000; // Auto-scroll interval in ms (2s)
+      const GALLERY_AUTO_MS = 1500; // Auto-scroll interval in ms (1.5s)
 
       async function loadLatestVisitGallery() {
         try {
@@ -437,26 +447,18 @@
               )
               .join("")}
           </div>
-          <div class="gallery-controls-horizontal">
-            <button class="gallery-btn-horizontal" id="prevBtn">⬅️ Prev</button>
-            <button class="gallery-btn-horizontal" id="autoScrollBtn">⏸️ Pause</button>
-            <button class="gallery-btn-horizontal" id="nextBtn">Next ➡️</button>
-          </div>
         `;
 
-        // Setup handlers
+        // Setup handlers for indicators
         currentSlide = 0;
-        document.getElementById("prevBtn").onclick = () => moveToPrev();
-        document.getElementById("nextBtn").onclick = () => moveToNext();
-        document.getElementById("autoScrollBtn").onclick = () =>
-          toggleAutoScroll();
+        for (const ind of document.querySelectorAll(
+          "#galleryIndicators .indicator"
+        )) {
+          ind.onclick = () => moveToSlide(Number(ind.dataset.index));
+        }
 
-        // Indicators click
-        document
-          .querySelectorAll("#galleryIndicators .indicator")
-          .forEach((ind) => {
-            ind.onclick = () => moveToSlide(Number(ind.dataset.index));
-          });
+        // Start the auto-scroll
+        startAutoScroll();
       }
 
       function showNoGallery() {
@@ -487,17 +489,6 @@
         }
       }
 
-      function toggleAutoScroll() {
-        const btn = document.getElementById("autoScrollBtn");
-        if (galleryInterval) {
-          stopAutoScroll();
-          btn.textContent = "▶️ Play";
-        } else {
-          startAutoScroll();
-          btn.textContent = "⏸️ Pause";
-        }
-      }
-
       function moveToSlide(index) {
         if (galleryMedia.length === 0) return;
         const slidesEl = document.getElementById("gallerySlides");
@@ -510,19 +501,20 @@
       }
 
       function moveToNext() {
+        if (galleryMedia.length === 0) return;
         moveToSlide(currentSlide + 1);
       }
 
-      function moveToPrev() {
-        moveToSlide(currentSlide - 1);
-      }
-
       function updateIndicators() {
-        const inds = document.querySelectorAll("#galleryIndicators .indicator");
-        inds.forEach((el, idx) => {
+        const indicators = document.querySelectorAll(
+          "#galleryIndicators .indicator"
+        );
+        let idx = 0;
+        for (const el of indicators) {
           if (idx === currentSlide) el.classList.add("active");
           else el.classList.remove("active");
-        });
+          idx++;
+        }
       }
 
       // Old vertical carousel functions (keep for backward compatibility)
@@ -581,7 +573,8 @@
 
       function updateVideoPlayback() {
         const slides = document.querySelectorAll(".gallery-slide");
-        slides.forEach((slide, index) => {
+        let index = 0;
+        for (const slide of slides) {
           const video = slide.querySelector("video");
           if (video) {
             if (index === currentSlide) {
@@ -592,7 +585,8 @@
               video.pause();
             }
           }
-        });
+          index++;
+        }
       }
 
       // Stop auto-scroll when user leaves the page

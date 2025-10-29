@@ -1,48 +1,52 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const schoolSchema = new mongoose.Schema({
+const schoolSchema = new mongoose.Schema(
+  {
     name: {
-        type: String,
-        required: [true, 'Please add school name'],
-        trim: true
+      type: String,
+      required: [true, "Please add school name"],
+      trim: true,
     },
     address: {
-        street: String,
-        city: String,
-        state: String,
-        pincode: String
+      street: String,
+      city: String,
+      state: String,
+      pincode: String,
     },
     contactPerson: {
-        name: String,
-        position: String,
-        phone: String,
-        email: String
+      name: String,
+      position: String,
+      phone: String,
+      phone2: String,
+      email: String,
     },
     totalClasses: {
-        type: Number,
-        required: true,
-        min: 1
+      type: Number,
+      required: true,
+      min: 1,
     },
     availableClasses: {
-        type: Number,
-        required: true
+      type: Number,
+      required: true,
     },
     grades: [String],
     notes: String,
     isActive: {
-        type: Boolean,
-        default: true
-    }
-}, {
-    timestamps: true
-});
+      type: Boolean,
+      default: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
 // Update availableClasses when totalClasses changes
-schoolSchema.pre('save', function(next) {
-    if (this.isModified('totalClasses') && !this.isModified('availableClasses')) {
-        this.availableClasses = this.totalClasses;
-    }
-    next();
+schoolSchema.pre("save", function (next) {
+  if (this.isModified("totalClasses") && !this.isModified("availableClasses")) {
+    this.availableClasses = this.totalClasses;
+  }
+  next();
 });
 
-module.exports = mongoose.model('School', schoolSchema);
+module.exports = mongoose.model("School", schoolSchema);
