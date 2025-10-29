@@ -97,9 +97,12 @@ body {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
-.form-group {
-  margin-bottom: 0;
-}
+.filters-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.filter-col { min-width: 220px; }
+.filter-actions { margin-left: auto; display: flex; gap: 10px; }
+.btn { padding: 10px 14px; border-radius: 8px; border: 0; cursor: pointer; font-weight: 600; }
+.btn-primary { background: #4caf50; color: #fff; }
+.btn-secondary { background: #e0e0e0; color: #333; }
 
 label {
   font-weight: 600;
@@ -119,6 +122,23 @@ select {
   font-family: inherit;
   transition: all 0.3s;
   cursor: pointer;
+}
+/* Date inputs styled similar to selects */
+.filter-col input[type="date"] {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.3s;
+}
+.filter-col input[type="date"]:focus {
+  border-color: #4caf50;
+  outline: none;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.15);
 }
 
 select:focus {
@@ -196,7 +216,8 @@ select:focus {
 
 /* ========= GRID LAYOUT ========= */
 .photo-grid,
-.video-grid {
+.video-grid,
+.document-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 20px;
@@ -252,6 +273,16 @@ select:focus {
 .video-thumbnail span {
   font-size: 1.05rem;
 }
+
+/* Documents */
+.doc-card { background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; transition: all 0.3s ease; }
+.doc-card:hover { border-color: #4caf50; box-shadow: 0 6px 15px rgba(76,175,80,0.15); transform: translateY(-2px); }
+.doc-icon { width: 40px; height: 40px; border-radius: 8px; background: #fff3cd; color: #8a6d3b; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
+.doc-info { display: flex; flex-direction: column; gap: 4px; }
+.doc-name { font-weight: 600; color: #2e7d32; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-meta { color: #666; font-size: 0.9rem; }
+.doc-actions { margin-left: auto; }
+.doc-actions a { text-decoration: none; color: #fff; background: #4caf50; padding: 8px 12px; border-radius: 8px; font-weight: 600; }
 
 /* ========= LIGHTBOX ========= */
 .lightbox {
@@ -350,7 +381,8 @@ select:focus {
   }
 
   .photo-grid,
-  .video-grid {
+  .video-grid,
+  .document-grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 15px;
   }
@@ -405,7 +437,8 @@ select:focus {
 
 @media (max-width: 480px) {
   .photo-grid,
-  .video-grid {
+  .video-grid,
+  .document-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 10px;
   }

@@ -11,11 +11,25 @@ let teams = [];
 let currentTeamId = null;
 let allUsers = [];
 
+function getUserFilters() {
+  const dept = document.getElementById('filterDepartment')?.value || '';
+  const year = document.getElementById('filterYear')?.value || '';
+  const availableOnly = document.getElementById('filterAvailableOnly')?.checked || false;
+  const searchTerm = document.getElementById('userSearchInput')?.value?.trim() || '';
+  const params = { role: 'volunteer', verified: 'true', page: '1', limit: '1000' };
+  if (dept) params.department = dept;
+  if (year) params.year = year;
+  if (availableOnly) params.availableOnly = 'true';
+  if (searchTerm) params.search = searchTerm;
+  return params;
+}
+
 async function loadUsers() {
   if (!isAdmin) return;
   try {
     loading.show('usersList', 'Loading users...');
-    const data = await api.getUsers();
+    const filters = getUserFilters();
+    const data = await api.getAdminUsers(filters);
     loading.hide('usersList');
 
     const usersDiv = document.getElementById('usersList');
@@ -25,11 +39,30 @@ async function loadUsers() {
     }
 
     allUsers = data.data;
+    maybePopulateDepartmentOptions(allUsers);
     renderUsers(allUsers);
   } catch (err) {
     loading.hide('usersList');
     renderError('usersList', 'Failed to load users');
   }
+}
+
+function maybePopulateDepartmentOptions(users) {
+  const deptSelect = document.getElementById('filterDepartment');
+  if (!deptSelect) return;
+  // If only the default option exists, populate dynamically from users
+  const hasOnlyDefault = deptSelect.options.length <= 1;
+  if (!hasOnlyDefault) return;
+
+  const depts = Array.from(new Set(users.map(u => (u.department || '').trim()).filter(Boolean))).sort();
+  const frag = document.createDocumentFragment();
+  depts.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d;
+    opt.textContent = d;
+    frag.appendChild(opt);
+  });
+  deptSelect.appendChild(frag);
 }
 
 function renderUsers(users) {
@@ -39,31 +72,41 @@ function renderUsers(users) {
     return;
   }
 
-  usersDiv.innerHTML = users.map(u => `
-    <label class="user-item" data-username="${escapeHtml(u.username || u.name).toLowerCase()}">
-      <input type="checkbox" name="members" value="${u._id}" />
-      <span class="username">${escapeHtml(u.username || u.name)}</span>
+  usersDiv.innerHTML = users.map(u => {
+    const assignedTeam = u.team && (u.team.name || u.team);
+    const disabled = !!assignedTeam;
+    const labelClasses = ['user-item'];
+    if (disabled) labelClasses.push('disabled');
+    const badge = disabled ? `<span class="assignment-badge" title="Already in ${escapeHtml(assignedTeam.name || assignedTeam)}">In team${assignedTeam && assignedTeam.name ? `: ${escapeHtml(assignedTeam.name)}` : ''}</span>` : '';
+    return `
+    <label class="${labelClasses.join(' ')}" data-username="${escapeHtml(u.username || u.name).toLowerCase()}">
+      <input type="checkbox" name="members" value="${u._id}" ${disabled ? 'disabled' : ''} />
+      <span class="username">${escapeHtml(u.username || u.name)} ${badge}</span>
       <div class="leader-selector">
-        <input type="radio" name="leader" value="${u._id}" title="Set as leader" />
+        <input type="radio" name="leader" value="${u._id}" title="Set as leader" ${disabled ? 'disabled' : ''} />
       </div>
-    </label>
-  `).join('');
+    </label>`;
+  }).join('');
 }
 
 // Search functionality
-(function attachSearchHandler() {
+// Attach filter handlers (search, department, year, availableOnly)
+(function attachFilterHandlers() {
   const searchInput = document.getElementById('userSearchInput');
-  if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      const searchTerm = e.target.value.toLowerCase().trim();
-      if (searchTerm === '') {
-        renderUsers(allUsers);
-      } else {
-        const filtered = allUsers.filter(u => (u.username || u.name || '').toLowerCase().includes(searchTerm));
-        renderUsers(filtered);
-      }
-    });
+  const deptSelect = document.getElementById('filterDepartment');
+  const yearSelect = document.getElementById('filterYear');
+  const availableOnly = document.getElementById('filterAvailableOnly');
+
+  let debounceTimer;
+  function triggerLoadWithDebounce() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => { loadUsers(); }, 250);
   }
+
+  if (searchInput) searchInput.addEventListener('input', triggerLoadWithDebounce);
+  if (deptSelect) deptSelect.addEventListener('change', loadUsers);
+  if (yearSelect) yearSelect.addEventListener('change', loadUsers);
+  if (availableOnly) availableOnly.addEventListener('change', loadUsers);
 })();
 
 async function loadTeams() {

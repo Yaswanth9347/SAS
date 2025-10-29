@@ -212,6 +212,7 @@ function renderVisitDetailsHtml(visit){
         <input type="file" data-visit-id="${visit._id}" class="media-input" multiple />
         <button class="btn btn-save upload-btn" data-visit-id="${visit._id}">Upload Files</button>
       </div>
+      <div class="upload-alert is-warning" data-visit-id="${visit._id}" role="alert" aria-live="polite" tabindex="-1" style="display:none"></div>
       <p class="upload-hint">Upload photos, videos, or documents related to this visit.</p>
     </div>
   `;
@@ -273,8 +274,20 @@ function attachDetailsHandlers(){
 async function onUploadClick(e){
   const visitId = e.currentTarget.dataset.visitId;
   const input = document.querySelector(`input.media-input[data-visit-id="${visitId}"]`);
+  const alertEl = document.querySelector(`.upload-alert[data-visit-id="${visitId}"]`);
+  const showInline = (msg, level = 'warning') => {
+    if (!alertEl) return;
+    alertEl.classList.remove('is-error','is-success','is-info','is-warning');
+    alertEl.classList.add(`is-${level}`);
+    alertEl.innerHTML = escapeHtml(msg);
+    alertEl.style.display = 'block';
+    // Ensure user sees it
+    alertEl.focus({ preventScroll: true });
+    alertEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+  const clearInline = () => { if (alertEl) { alertEl.style.display = 'none'; alertEl.textContent = ''; } };
   if(!input || !input.files || !input.files.length){ 
-    notify.warning('Please select files to upload');
+    showInline('Please select files to upload', 'warning');
     return; 
   }
 
@@ -291,9 +304,22 @@ async function onUploadClick(e){
     loading.showFullPage(`Uploading ${fileCount} file${fileCount !== 1 ? 's' : ''}...`);
     const result = await api.uploadVisitMedia(visitId, form);
     loading.hideFullPage();
-    if(result.success){ notify.success(`Successfully uploaded ${fileCount} file${fileCount !== 1 ? 's' : ''}!`); aSYNC_loadVisits(); }
-    else { notify.error(result.message || 'Upload failed'); }
-  }catch(err){ loading.hideFullPage(); handleAPIError(err); }
+    if(result.success){ 
+      clearInline();
+      notify.success(`Successfully uploaded ${fileCount} file${fileCount !== 1 ? 's' : ''}!`);
+      aSYNC_loadVisits(); 
+    }
+    else { 
+      // Prefer inline error near upload area
+      const msg = result.message || 'Upload failed';
+      const isWindowMsg = /Uploads (open|closed)/i.test(msg) || /12:00\s*PM/i.test(msg);
+      showInline(msg, isWindowMsg ? 'warning' : 'error');
+    }
+  }catch(err){ 
+    loading.hideFullPage(); 
+    const msg = err?.message || 'Upload failed';
+    showInline(escapeHtml(msg), 'error');
+  }
 }
 
 // Drawer creation and handlers

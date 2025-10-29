@@ -389,6 +389,7 @@ class VisitReportManager {
       // Fallback: enable uploads (server will still enforce)
       this.setUploadControlsDisabled(false);
       this.renderWindowBanner(null, 'Unable to determine upload window. You may attempt to upload; the server will enforce policy.', 'info');
+      this.showInlineAlert('Unable to determine upload window. You may attempt to upload; the server will enforce policy.', 'info');
     }
   }
 
@@ -479,6 +480,7 @@ class VisitReportManager {
     if (!info) {
       badgeEl.textContent = 'Info';
       msgEl.textContent = fallbackMsg || 'Upload window information unavailable.';
+      this.showInlineAlert(msgEl.textContent, level || 'info');
       return;
     }
     const { state, start, end } = info;
@@ -486,15 +488,38 @@ class VisitReportManager {
       badgeEl.textContent = 'Not open yet';
       badgeEl.classList.add('badge-soon');
       msgEl.textContent = `Uploads open at 12:00 PM IST on ${start.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`;
+      this.showInlineAlert(msgEl.textContent, 'warning');
     } else if (state === 'after') {
       badgeEl.textContent = 'Closed';
       badgeEl.classList.add('badge-closed');
       msgEl.textContent = `Uploads closed at ${end.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`;
+      this.showInlineAlert(msgEl.textContent, 'error');
     } else {
       badgeEl.textContent = 'Open';
       badgeEl.classList.add('badge-open');
       msgEl.textContent = 'You can upload photos and videos now.';
+      this.clearInlineAlert();
     }
+  }
+
+  /**
+   * Inline alert helpers (near upload area)
+   */
+  showInlineAlert(message, level = 'warning') {
+    const el = document.getElementById('uploadInlineAlert');
+    if (!el) return;
+    el.classList.remove('is-warning','is-error','is-success','is-info');
+    el.classList.add(`is-${level}`);
+    el.innerHTML = escapeHtml(message);
+    el.style.display = 'block';
+    try { el.focus({ preventScroll: true }); } catch(e){}
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e){}
+  }
+  clearInlineAlert() {
+    const el = document.getElementById('uploadInlineAlert');
+    if (!el) return;
+    el.style.display = 'none';
+    el.textContent = '';
   }
 
   /**
@@ -769,10 +794,17 @@ class VisitReportManager {
             if (uploadData && uploadData.success) {
               fileUrls = uploadData.data;
             } else {
+              // Surface inline near upload area
+              this.showInlineAlert(uploadData.message || 'File upload failed', /Uploads (open|closed)/i.test(uploadData?.message) ? 'warning' : 'error');
               throw new Error(uploadData.message || 'File upload failed');
             }
           } catch (uploadError) {
             console.error('File upload error:', uploadError);
+            // If server enforced window, show inline
+            const msg = uploadError?.message || 'File upload failed';
+            if (/Uploads (open|closed)/i.test(msg) || /12:00\s*PM/i.test(msg)) {
+              this.showInlineAlert(msg, 'warning');
+            }
             throw uploadError;
           }
         }
@@ -802,7 +834,9 @@ class VisitReportManager {
               window.location.href = 'dashboard.html';
             }, 2000);
           } else {
-            throw new Error(reportResult?.message || 'Report submission failed');
+            const msg = reportResult?.message || 'Report submission failed';
+            if (/Uploads (open|closed)/i.test(msg)) this.showInlineAlert(msg, 'error');
+            throw new Error(msg);
           }
         } catch (reportError) {
           console.error('Report submission error:', reportError);
@@ -819,7 +853,12 @@ class VisitReportManager {
           errorMessage = 'Server error: Unable to process your report. Please try again later or contact support.';
         }
         
-        notify.error('Failed to submit report: ' + errorMessage);
+        // Prefer inline for time-window errors, toast otherwise
+        if (/Uploads (open|closed)/i.test(errorMessage) || /12:00\s*PM/i.test(errorMessage)) {
+          this.showInlineAlert(errorMessage, 'error');
+        } else {
+          notify.error('Failed to submit report: ' + errorMessage);
+        }
       }
     });
   }

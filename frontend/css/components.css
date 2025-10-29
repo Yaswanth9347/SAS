@@ -495,6 +495,38 @@
   font-size: 0.85rem;
 }
 
+/* Inline upload alerts anchored to the control area */
+.upload-alert {
+  display: none;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border-left: 4px solid #ff9800;
+  background: #fff8e1;
+  color: #5d4037;
+  font-size: 0.9rem;
+}
+.upload-alert.is-warning {
+  border-left-color: #ff9800;
+  background: #fff8e1;
+  color: #5d4037;
+}
+.upload-alert.is-error {
+  border-left-color: #e53935;
+  background: #ffebee;
+  color: #b71c1c;
+}
+.upload-alert.is-success {
+  border-left-color: #43a047;
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+.upload-alert.is-info {
+  border-left-color: #1e88e5;
+  background: #e3f2fd;
+  color: #0d47a1;
+}
+
 /* Photos Gallery */
 .photos-gallery {
   display: grid;

@@ -7,25 +7,48 @@ const ActivityLog = require('../models/ActivityLog');
 // @access  Private/Admin
 exports.getUsers = async (req, res, next) => {
     try {
-        const { role, status, verified, search, page = 1, limit = 50 } = req.query;
+        const { role, status, verified, search, department, year, availableOnly, page = 1, limit = 50 } = req.query;
         const query = {};
 
         if (role) query.role = role;
         if (status) query.verificationStatus = status; // 'pending' | 'approved' | 'rejected'
         if (verified !== undefined) query.isVerified = verified === 'true';
+        if (department) query.department = department;
+        if (year) query.year = parseInt(year);
+
+        // availableOnly=true => users not currently assigned to a team
+        if (availableOnly === 'true') {
+            query.$or = [
+                { team: { $exists: false } },
+                { team: null }
+            ];
+        }
 
         if (search) {
-            query.$or = [
-                { name: new RegExp(search, 'i') },
-                { username: new RegExp(search, 'i') },
-                { email: new RegExp(search, 'i') }
-            ];
+            const searchClause = {
+                $or: [
+                    { name: new RegExp(search, 'i') },
+                    { username: new RegExp(search, 'i') },
+                    { email: new RegExp(search, 'i') }
+                ]
+            };
+            // Merge with existing query if needed
+            if (query.$or) {
+                query.$and = [{ $or: query.$or }, searchClause.$or ? searchClause : {}];
+                delete query.$or;
+            } else {
+                Object.assign(query, searchClause);
+            }
         }
 
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
         const [users, total] = await Promise.all([
-            User.find(query, '_id username name email role department year isActive isVerified verificationStatus createdAt updatedAt')
+            User.find(
+                query,
+                '_id username name email role department year isActive isVerified verificationStatus createdAt updatedAt team'
+            )
+                .populate('team', 'name')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(parseInt(limit)),
@@ -326,10 +349,20 @@ exports.createTeam = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Team leader must be one of the members' });
         }
 
-        // Verify members exist
-        const foundUsers = await User.find({ _id: { $in: members } });
+        // Verify members exist (and fetch their current team info)
+        const foundUsers = await User.find({ _id: { $in: members } }).populate('team', 'name');
         if (foundUsers.length !== members.length) {
             return res.status(400).json({ success: false, message: 'One or more members not found' });
+        }
+
+        // Enforce membership uniqueness: none of the selected users should already belong to a different team
+        const alreadyAssigned = foundUsers.filter(u => !!u.team);
+        if (alreadyAssigned.length > 0) {
+            const details = alreadyAssigned.map(u => `${u.username || u.name} (${u.team?.name || 'another team'})`).join(', ');
+            return res.status(409).json({
+                success: false,
+                message: `Some selected members already belong to a team: ${details}`
+            });
         }
 
         // Create team

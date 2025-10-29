@@ -40,19 +40,39 @@
         font-weight: 500;
       }
 
-      <div class="gallery-controls">
-        <div class="form-group">
-          <label for="visitSelect">Select Visit</label>
-          <select id="visitSelect">
-            <option value="">Loading visits...</option>
-          </select>
+      <div class="gallery-controls" aria-label="Gallery filters">
+        <div class="filters-row">
+          <div class="filter-col">
+            <label for="filterTeam">Team</label>
+            <select id="filterTeam">
+              <option value="">All Teams</option>
+            </select>
+          </div>
+          <div class="filter-col">
+            <label for="filterSchool">School</label>
+            <select id="filterSchool">
+              <option value="">All Schools</option>
+            </select>
+          </div>
+          <div class="filter-col">
+            <label for="filterStartDate">Start date</label>
+            <input type="date" id="filterStartDate" />
+          </div>
+          <div class="filter-col">
+            <label for="filterEndDate">End date</label>
+            <input type="date" id="filterEndDate" />
+          </div>
+          <div class="filter-actions">
+            <button id="applyFiltersBtn" class="btn btn-primary" type="button">Apply</button>
+            <button id="clearFiltersBtn" class="btn btn-secondary" type="button">Clear</button>
+          </div>
         </div>
       </div>
 
       <div id="galleryContent" class="gallery-content">
         <div class="empty-gallery">
-          <h3>Select a visit to view photos and videos</h3>
-          <p>Choose from your completed visits to see the gallery.</p>
+          <h3>Loading gallery…</h3>
+          <p>Please wait while we fetch the latest photos, videos, and documents.</p>
         </div>
       </div>
     </div>

@@ -1,155 +1,112 @@
-// Visit Gallery Page Logic
-// Require authentication
+// Visit Gallery Page Logic (All-media view with optional filters)
 authManager.requireAuth();
 const user = authManager.getUser();
 
-// Media tracking for keyboard navigation
 let currentMediaList = [];
 let currentMediaIndex = -1;
 
-/**
- * Load all completed visits into the select dropdown
- */
-async function loadCompletedVisits() {
-  const select = document.getElementById('visitSelect');
-  if (!select) return;
-
-  // Show loading state
-  select.innerHTML = '<option>Loading visits...</option>';
-  select.disabled = true;
-
+async function loadFilters() {
+  // Populate Team filter
   try {
-    const data = await api.getVisits({ status: 'completed' });
-
-    if (data && data.success) {
-      if (!data.data || data.data.length === 0) {
-        select.innerHTML = '<option>No completed visits yet</option>';
-        select.disabled = true;
-        return;
+    const teamSel = document.getElementById('filterTeam');
+    const schoolSel = document.getElementById('filterSchool');
+    if (teamSel) {
+      const tRes = await api.getTeams();
+      if (tRes?.success && Array.isArray(tRes.data)) {
+        teamSel.innerHTML = '<option value="">All Teams</option>' + tRes.data.map(t => `<option value="${t._id}">${escapeHtml(t.name)}</option>`).join('');
       }
-
-      // Populate dropdown with completed visits
-      select.innerHTML = '<option value="">Select a visit</option>' +
-        data.data.map((v) => 
-          `<option value="${v._id}">${escapeHtml(v.school?.name || 'School')} - ${formatDate(v.date)}</option>`
-        ).join('');
-      
-      select.disabled = false;
-      select.addEventListener('change', loadVisitGallery);
-    } else {
-      select.innerHTML = '<option>Error loading visits</option>';
-      select.disabled = true;
     }
-  } catch (err) {
-    select.innerHTML = '<option>Error loading visits</option>';
-    select.disabled = true;
-    handleAPIError(err);
+    if (schoolSel) {
+      const sRes = await api.getSchools();
+      if (sRes?.success && Array.isArray(sRes.data)) {
+        schoolSel.innerHTML = '<option value="">All Schools</option>' + sRes.data.map(s => `<option value="${s._id}">${escapeHtml(s.name)}</option>`).join('');
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load filters', e);
   }
 }
 
-/**
- * Load gallery for selected visit
- */
-async function loadVisitGallery(e) {
-  const id = e.target.value;
-  const gallery = document.getElementById('galleryContent');
-  
-  if (!id) {
-    gallery.innerHTML = `
-      <div class="empty-gallery">
-        <h3>Select a visit to view photos and videos</h3>
-        <p>Choose from your completed visits to see the gallery.</p>
-      </div>`;
-    currentMediaList = [];
-    currentMediaIndex = -1;
-    return;
+function getSelectedFilters() {
+  const team = document.getElementById('filterTeam')?.value || '';
+  const school = document.getElementById('filterSchool')?.value || '';
+  const startDate = document.getElementById('filterStartDate')?.value || '';
+  const endDate = document.getElementById('filterEndDate')?.value || '';
+  const params = { limit: 500 };
+  if (team) params.team = team;
+  if (school) params.school = school;
+  if (startDate && endDate) {
+    params.startDate = startDate;
+    params.endDate = endDate;
   }
+  return params;
+}
 
+async function loadAllMedia(params = {}) {
+  const gallery = document.getElementById('galleryContent');
   try {
     loading.show('galleryContent', 'Loading gallery...');
-    const data = await api.getVisitGallery(id);
+    const res = await api.getAllGalleryMedia(params);
     loading.hide('galleryContent');
-
-    if (data && data.success) {
-      displayGallery(data.data);
+    if (res?.success) {
+      renderAllMedia(res.data);
     } else {
       gallery.innerHTML = '<p>Error loading gallery</p>';
       currentMediaList = [];
       currentMediaIndex = -1;
     }
-  } catch (err) {
+  } catch (e) {
     loading.hide('galleryContent');
-    gallery.innerHTML = '<p>Error loading gallery</p>';
-    handleAPIError(err);
-    currentMediaList = [];
-    currentMediaIndex = -1;
+    handleAPIError(e);
+    const gallery = document.getElementById('galleryContent');
+    if (gallery) gallery.innerHTML = '<p>Error loading gallery</p>';
   }
 }
 
-/**
- * Display gallery content
- */
-function displayGallery(data) {
+function renderAllMedia(mediaItems) {
   const gallery = document.getElementById('galleryContent');
-  
-  // Check if there's any media
-  const hasPhotos = data.photos && data.photos.length > 0;
-  const hasVideos = data.videos && data.videos.length > 0;
-  
-  if (!hasPhotos && !hasVideos) {
+  if (!Array.isArray(mediaItems) || mediaItems.length === 0) {
     gallery.innerHTML = `
       <div class="empty-gallery">
         <h3>No media available</h3>
-        <p>No photos or videos were uploaded for this visit.</p>
+        <p>All photos, videos, and documents will appear here when uploaded.</p>
       </div>`;
     currentMediaList = [];
     currentMediaIndex = -1;
     return;
   }
 
-  // Build media list for keyboard navigation
+  const photos = mediaItems.filter(m => m.type === 'photo');
+  const videos = mediaItems.filter(m => m.type === 'video');
+  const docs = mediaItems.filter(m => m.type === 'doc');
+
   currentMediaList = [];
-  
-  if (hasPhotos) {
-    data.photos.forEach(photo => {
-      currentMediaList.push({ src: photo, type: 'image' });
-    });
-  }
-  
-  if (hasVideos) {
-    data.videos.forEach(video => {
-      currentMediaList.push({ src: video, type: 'video' });
-    });
-  }
+  photos.forEach(p => currentMediaList.push({ src: p.url, type: 'image' }));
+  const videoStartIdx = currentMediaList.length;
+  videos.forEach(v => currentMediaList.push({ src: v.url, type: 'video' }));
 
-  // Build HTML
-  let html = `
-    <div class="gallery-header">
-      <h2>${escapeHtml(data.school?.name || 'School')}</h2>
-      <p>Visit Date: ${new Date(data.date).toLocaleDateString()}</p>
-    </div>`;
+  let html = '';
 
-  if (hasPhotos) {
+  if (photos.length) {
     html += `
     <div class="gallery-section">
-      <h3>📸 Photos (${data.photos.length})</h3>
+      <h3>📸 Photos (${photos.length})</h3>
       <div class="photo-grid">
-        ${data.photos.map((photo, index) => `
-          <div class="gallery-item" onclick="openLightboxByIndex(${index})">
-            <img src="${photo}" alt="Visit photo" loading="lazy">
+        ${photos.map((p, idx) => `
+          <div class="gallery-item" onclick="openLightboxByIndex(${idx})">
+            <img src="${p.url}" alt="Photo" loading="lazy">
           </div>`).join('')}
       </div>
     </div>`;
   }
 
-  if (hasVideos) {
-    const videoStartIndex = hasPhotos ? data.photos.length : 0;
+  if (videos.length) {
     html += `
     <div class="gallery-section">
-      <h3>🎥 Videos (${data.videos.length})</h3>
+      <h3>🎥 Videos (${videos.length})</h3>
       <div class="video-grid">
-        ${data.videos.map((video, index) => `
-          <div class="gallery-item" onclick="openLightboxByIndex(${videoStartIndex + index})">
+        ${videos.map((v, i) => `
+          <div class="gallery-item" onclick="openLightboxByIndex(${videoStartIdx + i})">
             <div class="video-thumbnail">
               <div class="play-icon">▶</div>
               <span>Watch Video</span>
@@ -159,7 +116,25 @@ function displayGallery(data) {
     </div>`;
   }
 
-  gallery.innerHTML = html;
+  if (docs.length) {
+    html += `
+    <div class="gallery-section">
+      <h3>📄 Documents (${docs.length})</h3>
+      <div class="document-grid">
+        ${docs.map(d => `
+          <div class="doc-card">
+            <div class="doc-icon"><i class="fa fa-file"></i></div>
+            <div class="doc-info">
+              <div class="doc-name" title="${escapeHtml(d.name || 'Document')}">${escapeHtml(d.name || 'Document')}</div>
+              <div class="doc-meta">${d.school?.name ? escapeHtml(d.school.name) + ' • ' : ''}${d.team?.name ? escapeHtml(d.team.name) + ' • ' : ''}${new Date(d.visitDate).toLocaleDateString()}</div>
+            </div>
+            <div class="doc-actions"><a href="${d.url}" target="_blank" rel="noopener">Open</a></div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  gallery.innerHTML = html || '<div class="empty-gallery"><p>No media to display.</p></div>';
 }
 
 /**
@@ -326,6 +301,30 @@ document.addEventListener('DOMContentLoaded', () => {
   // Keyboard navigation
   document.addEventListener('keydown', handleLightboxKeyboard);
   
-  // Initialize page
-  loadCompletedVisits();
+  // Initialize filters and load all media by default
+  loadFilters().then(() => loadAllMedia());
+
+  // Hook up filter actions
+  const applyBtn = document.getElementById('applyFiltersBtn');
+  const clearBtn = document.getElementById('clearFiltersBtn');
+  if (applyBtn) applyBtn.addEventListener('click', () => {
+    const sd = document.getElementById('filterStartDate')?.value || '';
+    const ed = document.getElementById('filterEndDate')?.value || '';
+    if (sd && ed && new Date(sd) > new Date(ed)) {
+      if (typeof notify !== 'undefined') notify.warning('Start date should be before End date');
+      return;
+    }
+    loadAllMedia(getSelectedFilters());
+  });
+  if (clearBtn) clearBtn.addEventListener('click', () => {
+    const teamSel = document.getElementById('filterTeam');
+    const schoolSel = document.getElementById('filterSchool');
+    const sd = document.getElementById('filterStartDate');
+    const ed = document.getElementById('filterEndDate');
+    if (teamSel) teamSel.value = '';
+    if (schoolSel) schoolSel.value = '';
+    if (sd) sd.value = '';
+    if (ed) ed.value = '';
+    loadAllMedia();
+  });
 });

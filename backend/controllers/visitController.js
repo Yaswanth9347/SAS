@@ -621,6 +621,11 @@ exports.submitCompleteReport = async (req, res, next) => {
     }
     const isMember = await requireTeamMemberOrAdmin(req, visit);
     if (!isMember) return res.status(403).json({ success: false, message: 'Only assigned team members or admins can submit report.' });
+    // Block submissions before window opens (e.g., before 12:00 PM IST on visit date)
+    if (new Date() < new Date(visit.uploadWindowStartUtc)) {
+      const start = new Date(visit.uploadWindowStartUtc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      return res.status(403).json({ success: false, message: `Report submissions open at 12:00 PM IST on the visit date (${start}).` });
+    }
     if (new Date() > new Date(visit.uploadWindowEndUtc)) {
       const end = new Date(visit.uploadWindowEndUtc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
       return res.status(403).json({ success: false, message: `Uploads and edits closed at ${end}.` });
@@ -775,6 +780,37 @@ exports.getAllGalleryMedia = async (req, res, next) => {
           allMedia.push({
             url: videoUrl,
             type: "video",
+            visitId: visit._id,
+            visitName: visit.name || "",
+            visitDate: visit.date,
+            school: visit.school
+              ? {
+                  id: visit.school._id,
+                  name: visit.school.name,
+                }
+              : null,
+            team: visit.team
+              ? {
+                  id: visit.team._id,
+                  name: visit.team.name,
+                }
+              : null,
+          });
+        });
+      }
+
+      // Process documents
+      if (visit.docs && visit.docs.length > 0) {
+        visit.docs.forEach((doc) => {
+          let docUrl =
+            typeof doc === "object" ? doc.cloudUrl || doc.path : doc;
+
+          docUrl = normalizeFilePath(docUrl);
+
+          allMedia.push({
+            url: docUrl,
+            type: "doc",
+            name: typeof doc === "object" ? (doc.originalName || doc.filename || "Document") : "Document",
             visitId: visit._id,
             visitName: visit.name || "",
             visitDate: visit.date,
@@ -1060,11 +1096,12 @@ function normalizeFilePath(p) {
   return urlPath;
 }
 
-// Auto-update 'scheduled' visits in the past to 'completed'
+// Auto-fix inconsistent records only (do NOT auto-complete purely by date)
 async function updatePastVisits() {
   try {
+    // If, due to earlier bugs, a submitted report exists but status didn't flip
     await Visit.updateMany(
-      { status: "scheduled", date: { $lt: new Date() } },
+      { status: "scheduled", submittedBy: { $ne: null } },
       { $set: { status: "completed" } }
     );
   } catch (e) {
