@@ -23,20 +23,38 @@ const router = express.Router();
 // Rate limiter for authentication endpoints (stricter limits)
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.AUTH_RATE_LIMIT_MAX || 5, // 5 attempts per 15 minutes
-    message: 'Too many authentication attempts from this IP, please try again after 15 minutes.',
+    max: process.env.AUTH_RATE_LIMIT_MAX || 50, // 50 attempts per 15 minutes (increased for testing)
+    message: JSON.stringify({
+        success: false,
+        error: 'Too many authentication attempts from this IP, please try again after 15 minutes.'
+    }),
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            error: 'Too many authentication attempts from this IP, please try again after 15 minutes.'
+        });
+    }
 });
 
 // Rate limiter for password reset (prevent abuse)
 const passwordResetLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: process.env.PASSWORD_RESET_LIMIT_MAX || 3, // 3 reset requests per hour
-    message: 'Too many password reset requests, please try again after an hour.',
+    max: process.env.PASSWORD_RESET_LIMIT_MAX || 10, // 10 reset requests per hour (increased for testing)
+    message: JSON.stringify({
+        success: false,
+        error: 'Too many password reset requests, please try again after an hour.'
+    }),
     standardHeaders: true,
     legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            error: 'Too many password reset requests, please try again after an hour.'
+        });
+    }
 });
 
 router.post('/register', authLimiter, register);
