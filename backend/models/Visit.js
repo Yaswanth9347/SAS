@@ -168,6 +168,26 @@ const visitSchema = new mongoose.Schema(
         email: String,
       },
     },
+    // Report generation fields
+    reportStatus: {
+      type: String,
+      enum: ["none", "draft", "final"],
+      default: "none",
+    },
+    reportDraft: {
+      type: Object,
+      default: null,
+    },
+    reportDraftUpdatedAt: { type: Date },
+    reportSnapshot: {
+      type: Object,
+      default: null,
+    },
+    reportPdfPath: {
+      type: String,
+      default: null,
+    },
+    reportFinalizedAt: { type: Date },
   },
   {
     timestamps: true,
@@ -178,9 +198,48 @@ const visitSchema = new mongoose.Schema(
 function fileMetadataToUrl(fileMetadata) {
   if (!fileMetadata) return null;
 
-  // If it's already a string, return as-is (backward compatibility)
+  // If it's already a string, normalize it
   if (typeof fileMetadata === "string") {
-    return fileMetadata;
+    let urlPath = fileMetadata;
+    // Convert Windows backslashes to forward slashes
+    urlPath = urlPath.replace(/\\/g, "/");
+    
+    // If already starts with /uploads/, return as-is
+    if (urlPath.startsWith("/uploads/")) {
+      return urlPath;
+    }
+    
+    // Extract from uploads/ onwards
+    const uploadsIndex = urlPath.indexOf("/uploads/");
+    if (uploadsIndex !== -1) {
+      return urlPath.substring(uploadsIndex);
+    }
+    
+    const uploadsIndex2 = urlPath.indexOf("uploads/");
+    if (uploadsIndex2 !== -1) {
+      return "/" + urlPath.substring(uploadsIndex2);
+    }
+    
+    // If path looks absolute (contains full path), try to extract just filename
+    if (urlPath.includes("/")) {
+      const parts = urlPath.split("/");
+      const filename = parts[parts.length - 1];
+      // Try to reconstruct based on common patterns
+      if (urlPath.includes("photos/")) {
+        const idx = urlPath.indexOf("photos/");
+        return "/uploads/" + urlPath.substring(idx);
+      }
+      if (urlPath.includes("videos/")) {
+        const idx = urlPath.indexOf("videos/");
+        return "/uploads/" + urlPath.substring(idx);
+      }
+      if (urlPath.includes("docs/")) {
+        const idx = urlPath.indexOf("docs/");
+        return "/uploads/" + urlPath.substring(idx);
+      }
+    }
+    
+    return urlPath;
   }
 
   // If it's an object with path, convert to URL
@@ -190,18 +249,35 @@ function fileMetadataToUrl(fileMetadata) {
     // Convert Windows backslashes to forward slashes
     urlPath = urlPath.replace(/\\/g, "/");
 
+    // If already starts with /uploads/, return as-is
+    if (urlPath.startsWith("/uploads/")) {
+      return urlPath;
+    }
+
     // Extract the path from 'uploads/' onwards (handle both absolute and relative paths)
     const uploadsIndex = urlPath.indexOf("/uploads/");
     if (uploadsIndex !== -1) {
-      // Extract everything from '/uploads/' onwards (keep 'uploads' in the path)
+      // Extract everything from '/uploads/' onwards
       urlPath = urlPath.substring(uploadsIndex);
     } else {
-      // Fallback: if path starts with 'uploads/', ensure leading slash
-      if (urlPath.startsWith("uploads/")) {
-        urlPath = "/" + urlPath;
+      const uploadsIndex2 = urlPath.indexOf("uploads/");
+      if (uploadsIndex2 !== -1) {
+        urlPath = "/" + urlPath.substring(uploadsIndex2);
       } else if (!urlPath.startsWith("/uploads/")) {
-        // If it doesn't have uploads prefix at all, add it
-        urlPath = "/uploads/" + urlPath;
+        // Try to find common patterns
+        if (urlPath.includes("photos/")) {
+          const idx = urlPath.indexOf("photos/");
+          urlPath = "/uploads/" + urlPath.substring(idx);
+        } else if (urlPath.includes("videos/")) {
+          const idx = urlPath.indexOf("videos/");
+          urlPath = "/uploads/" + urlPath.substring(idx);
+        } else if (urlPath.includes("docs/")) {
+          const idx = urlPath.indexOf("docs/");
+          urlPath = "/uploads/" + urlPath.substring(idx);
+        } else {
+          // Last resort: prepend /uploads/
+          urlPath = "/uploads/" + urlPath.replace(/^\/+/, "");
+        }
       }
     }
 

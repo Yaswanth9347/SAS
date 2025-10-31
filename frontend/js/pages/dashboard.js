@@ -145,16 +145,25 @@ class DashboardManager {
         if (galleryData.success && galleryData.data) {
           const { photos = [], videos = [] } = galleryData.data;
           
+          // Helper to ensure absolute URLs
+          const toAbsoluteUrl = (url) => {
+            if (!url) return url;
+            if (url.startsWith('http://') || url.startsWith('https://')) return url;
+            const base = window.location.origin || 'http://localhost:5001';
+            const path = url.startsWith('/') ? url : '/' + url;
+            return base + path;
+          };
+
           // Combine photos and videos
           this.galleryMedia = [
             ...photos.map(photo => ({ 
               type: 'photo', 
-              url: typeof photo === 'string' ? photo : photo.path,
+              url: toAbsoluteUrl(typeof photo === 'string' ? photo : photo.path),
               metadata: typeof photo === 'object' ? photo : null
             })),
             ...videos.map(video => ({ 
               type: 'video', 
-              url: typeof video === 'string' ? video : video.path,
+              url: toAbsoluteUrl(typeof video === 'string' ? video : video.path),
               metadata: typeof video === 'object' ? video : null
             }))
           ];

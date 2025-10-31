@@ -15,7 +15,11 @@ const {
     getVisitGallery,
     updateVisit,
     deleteVisit,
-    deleteMedia
+    deleteMedia,
+    getReportDraft,
+    saveReportDraft,
+    finalizeReport,
+    downloadReportPdf
 } = require('../controllers/visitController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -34,5 +38,11 @@ router.delete('/:id', protect, deleteVisit);
 router.delete('/:id/media', protect, deleteMedia);
 router.put('/:id/complete-report', protect, submitCompleteReport);
 router.put('/:id/cancel', protect, cancelVisit); // All users can cancel visits (removed role restriction)
+
+// Report Draft/Finalize/Download (Admin only)
+router.get('/:id/report/draft', protect, authorize('admin'), getReportDraft);
+router.put('/:id/report/draft', protect, authorize('admin'), saveReportDraft);
+router.post('/:id/report/finalize', protect, authorize('admin'), finalizeReport);
+router.get('/:id/report/download', protect, authorize('admin'), downloadReportPdf);
 
 module.exports = router;

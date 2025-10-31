@@ -10,6 +10,15 @@ let currentTeam = "";
 let gridSize = "medium";
 let allPhotos = [];
 
+// Helper to ensure absolute media URLs
+function toAbsoluteMediaUrl(url) {
+  if (!url) return url;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const base = window.location.origin || 'http://localhost:5001';
+  const path = url.startsWith('/') ? url : '/' + url;
+  return base + path;
+}
+
 // Initialize gallery
 async function initGallery() {
   console.log("Initializing gallery...");
@@ -358,10 +367,13 @@ function displayPhotos(photos) {
 
       // Debug log to see the actual URL
       console.log("Photo URL:", photoUrl);
+      
+      // Ensure absolute URL
+      const absoluteUrl = toAbsoluteMediaUrl(photoUrl);
 
       if (photo.type === "photo") {
         // Escape quotes in URLs for onclick handlers
-        const escapedUrl = photoUrl.replace(/'/g, "\\'");
+        const escapedUrl = absoluteUrl.replace(/'/g, "\\'");
 
         return `
         <div class="photo-card" onclick="openLightbox('${escapedUrl}', 'image', '${escapeHtml(
@@ -369,7 +381,7 @@ function displayPhotos(photos) {
         )} - ${escapeHtml(date)}')">
           ${isNew ? '<span class="new-badge">NEW</span>' : ""}
           <div class="photo-img">
-            <img src="${photoUrl}" alt="Visit photo" loading="lazy" onerror="handleImageError(this)" />
+            <img src="${absoluteUrl}" alt="Visit photo" loading="lazy" onerror="handleImageError(this)" />
           </div>
           <div class="photo-info">
             <div class="photo-meta">

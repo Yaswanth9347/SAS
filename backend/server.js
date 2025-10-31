@@ -28,6 +28,7 @@ app.use(helmet({
                 "https://unpkg.com",
                 "https://ga.jspm.io"
             ],
+            scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers (onclick, onerror, onload)
             imgSrc: ["'self'", "data:", "blob:"],
             connectSrc: ["'self'"],
             fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "data:"],

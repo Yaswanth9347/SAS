@@ -9,6 +9,8 @@
     "test": "node run-tests.js",
     "verify:email": "node scripts/verify-email-env.js",
     "migrate:windows": "node scripts/backfill-upload-windows.js",
+    "migrate:media-paths": "node scripts/normalize-media-paths.js",
+    "cleanup:orphaned-files": "node scripts/cleanup-orphaned-files.js",
     "test:api": "npx jest tests/api.test.js --verbose",
     "test:integration": "npx jest tests/integration.test.js --verbose",
     "test:comprehensive": "npx jest tests/comprehensive.test.js --verbose",
@@ -32,6 +34,7 @@
     "mongoose": "^7.5.0",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.10.1",
+    "pdf-lib": "^1.17.1",
     "sharp": "^0.34.4"
   },
   "devDependencies": {

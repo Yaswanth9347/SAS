@@ -418,6 +418,7 @@ const { uploadVisitFiles } = require("../middleware/upload");
 const { processUploadedFiles } = require("../utils/fileProcessing");
 const fs = require("fs");
 const path = require("path");
+const { generateVisitReportPdf } = require('../utils/pdfService');
 
 // @desc    Upload files for visit report
 // @route   POST /api/visits/:id/upload
@@ -689,6 +690,7 @@ exports.getAllGalleryMedia = async (req, res, next) => {
       $or: [
         { photos: { $exists: true, $not: { $size: 0 } } },
         { videos: { $exists: true, $not: { $size: 0 } } },
+        { docs: { $exists: true, $not: { $size: 0 } } },
       ],
     });
 
@@ -859,7 +861,7 @@ exports.getAllGalleryMedia = async (req, res, next) => {
 exports.getVisitGallery = async (req, res, next) => {
   try {
     const visit = await Visit.findById(req.params.id)
-      .select("photos videos school date")
+      .select("photos videos docs school date")
       .populate("school", "name");
 
     if (!visit) {
@@ -890,11 +892,22 @@ exports.getVisitGallery = async (req, res, next) => {
       return normalizeFilePath(video);
     });
 
+    const normalizedDocs = (visit.docs || []).map((doc) => {
+      if (typeof doc === "object" && doc !== null) {
+        return {
+          ...doc.toObject(),
+          path: normalizeFilePath(doc.cloudUrl || doc.path),
+        };
+      }
+      return normalizeFilePath(doc);
+    });
+
     res.status(200).json({
       success: true,
       data: {
         photos: normalizedPhotos,
         videos: normalizedVideos,
+        docs: normalizedDocs,
         school: visit.school,
         date: visit.date,
       },
@@ -1108,3 +1121,118 @@ async function updatePastVisits() {
     console.warn("updatePastVisits failed:", e.message);
   }
 }
+
+// ================================
+// Report Draft/Finalize/Download
+// ================================
+
+// @desc    Get or build report draft snapshot for a visit
+// @route   GET /api/visits/:id/report/draft
+// @access  Private/Admin
+exports.getReportDraft = async (req, res) => {
+  try {
+    const visit = await Visit.findById(req.params.id)
+      .populate('school', 'name address contactPerson')
+      .populate('team', 'name');
+    if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
+    if (req.user?.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin only' });
+
+    const draft = visit.reportDraft || {
+      childrenCount: visit.childrenCount,
+      childrenResponse: visit.childrenResponse,
+      topicsCovered: visit.topicsCovered || [],
+      teachingMethods: visit.teachingMethods || [],
+      challengesFaced: visit.challengesFaced || '',
+      suggestions: visit.suggestions || ''
+    };
+
+    return res.status(200).json({ success: true, data: { draft, reportStatus: visit.reportStatus } });
+  } catch (e) {
+    return res.status(400).json({ success: false, message: e.message });
+  }
+};
+
+// @desc    Save/update report draft
+// @route   PUT /api/visits/:id/report/draft
+// @access  Private/Admin
+exports.saveReportDraft = async (req, res) => {
+  try {
+    const visit = await Visit.findById(req.params.id);
+    if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
+    if (req.user?.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin only' });
+
+    const payload = req.body || {};
+    visit.reportDraft = payload;
+    visit.reportStatus = 'draft';
+    visit.reportDraftUpdatedAt = new Date();
+    await visit.save();
+    return res.status(200).json({ success: true, message: 'Draft saved', data: { reportStatus: visit.reportStatus } });
+  } catch (e) {
+    return res.status(400).json({ success: false, message: e.message });
+  }
+};
+
+// @desc    Finalize report and generate PDF (only if visit is completed)
+// @route   POST /api/visits/:id/report/finalize
+// @access  Private/Admin
+exports.finalizeReport = async (req, res) => {
+  try {
+    const visit = await Visit.findById(req.params.id)
+      .populate('school', 'name address contactPerson')
+      .populate('team', 'name');
+    if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
+    if (req.user?.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin only' });
+    if (visit.status !== 'completed') {
+      return res.status(400).json({ success: false, message: 'Report can be finalized only after visit is completed.' });
+    }
+
+    // Build snapshot from draft or current data
+    const snapshot = {
+      childrenCount: visit.childrenCount,
+      childrenResponse: visit.childrenResponse,
+      topicsCovered: (visit.reportDraft?.topicsCovered ?? visit.topicsCovered) || [],
+      teachingMethods: (visit.reportDraft?.teachingMethods ?? visit.teachingMethods) || [],
+      challengesFaced: visit.reportDraft?.challengesFaced ?? visit.challengesFaced ?? '',
+      suggestions: visit.reportDraft?.suggestions ?? visit.suggestions ?? ''
+    };
+
+    // Generate PDF
+    const pdfPathAbs = await generateVisitReportPdf(visit, snapshot);
+    // Normalize to web path
+    const rel = pdfPathAbs.replace(/\\/g, '/');
+    const idx = rel.indexOf('/uploads/');
+    const webPath = idx !== -1 ? rel.substring(idx) : '/uploads/' + path.basename(pdfPathAbs);
+
+    visit.reportSnapshot = snapshot;
+    visit.reportPdfPath = webPath;
+    visit.reportFinalizedAt = new Date();
+    visit.reportStatus = 'final';
+    await visit.save();
+
+    return res.status(200).json({ success: true, message: 'Report finalized', data: { pdfPath: webPath } });
+  } catch (e) {
+    console.error('finalizeReport error:', e);
+    return res.status(400).json({ success: false, message: e.message });
+  }
+};
+
+// @desc    Download finalized report PDF
+// @route   GET /api/visits/:id/report/download
+// @access  Private/Admin
+exports.downloadReportPdf = async (req, res) => {
+  try {
+    const visit = await Visit.findById(req.params.id);
+    if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
+    if (req.user?.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin only' });
+    if (!visit.reportPdfPath) return res.status(404).json({ success: false, message: 'No finalized report for this visit' });
+
+    // Convert web path to disk path
+    const diskPath = path.join(__dirname, '..', visit.reportPdfPath.replace(/^\/?uploads\//, 'uploads/'));
+    if (!fs.existsSync(diskPath)) return res.status(404).json({ success: false, message: 'Report file missing' });
+    res.setHeader('Content-Disposition', `attachment; filename="Report-${visit._id}.pdf"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    fs.createReadStream(diskPath).pipe(res);
+  } catch (e) {
+    return res.status(400).json({ success: false, message: e.message });
+  }
+};

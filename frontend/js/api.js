@@ -194,6 +194,25 @@ class APIManager {
     return this.delete(`/visits/${visitId}/media`, { url });
   }
 
+  // ==================== REPORT (ADMIN) ====================
+
+  async getReportDraft(visitId) {
+    return this.get(`/visits/${visitId}/report/draft`);
+  }
+
+  async saveReportDraft(visitId, draft) {
+    return this.put(`/visits/${visitId}/report/draft`, draft);
+  }
+
+  async finalizeReportPdf(visitId) {
+    return this.post(`/visits/${visitId}/report/finalize`, {});
+  }
+
+  getReportDownloadUrl(visitId) {
+    // Use API download endpoint (auth required)
+    return `${this.baseURL}/visits/${visitId}/report/download`;
+  }
+
   // ==================== SCHOOLS ENDPOINTS ====================
   
   async getSchools() {

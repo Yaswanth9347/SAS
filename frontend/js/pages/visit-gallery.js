@@ -5,6 +5,22 @@ const user = authManager.getUser();
 let currentMediaList = [];
 let currentMediaIndex = -1;
 
+/**
+ * Convert relative media URL to absolute URL
+ */
+function toAbsoluteMediaUrl(url) {
+  if (!url) return url;
+  // If already absolute, return as-is
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  // Get base URL from window location or config
+  const base = window.location.origin || 'http://localhost:5001';
+  // Ensure single leading slash
+  const path = url.startsWith('/') ? url : '/' + url;
+  return base + path;
+}
+
 async function loadFilters() {
   // Populate Team filter
   try {
@@ -65,6 +81,10 @@ async function loadAllMedia(params = {}) {
 
 function renderAllMedia(mediaItems) {
   const gallery = document.getElementById('galleryContent');
+  
+  console.log('🎨 renderAllMedia called with:', mediaItems.length, 'items');
+  console.log('📸 First photo sample:', mediaItems.find(m => m.type === 'photo'));
+  
   if (!Array.isArray(mediaItems) || mediaItems.length === 0) {
     gallery.innerHTML = `
       <div class="empty-gallery">
@@ -80,10 +100,19 @@ function renderAllMedia(mediaItems) {
   const videos = mediaItems.filter(m => m.type === 'video');
   const docs = mediaItems.filter(m => m.type === 'doc');
 
+  console.log('📊 Photos:', photos.length, 'Videos:', videos.length, 'Docs:', docs.length);
+  if (photos.length > 0) {
+    const firstPhoto = photos[0];
+    const absoluteUrl = toAbsoluteMediaUrl(firstPhoto.url);
+    console.log('🔗 First photo URL transformation:');
+    console.log('  Original:', firstPhoto.url);
+    console.log('  Absolute:', absoluteUrl);
+  }
+
   currentMediaList = [];
-  photos.forEach(p => currentMediaList.push({ src: p.url, type: 'image' }));
+  photos.forEach(p => currentMediaList.push({ src: toAbsoluteMediaUrl(p.url), type: 'image' }));
   const videoStartIdx = currentMediaList.length;
-  videos.forEach(v => currentMediaList.push({ src: v.url, type: 'video' }));
+  videos.forEach(v => currentMediaList.push({ src: toAbsoluteMediaUrl(v.url), type: 'video' }));
 
   let html = '';
 
@@ -92,10 +121,16 @@ function renderAllMedia(mediaItems) {
     <div class="gallery-section">
       <h3>📸 Photos (${photos.length})</h3>
       <div class="photo-grid">
-        ${photos.map((p, idx) => `
+        ${photos.map((p, idx) => {
+          const imageUrl = toAbsoluteMediaUrl(p.url);
+          console.log(`🖼️ Rendering photo ${idx + 1}: ${imageUrl}`);
+          return `
           <div class="gallery-item" onclick="openLightboxByIndex(${idx})">
-            <img src="${p.url}" alt="Photo" loading="lazy">
-          </div>`).join('')}
+            <img src="${imageUrl}" alt="Photo" loading="lazy" 
+                 onerror="console.error('❌ FAILED TO LOAD IMAGE:', this.src); this.style.border='3px solid red';"
+                 onload="console.log('✅ Image loaded successfully:', this.src)">
+          </div>`;
+        }).join('')}
       </div>
     </div>`;
   }
@@ -128,7 +163,7 @@ function renderAllMedia(mediaItems) {
               <div class="doc-name" title="${escapeHtml(d.name || 'Document')}">${escapeHtml(d.name || 'Document')}</div>
               <div class="doc-meta">${d.school?.name ? escapeHtml(d.school.name) + ' • ' : ''}${d.team?.name ? escapeHtml(d.team.name) + ' • ' : ''}${new Date(d.visitDate).toLocaleDateString()}</div>
             </div>
-            <div class="doc-actions"><a href="${d.url}" target="_blank" rel="noopener">Open</a></div>
+            <div class="doc-actions"><a href="${toAbsoluteMediaUrl(d.url)}" target="_blank" rel="noopener">Open</a></div>
           </div>`).join('')}
       </div>
     </div>`;

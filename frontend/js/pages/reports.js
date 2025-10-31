@@ -132,6 +132,9 @@ class ReportsManager {
         
         let html = '<table class="results-table"><thead><tr>';
         html += '<th>Date</th><th>School</th><th>Team</th><th>Children</th><th>Status</th>';
+        if (authManager.isAdmin && authManager.isAdmin()) {
+          html += '<th>Report</th>';
+        }
         html += '</tr></thead><tbody>';
         
         data.data.forEach(visit => {
@@ -140,18 +143,54 @@ class ReportsManager {
           const team = visit.team?.name || 'N/A';
           const children = visit.childrenCount || 0;
           const status = visit.status || 'scheduled';
-          
+          const reportCell = (() => {
+            if (!(authManager.isAdmin && authManager.isAdmin())) return '';
+            // Admin actions: if finalized, show download; if completed but not final, allow finalize; otherwise disabled
+            if (visit.reportStatus === 'final' && visit.reportPdfPath) {
+              const url = api.getReportDownloadUrl(visit._id);
+              return `<a class="btn btn-secondary btn-sm" href="${url}"><i class="fas fa-file-pdf"></i> Download PDF</a>`;
+            }
+            if (status === 'completed') {
+              return `<button class="btn btn-primary btn-sm" data-action="finalize" data-id="${visit._id}"><i class="fas fa-check"></i> Finalize</button>`;
+            }
+            return `<span class="muted">—</span>`;
+          })();
+
           html += `<tr>
             <td>${date}</td>
             <td>${school}</td>
             <td>${team}</td>
             <td>${children}</td>
             <td><span class="status-badge status-${status}">${status}</span></td>
+            ${authManager.isAdmin && authManager.isAdmin() ? `<td>${reportCell}</td>` : ''}
           </tr>`;
         });
         
         html += '</tbody></table>';
         document.getElementById('resultsContent').innerHTML = html;
+
+        // Wire finalize buttons
+        if (authManager.isAdmin && authManager.isAdmin()) {
+          document.querySelectorAll('button[data-action="finalize"]').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              const id = e.currentTarget.getAttribute('data-id');
+              e.currentTarget.disabled = true;
+              e.currentTarget.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finalizing...';
+              try {
+                const res = await api.finalizeReportPdf(id);
+                if (res.success) {
+                  notify.success('Report finalized. Download will be available in a moment.');
+                  // Reload current view
+                  this.loadVisitsReport();
+                } else {
+                  notify.error(res.message || 'Failed to finalize report');
+                }
+              } catch (err) {
+                notify.error(err.message || 'Failed to finalize report');
+              }
+            });
+          });
+        }
       }
     } catch (error) {
       console.error('Error loading visits report:', error);

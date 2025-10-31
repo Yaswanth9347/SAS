@@ -12,6 +12,15 @@ const iconCalendar = '<span class="icon" aria-hidden="true"><svg viewBox="0 0 24
 const iconTeam = '<span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zM8 11c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h10v-2.5C11 14.17 6.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></span>';
 const iconSchool = '<span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm0 13L3 12.09V17l9 5 9-5v-4.91L12 16z"/></svg></span>';
 
+// Helper to ensure absolute media URLs
+function toAbsoluteMediaUrl(url) {
+  if (!url) return url;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const base = window.location.origin || 'http://localhost:5001';
+  const path = url.startsWith('/') ? url : '/' + url;
+  return base + path;
+}
+
 function statusClassName(status) {
   const s = (status || 'scheduled').toLowerCase();
   if (s === 'completed') return 'completed';
@@ -165,7 +174,7 @@ function renderVisitDetailsHtml(visit){
         <div class="media-gallery photos-gallery">
           ${visit.photos.map(p=>`
             <div class="media-item photo-item">
-              <img src="${p}" data-media-src="${p}" data-media-type="image" alt="Visit photo" />
+              <img src="${toAbsoluteMediaUrl(p)}" data-media-src="${toAbsoluteMediaUrl(p)}" data-media-type="image" alt="Visit photo" loading="lazy" />
             </div>
           `).join('')}
         </div>
@@ -177,7 +186,7 @@ function renderVisitDetailsHtml(visit){
         <h4>Videos (${visit.videos.length})</h4>
         <div class="media-gallery videos-gallery">
           ${visit.videos.map(v=>`
-            <div class="media-item video-item" data-media-src="${v}" data-media-type="video">
+            <div class="media-item video-item" data-media-src="${toAbsoluteMediaUrl(v)}" data-media-type="video">
               <div class="video-play-button">▶</div>
               <span>Play Video</span>
             </div>
