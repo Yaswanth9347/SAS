@@ -1,0 +1,35 @@
+services:
+  # Single web service for both backend API + frontend static files
+  - type: web
+    name: sas-app
+    env: node
+    region: singapore  # Closest to India
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000  # Render's default port
+      - key: MONGO_URI
+        sync: false  # Set manually in Render dashboard (MongoDB Atlas connection string)
+      - key: JWT_SECRET
+        generateValue: true  # Auto-generate secure 32-char secret
+      - key: JWT_EXPIRE
+        value: 30d
+      - key: EMAIL_SERVICE
+        value: gmail
+      - key: EMAIL_USER
+        sync: false  # Set manually in Render dashboard
+      - key: EMAIL_PASSWORD
+        sync: false  # Set manually in Render dashboard (Gmail App Password)
+      - key: FRONTEND_URL
+        sync: false  # Set manually after first deploy (e.g., https://sas-app.onrender.com)
+    # Persistent disk for file uploads (1GB free tier)
+    disk:
+      name: uploads-disk
+      mountPath: /opt/render/project/src/backend/uploads
+      sizeGB: 1
+    # Auto-deploy when you push to GitHub
+    autoDeploy: true

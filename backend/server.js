@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const compression = require('compression');
 require('dotenv').config();
 
 const app = express();
@@ -88,6 +89,9 @@ const authLimiter = rateLimit({
 // Apply global rate limiter to all API routes
 app.use('/api/', globalLimiter);
 
+// Compression middleware - compress all responses for better performance
+app.use(compression());
+
 // Middleware
 app.use(express.json({ limit: '10mb' })); // Limit JSON payload size
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -130,19 +134,13 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/feedback', require('./routes/feedback'));
 app.use('/api/contact', require('./routes/contact'));
 
+// Health check routes (for monitoring and Render deployment)
+app.use('/api/health', require('./routes/health'));
+
 // Test route
 app.get('/api/test', (req, res) => {
     res.json({ 
         message: 'Backend is working!',
-        timestamp: new Date().toISOString()
-    });
-});
-
-// API health check
-app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: 'OK',
-        database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
         timestamp: new Date().toISOString()
     });
 });
@@ -162,8 +160,10 @@ const PORT = process.env.PORT || 5001;
 
 // Only start server if not in test environment
 if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
+    // Bind to 0.0.0.0 to accept connections from any network interface (required for Render)
+    app.listen(PORT, '0.0.0.0', () => {
         console.log(`🚀 Server is running on port ${PORT}`);
+        console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
         console.log(`📱 Access your site: http://localhost:${PORT}`);
         console.log(`🔗 API endpoints: http://localhost:${PORT}/api/`);
         console.log(`❤️  Health check: http://localhost:${PORT}/api/health`);
