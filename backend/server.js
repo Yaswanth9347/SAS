@@ -46,25 +46,55 @@ app.use(helmet({
     }
 }));
 
-// CORS Configuration with environment variables
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-    ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
-    : ['http://localhost:5001', 'http://localhost:3000'];
+// CORS Configuration - Production Ready
+const allowedOrigins = [
+    'http://localhost:5001',
+    'http://localhost:3000',
+    'http://127.0.0.1:5001',
+    'http://127.0.0.1:3000'
+];
+
+// Add production frontend URL if defined
+if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
+// Add custom allowed origins from environment variable
+if (process.env.ALLOWED_ORIGINS) {
+    const customOrigins = process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim());
+    allowedOrigins.push(...customOrigins);
+}
+
+// In production, also allow Render domains
+if (process.env.NODE_ENV === 'production') {
+    allowedOrigins.push(/\.onrender\.com$/);
+}
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
+        // Allow requests with no origin (like mobile apps, Postman, curl, server-to-server)
         if (!origin) return callback(null, true);
         
-        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+        // Check if origin is in allowed list
+        const isAllowed = allowedOrigins.some(allowedOrigin => {
+            if (allowedOrigin instanceof RegExp) {
+                return allowedOrigin.test(origin);
+            }
+            return allowedOrigin === origin;
+        });
+        
+        if (isAllowed) {
             callback(null, true);
         } else {
+            console.log('❌ CORS Error: Origin not allowed:', origin);
+            console.log('✅ Allowed origins:', allowedOrigins.filter(o => !(o instanceof RegExp)));
             callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
 
 // Global rate limiter - General API protection
