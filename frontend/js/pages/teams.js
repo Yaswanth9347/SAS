@@ -10,6 +10,28 @@ const currentUser = authManager.getUser();
 let teams = [];
 let currentTeamId = null;
 let allUsers = [];
+let _trapCleanupMembers = null;
+let _trapCleanupSchedule = null;
+
+function announce(msg) { try { if (window.announce) window.announce(msg); } catch(_) {} }
+
+function trapFocus(container) {
+  const focusable = container.querySelectorAll('a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])');
+  if (!focusable.length) return () => {};
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const handler = (e) => {
+    if (e.key !== 'Tab') return;
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  };
+  container.addEventListener('keydown', handler);
+  try { first.focus(); } catch(_) {}
+  return () => container.removeEventListener('keydown', handler);
+}
 
 function getUserFilters() {
   const dept = document.getElementById('filterDepartment')?.value || '';
@@ -45,6 +67,38 @@ async function loadUsers() {
     loading.hide('usersList');
     renderError('usersList', 'Failed to load users');
   }
+}
+
+// URL state persistence for filters
+function updateUrlParams() {
+  try {
+    const params = new URLSearchParams();
+    const dept = document.getElementById('filterDepartment')?.value || '';
+    const year = document.getElementById('filterYear')?.value || '';
+    const availableOnly = document.getElementById('filterAvailableOnly')?.checked ? 'true' : '';
+    const searchTerm = document.getElementById('userSearchInput')?.value?.trim() || '';
+    if (dept) params.set('department', dept);
+    if (year) params.set('year', year);
+    if (availableOnly) params.set('availableOnly', 'true');
+    if (searchTerm) params.set('search', searchTerm);
+    const qs = params.toString();
+    const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    history.replaceState({}, '', url);
+  } catch(_) {}
+}
+
+function restoreFromUrl() {
+  try {
+    const sp = new URLSearchParams(window.location.search);
+    const dept = sp.get('department') || '';
+    const year = sp.get('year') || '';
+    const available = sp.get('availableOnly') === 'true';
+    const search = sp.get('search') || '';
+    const deptSelect = document.getElementById('filterDepartment'); if (deptSelect) deptSelect.value = dept;
+    const yearSelect = document.getElementById('filterYear'); if (yearSelect) yearSelect.value = year;
+    const chk = document.getElementById('filterAvailableOnly'); if (chk) chk.checked = available;
+    const si = document.getElementById('userSearchInput'); if (si) si.value = search;
+  } catch(_) {}
 }
 
 function maybePopulateDepartmentOptions(users) {
@@ -144,6 +198,7 @@ async function loadTeams() {
           ${isAdmin ? `
             <button class="btn-schedule" data-team-id="${t._id}" title="Schedule Visit" aria-label="Schedule Visit"><i class="fa-solid fa-calendar-plus"></i></button>
             <button class=\"btn-delete\" data-team-id=\"${t._id}\" title=\"Delete Team\" aria-label=\"Delete Team\"><i class=\"fa-solid fa-trash\"></i></button>
+            <button class=\"btn-manage\" data-team-id=\"${t._id}\" title=\"Manage Members\" aria-label=\"Manage Members\"><i class=\"fa-solid fa-user-gear\"></i></button>
           ` : ''}
         </div>
       </div>
@@ -174,6 +229,14 @@ function attachTeamActionHandlers() {
     btn.removeEventListener('click', onDeleteTeamClick);
     btn.addEventListener('click', onDeleteTeamClick);
   });
+
+  // Manage members (admin only)
+  document.querySelectorAll('.btn-manage').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const teamId = e.currentTarget.getAttribute('data-team-id');
+      showAllMembers(teamId);
+    });
+  });
 }
 
 function onViewMembersClick(e) {
@@ -199,12 +262,15 @@ function deleteTeam(teamId) {
   currentTeamId = teamId;
   notify.confirm(`Are you sure you want to delete team "${team.name}"? This action cannot be undone.`, async () => {
     try {
+      // disable delete button while processing
+      try { const btn = document.querySelector(`.btn-delete[data-team-id="${teamId}"]`); if (btn) btn.disabled = true; } catch(_) {}
       loading.showFullPage('Deleting team...');
       const data = await api.deleteTeam(teamId);
       loading.hideFullPage();
       if (data.success) { notify.success('Team deleted successfully!'); loadTeams(); }
       else { notify.error(data.message || 'Failed to delete team'); }
     } catch (err) { loading.hideFullPage(); handleAPIError(err); }
+    finally { try { const btn = document.querySelector(`.btn-delete[data-team-id="${teamId}"]`); if (btn) btn.disabled = false; } catch(_) {} }
   });
 }
 
@@ -247,11 +313,14 @@ function scheduleVisit(teamId) {
   loadSchoolsForModal();
   document.getElementById('scheduleVisitModal').classList.add('show');
   document.getElementById('scheduleSuccessMessage').classList.remove('show');
+  try { _trapCleanupSchedule && _trapCleanupSchedule(); } catch(_) {}
+  _trapCleanupSchedule = trapFocus(document.getElementById('scheduleVisitModal'));
 }
 
 function closeScheduleModal() {
   document.getElementById('scheduleVisitModal').classList.remove('show');
   document.getElementById('scheduleVisitForm').reset();
+  try { _trapCleanupSchedule && _trapCleanupSchedule(); } catch(_) {}
 }
 
 function showAllMembers(teamId) {
@@ -262,18 +331,105 @@ function showAllMembers(teamId) {
   const membersBody = document.getElementById('teamMembersBody');
   membersBody.innerHTML = team.members.map(member => {
     const isLeader = String(member._id) === String(leaderId);
+    const actions = (isAdmin && !isLeader) ? `
+      <div class="member-actions">
+        <button class="btn btn-small" data-action="make-leader" data-team="${team._id}" data-member="${member._id}">Make Leader</button>
+        <button class="btn btn-small btn-danger" data-action="remove-member" data-team="${team._id}" data-member="${member._id}">Remove</button>
+      </div>` : (isLeader ? '<span class="leader-badge">Team Leader</span>' : '');
     return `
       <div class="member-list-item ${isLeader ? 'leader' : ''}">
         <i class="fa fa-user"></i>
         <span style="flex: 1; font-weight: ${isLeader ? '600' : '500'};">${escapeHtml(member.username || member.name || 'Member')}</span>
-        ${isLeader ? '<span class="leader-badge">Team Leader</span>' : ''}
+        ${actions}
       </div>
     `;
   }).join('');
+
+  // Admin: add quick add-members UI inline
+  if (isAdmin) {
+    const available = allUsers.filter(u => !u.team && !team.members.find(m => String(m._id) === String(u._id)));
+    const addSection = document.createElement('div');
+    addSection.className = 'add-members-section';
+    addSection.innerHTML = `
+      <div class="add-members-header"><strong>Add Members</strong></div>
+      <div class="add-members-list">
+        ${available.length ? available.slice(0, 50).map(u => `
+          <label class="user-item">
+            <input type="checkbox" name="addMembers" value="${u._id}" />
+            <span class="username">${escapeHtml(u.username || u.name)}</span>
+          </label>
+        `).join('') : '<div class="empty">No available users to add</div>'}
+      </div>
+      <div class="add-members-actions">
+        <button class="btn" id="addSelectedMembersBtn">Add Selected</button>
+      </div>
+    `;
+    membersBody.appendChild(addSection);
+
+    const addBtn = addSection.querySelector('#addSelectedMembersBtn');
+    if (addBtn) addBtn.addEventListener('click', async () => {
+      const ids = Array.from(addSection.querySelectorAll('input[name="addMembers"]:checked')).map(cb => cb.value);
+      if (!ids.length) { notify.info('Select at least one user to add'); return; }
+      try {
+        loading.showFullPage('Adding members...');
+        const res = await api.addTeamMembers(team._id, ids);
+        loading.hideFullPage();
+        if (res.success) { notify.success('Members added'); await reloadTeamInPlace(team._id); showAllMembers(team._id); loadTeams(); }
+        else { notify.error(res.message || 'Failed to add members'); }
+      } catch (err) { loading.hideFullPage(); handleAPIError(err); }
+    });
+  }
+
+  // Wire member actions
+  membersBody.querySelectorAll('[data-action="make-leader"]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const tId = e.currentTarget.getAttribute('data-team');
+      const mId = e.currentTarget.getAttribute('data-member');
+      notify.confirm('Make this member the team leader?', async () => {
+        try {
+          loading.showFullPage('Changing leader...');
+          const res = await api.changeTeamLeader(tId, mId);
+          loading.hideFullPage();
+          if (res.success) { notify.success('Leader changed'); await reloadTeamInPlace(tId); showAllMembers(tId); loadTeams(); }
+          else { notify.error(res.message || 'Failed to change leader'); }
+        } catch (err) { loading.hideFullPage(); handleAPIError(err); }
+      });
+    });
+  });
+  membersBody.querySelectorAll('[data-action="remove-member"]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const tId = e.currentTarget.getAttribute('data-team');
+      const mId = e.currentTarget.getAttribute('data-member');
+      notify.confirm('Remove this member from the team?', async () => {
+        try {
+          loading.showFullPage('Removing member...');
+          const res = await api.removeTeamMember(tId, mId);
+          loading.hideFullPage();
+          if (res.success) { notify.success('Member removed'); await reloadTeamInPlace(tId); showAllMembers(tId); loadTeams(); }
+          else { notify.error(res.message || 'Failed to remove member'); }
+        } catch (err) { loading.hideFullPage(); handleAPIError(err); }
+      });
+    });
+  });
   document.getElementById('teamMembersModal').classList.add('show');
+  try { _trapCleanupMembers && _trapCleanupMembers(); } catch(_) {}
+  _trapCleanupMembers = trapFocus(document.getElementById('teamMembersModal'));
 }
 
-function closeMembersModal() { document.getElementById('teamMembersModal').classList.remove('show'); }
+function closeMembersModal() { document.getElementById('teamMembersModal').classList.remove('show'); try { _trapCleanupMembers && _trapCleanupMembers(); } catch(_) {} }
+
+// Reload a single team object in-place to keep references fresh
+async function reloadTeamInPlace(teamId) {
+  try {
+    const data = await api.getTeam(teamId);
+    if (data && data.success && data.data) {
+      const idx = teams.findIndex(t => t._id === teamId);
+      if (idx !== -1) teams[idx] = data.data;
+    }
+  } catch (e) {
+    console.warn('Failed to reload team', e);
+  }
+}
 
 async function loadSchoolsForModal() {
   try {
@@ -364,5 +520,15 @@ window.closeMembersModal = closeMembersModal;
 
 // Initialize page
 initializePageAccess();
+restoreFromUrl();
 loadUsers();
 loadTeams();
+
+// Keep URL in sync when filters change
+document.getElementById('userSearchInput')?.addEventListener('input', () => { updateUrlParams(); });
+document.getElementById('filterDepartment')?.addEventListener('change', updateUrlParams);
+document.getElementById('filterYear')?.addEventListener('change', updateUrlParams);
+document.getElementById('filterAvailableOnly')?.addEventListener('change', updateUrlParams);
+
+// Handle back/forward nav
+window.addEventListener('popstate', () => { restoreFromUrl(); loadUsers(); });

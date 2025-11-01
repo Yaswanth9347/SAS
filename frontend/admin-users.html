@@ -71,11 +71,31 @@
           </button>
         </div>
       </div>
+      <div id="activeFilters" class="active-filters" aria-live="polite" style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"></div>
     </section>
 
 
     <!-- User Table -->
     <section class="table-section">
+      <!-- Bulk Controls (appear when selection active) -->
+      <div class="bulk-controls" style="display:none; align-items:center; justify-content:space-between; margin-bottom:12px;" aria-hidden="true">
+        <div class="bulk-left">
+          <span id="selectionInfo">0 selected</span>
+        </div>
+        <div class="bulk-actions">
+          <button id="bulkApprove" class="btn btn-primary">Approve</button>
+          <button id="bulkReject" class="btn btn-warning">Reject</button>
+          <button id="selectAllMatching" class="btn btn-light" title="Select all users matching current filters">Select all matching</button>
+          <select id="bulkRoleSelect">
+            <option value="">Change role...</option>
+            <option value="volunteer">Volunteer</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button id="bulkChangeRole" class="btn btn-secondary">Apply Role</button>
+          <button id="bulkDelete" class="btn btn-danger">Delete</button>
+          <button id="bulkClear" class="btn btn-light">Clear</button>
+        </div>
+      </div>
       <div class="users-table-wrapper">
         <table class="users-table">
           <thead>
@@ -95,7 +115,19 @@
           </tbody>
         </table>
       </div>
-      <div id="pagination" class="pagination"></div>
+      <div class="table-footer">
+        <div class="left-meta">
+          <label for="pageSize">Show</label>
+          <select id="pageSize">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          <span id="totalCount" class="total-count">Total: 0</span>
+        </div>
+        <div id="pagination" class="pagination"></div>
+      </div>
     </section>
   </main>
 
@@ -119,6 +151,32 @@
       <div id="activityList" class="activity-list"></div>
       <div class="modal-actions">
         <button id="closeActivity" class="btn btn-secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Details Modal -->
+  <div id="userDetailsModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>User Details</h3>
+      <div id="userDetailsContent" class="user-details-content">
+        <!-- Filled dynamically -->
+      </div>
+      <div class="modal-actions">
+        <button id="closeUserDetails" class="btn btn-secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Summary Modal -->
+  <div id="bulkSummaryModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>Bulk Operation Summary</h3>
+      <div id="bulkSummaryContent" class="bulk-summary-content"></div>
+      <div class="modal-actions">
+        <button id="retryBulk" class="btn btn-primary" style="display:none;">Retry failed</button>
+        <button id="abortBulk" class="btn btn-warning" style="display:none;">Abort</button>
+        <button id="closeBulkSummary" class="btn btn-secondary">Close</button>
       </div>
     </div>
   </div>

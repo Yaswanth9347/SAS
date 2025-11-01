@@ -2,44 +2,51 @@ const User = require('../models/User');
 const Team = require('../models/Team');
 const ActivityLog = require('../models/ActivityLog');
 
+// Helper to build user query from filters consistently across endpoints
+function buildUserQueryFromReq(req) {
+    const { role, status, verified, search, department, year, availableOnly } = req.query || {};
+    const query = {};
+
+    if (role) query.role = role;
+    if (status) query.verificationStatus = status; // 'pending' | 'approved' | 'rejected'
+    if (verified !== undefined) query.isVerified = verified === 'true';
+    if (department) query.department = department;
+    if (year) query.year = parseInt(year);
+
+    // availableOnly=true => users not currently assigned to a team
+    if (availableOnly === 'true') {
+        query.$or = [
+            { team: { $exists: false } },
+            { team: null }
+        ];
+    }
+
+    if (search) {
+        const searchClause = {
+            $or: [
+                { name: new RegExp(search, 'i') },
+                { username: new RegExp(search, 'i') },
+                { email: new RegExp(search, 'i') }
+            ]
+        };
+        if (query.$or) {
+            query.$and = [{ $or: query.$or }, searchClause.$or ? searchClause : {}];
+            delete query.$or;
+        } else {
+            Object.assign(query, searchClause);
+        }
+    }
+
+    return query;
+}
+
 // @desc    Get all users (for team creation UI)
 // @route   GET /api/admin/users
 // @access  Private/Admin
 exports.getUsers = async (req, res, next) => {
     try {
-        const { role, status, verified, search, department, year, availableOnly, page = 1, limit = 50 } = req.query;
-        const query = {};
-
-        if (role) query.role = role;
-        if (status) query.verificationStatus = status; // 'pending' | 'approved' | 'rejected'
-        if (verified !== undefined) query.isVerified = verified === 'true';
-        if (department) query.department = department;
-        if (year) query.year = parseInt(year);
-
-        // availableOnly=true => users not currently assigned to a team
-        if (availableOnly === 'true') {
-            query.$or = [
-                { team: { $exists: false } },
-                { team: null }
-            ];
-        }
-
-        if (search) {
-            const searchClause = {
-                $or: [
-                    { name: new RegExp(search, 'i') },
-                    { username: new RegExp(search, 'i') },
-                    { email: new RegExp(search, 'i') }
-                ]
-            };
-            // Merge with existing query if needed
-            if (query.$or) {
-                query.$and = [{ $or: query.$or }, searchClause.$or ? searchClause : {}];
-                delete query.$or;
-            } else {
-                Object.assign(query, searchClause);
-            }
-        }
+        const { page = 1, limit = 50 } = req.query;
+        const query = buildUserQueryFromReq(req);
 
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -62,6 +69,33 @@ exports.getUsers = async (req, res, next) => {
             page: parseInt(page),
             pages: Math.ceil(total / parseInt(limit)),
             data: users
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Get only user IDs matching filters (server-assisted select-all)
+// @route   GET /api/admin/users/ids
+// @access  Private/Admin
+exports.getUserIds = async (req, res) => {
+    try {
+        const { page = 1, limit = 10000 } = req.query; // cap default to 10k per page
+        const query = buildUserQueryFromReq(req);
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const [ids, total] = await Promise.all([
+            User.find(query).sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)).select('_id').lean(),
+            User.countDocuments(query)
+        ]);
+
+        res.status(200).json({
+            success: true,
+            count: ids.length,
+            total,
+            page: parseInt(page),
+            pages: Math.ceil(total / parseInt(limit)),
+            ids: ids.map(d => String(d._id))
         });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
@@ -158,22 +192,62 @@ exports.updateUserRole = async (req, res) => {
 // @access  Private/Admin
 exports.bulkUpdateUsers = async (req, res) => {
     try {
-        const { action, userIds = [], role, reason, notes } = req.body;
+        const { action, userIds = [], role, reason, notes, idempotencyKey } = req.body;
         if (!Array.isArray(userIds) || userIds.length === 0) {
             return res.status(400).json({ success: false, message: 'userIds array is required' });
         }
 
-        let result = { matched: userIds.length, modified: 0 };
+        // Idempotency: if idempotencyKey present and prior log exists, return that result
+        if (idempotencyKey) {
+            const prior = await ActivityLog.findOne({
+                actor: req.user.id,
+                action: `user.bulk.${action}`,
+                'metadata.idempotencyKey': idempotencyKey
+            }).sort({ createdAt: -1 }).lean();
+            if (prior && prior.metadata && (prior.metadata.results || prior.metadata.result)) {
+                const data = prior.metadata.results ? { matched: (prior.metadata.results || []).length, modified: prior.metadata.modified || 0, results: prior.metadata.results } : prior.metadata.result;
+                return res.json({ success: true, idempotent: true, message: 'Bulk operation already processed', data });
+            }
+        }
+
+        // Build per-ID results for partial failure handling
+        const results = [];
+        let modified = 0;
         if (action === 'approve') {
-            const r = await User.updateMany({ _id: { $in: userIds } }, { isVerified: true, verificationStatus: 'approved', verificationNotes: notes });
-            result.modified = r.modifiedCount;
+            for (const id of userIds) {
+                try {
+                    const u = await User.findByIdAndUpdate(id, { isVerified: true, verificationStatus: 'approved', verificationNotes: notes }, { new: true });
+                    if (!u) { results.push({ id, ok: false, reason: 'not-found' }); continue; }
+                    results.push({ id, ok: true });
+                    modified += 1;
+                } catch (e) { results.push({ id, ok: false, reason: 'error' }); }
+            }
         } else if (action === 'reject') {
-            const r = await User.updateMany({ _id: { $in: userIds } }, { isVerified: false, verificationStatus: 'rejected', verificationNotes: reason });
-            result.modified = r.modifiedCount;
+            for (const id of userIds) {
+                try {
+                    const u = await User.findByIdAndUpdate(id, { isVerified: false, verificationStatus: 'rejected', verificationNotes: reason }, { new: true });
+                    if (!u) { results.push({ id, ok: false, reason: 'not-found' }); continue; }
+                    results.push({ id, ok: true });
+                    modified += 1;
+                } catch (e) { results.push({ id, ok: false, reason: 'error' }); }
+            }
         } else if (action === 'role') {
             if (!['admin', 'volunteer'].includes(role)) return res.status(400).json({ success: false, message: 'Invalid role' });
-            const r = await User.updateMany({ _id: { $in: userIds } }, { role });
-            result.modified = r.modifiedCount;
+            for (const id of userIds) {
+                try {
+                    // Prevent demoting the last admin
+                    const current = await User.findById(id);
+                    if (!current) { results.push({ id, ok: false, reason: 'not-found' }); continue; }
+                    if (current.role === 'admin' && role !== 'admin') {
+                        const adminsCount = await User.countDocuments({ role: 'admin', _id: { $ne: id } });
+                        if (adminsCount === 0) { results.push({ id, ok: false, reason: 'last-admin' }); continue; }
+                    }
+                    const u = await User.findByIdAndUpdate(id, { role }, { new: true });
+                    if (!u) { results.push({ id, ok: false, reason: 'not-found' }); continue; }
+                    results.push({ id, ok: true });
+                    modified += 1;
+                } catch (e) { results.push({ id, ok: false, reason: 'error' }); }
+            }
         } else {
             return res.status(400).json({ success: false, message: 'Invalid action' });
         }
@@ -182,11 +256,11 @@ exports.bulkUpdateUsers = async (req, res) => {
             actor: req.user.id,
             action: `user.bulk.${action}`,
             targetType: 'User',
-            metadata: { userIds, role, reason, notes },
+            metadata: { userIds, role, reason, notes, idempotencyKey, results, modified },
             ip: req.ip
         });
 
-        res.json({ success: true, message: 'Bulk operation completed', data: result });
+        res.json({ success: true, message: 'Bulk operation completed', data: { matched: userIds.length, modified, results } });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });
     }
@@ -254,9 +328,22 @@ exports.deleteUser = async (req, res) => {
 // @access  Private/Admin
 exports.bulkDeleteUsers = async (req, res) => {
     try {
-        const { userIds = [] } = req.body || {};
+        const { userIds = [], idempotencyKey } = req.body || {};
         if (!Array.isArray(userIds) || userIds.length === 0) {
             return res.status(400).json({ success: false, message: 'userIds array is required' });
+        }
+
+        // Idempotency: if idempotencyKey present and prior log exists, return that result
+        if (idempotencyKey) {
+            const prior = await ActivityLog.findOne({
+                actor: req.user.id,
+                action: 'user.bulk.delete',
+                'metadata.idempotencyKey': idempotencyKey
+            }).sort({ createdAt: -1 }).lean();
+            if (prior && prior.metadata && prior.metadata.results) {
+                const deleted = prior.metadata.results.filter(r => r.ok).length;
+                return res.json({ success: true, idempotent: true, message: `Deleted ${deleted} user(s).`, data: { results: prior.metadata.results, deleted } });
+            }
         }
 
         const results = [];
@@ -287,7 +374,7 @@ exports.bulkDeleteUsers = async (req, res) => {
             actor: req.user.id,
             action: 'user.bulk.delete',
             targetType: 'User',
-            metadata: { userIds, results },
+            metadata: { userIds, results, idempotencyKey },
             ip: req.ip
         });
 
@@ -303,10 +390,13 @@ exports.bulkDeleteUsers = async (req, res) => {
 // @access  Private/Admin
 exports.getActivityLogs = async (req, res) => {
     try {
-        const { userId, action, page = 1, limit = 50 } = req.query;
+        const { userId, action, actorId, targetId, targetType, page = 1, limit = 50 } = req.query;
         const query = {};
         if (userId) query.user = userId;
         if (action) query.action = action;
+        if (actorId) query.actor = actorId;
+        if (targetId) query.targetId = targetId;
+        if (targetType) query.targetType = targetType;
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
         const [logs, total] = await Promise.all([
@@ -365,8 +455,8 @@ exports.createTeam = async (req, res, next) => {
             });
         }
 
-        // Create team
-        const team = await Team.create({ name: name.trim(), teamLeader, members });
+    // Create team
+    const team = await Team.create({ name: name.trim(), teamLeader, members });
 
         // Update users to reference this team
         await User.updateMany({ _id: { $in: members } }, { team: team._id });
@@ -374,6 +464,16 @@ exports.createTeam = async (req, res, next) => {
         const populated = await Team.findById(team._id)
             .populate('teamLeader', 'name username')
             .populate('members', 'name username');
+
+        // Audit log
+        await ActivityLog.create({
+            actor: req.user.id,
+            action: 'team.create',
+            targetType: 'Team',
+            targetId: team._id,
+            metadata: { name: name.trim(), teamLeader, members, memberCount: members.length },
+            ip: req.ip
+        });
 
         res.status(201).json({ success: true, data: populated });
     } catch (error) {
@@ -460,6 +560,15 @@ exports.createTeams = async (req, res, next) => {
             teams.push(team);
             teamCount++;
         }
+
+        // Audit log for auto-create
+        await ActivityLog.create({
+            actor: req.user.id,
+            action: 'teams.auto.create',
+            targetType: 'Team',
+            metadata: { teamSize, count: teams.length, teamIds: teams.map(t => t._id) },
+            ip: req.ip
+        });
 
         res.status(200).json({
             success: true,
@@ -569,6 +678,16 @@ exports.addTeamMembers = async (req, res, next) => {
             .populate('teamLeader', 'name username email department year')
             .populate('members', 'name username email department year');
 
+        // Audit log
+        await ActivityLog.create({
+            actor: req.user.id,
+            action: 'team.members.add',
+            targetType: 'Team',
+            targetId: team._id,
+            metadata: { added: newMembers, count: newMembers.length },
+            ip: req.ip
+        });
+
         res.status(200).json({
             success: true,
             message: `${newMembers.length} member(s) added successfully`,
@@ -622,12 +741,12 @@ exports.removeTeamMember = async (req, res, next) => {
             });
         }
 
-        // Check if member has upcoming scheduled visits
+        // Check if member has upcoming scheduled visits (Visit.members contains userId strings)
         const upcomingVisits = await Visit.countDocuments({
             team: team._id,
             status: 'scheduled',
             date: { $gte: new Date() },
-            'team.members': memberId
+            members: memberId
         });
 
         if (upcomingVisits > 0) {
@@ -648,6 +767,16 @@ exports.removeTeamMember = async (req, res, next) => {
         const updatedTeam = await Team.findById(team._id)
             .populate('teamLeader', 'name username email department year')
             .populate('members', 'name username email department year');
+
+        // Audit log
+        await ActivityLog.create({
+            actor: req.user.id,
+            action: 'team.members.remove',
+            targetType: 'Team',
+            targetId: team._id,
+            metadata: { memberId },
+            ip: req.ip
+        });
 
         res.status(200).json({
             success: true,
@@ -711,6 +840,16 @@ exports.changeTeamLeader = async (req, res, next) => {
         const updatedTeam = await Team.findById(team._id)
             .populate('teamLeader', 'name username email department year')
             .populate('members', 'name username email department year');
+
+        // Audit log
+        await ActivityLog.create({
+            actor: req.user.id,
+            action: 'team.leader.change',
+            targetType: 'Team',
+            targetId: team._id,
+            metadata: { from: oldLeaderId, to: leaderId },
+            ip: req.ip
+        });
 
         res.status(200).json({
             success: true,
@@ -784,14 +923,26 @@ exports.deleteTeam = async (req, res, next) => {
             });
         }
 
-        // Remove team reference from all members
-        await User.updateMany(
-            { _id: { $in: team.members } },
-            { $unset: { team: 1 } }
-        );
+        // Enforce non-empty team rule: cannot delete if members remain
+        if (team.members && team.members.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot delete a non-empty team. Remove all members first.'
+            });
+        }
 
         // Delete the team
         await Team.findByIdAndDelete(req.params.id);
+
+        // Audit log
+        await ActivityLog.create({
+            actor: req.user.id,
+            action: 'team.delete',
+            targetType: 'Team',
+            targetId: team._id,
+            metadata: { name: team.name, memberCount: (team.members || []).length },
+            ip: req.ip
+        });
 
         res.status(200).json({
             success: true,
@@ -969,7 +1120,20 @@ exports.cleanupStorage = async (req, res, next) => {
         
         // Cleanup orphaned files
         const cleanupResults = await cleanupOrphanedFiles(uploadsDir, visitIds);
-        
+
+        // Audit log
+        await ActivityLog.create({
+            actor: req.user.id,
+            action: 'storage.cleanup',
+            targetType: 'Storage',
+            metadata: {
+                deletedFolders: cleanupResults.deletedFolders.length,
+                deletedSize: cleanupResults.deletedSize,
+                deletedSizeFormatted: cleanupResults.deletedSizeFormatted
+            },
+            ip: req.ip
+        });
+
         res.status(200).json({
             success: true,
             data: cleanupResults,

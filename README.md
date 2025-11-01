@@ -20,6 +20,7 @@ A comprehensive web application to manage volunteer visits to schools, enabling 
     - [Background Notifications](#background-notifications)
 - [API Documentation](#api-documentation)
 - [Testing](#testing)
+- [Admin User Management](#admin-user-management)
 - [Contributing](#contributing)
 - [License](#license)
   - [One-off migration: backfill upload windows](#one-off-migration-backfill-upload-windows)
@@ -303,6 +304,11 @@ Environment variables: use MONGODB_URI (or MONGO_URI) and optional DB_NAME to ta
 - `POST /api/admin/users` - Create a user (admin only)
 - `PUT /api/admin/users/:id` - Update any user (admin only)
 
+Validation & limits:
+- Users listing (`GET /api/admin/users` and `GET /api/admin/users/ids`) support `page`, `limit` (1–10000), `search`, `role`, `status`, and `verified` with strict validation. Invalid inputs return HTTP 400 with a structured `details` array.
+- Bulk operations (`PUT /api/admin/users/bulk`, `DELETE /api/admin/users/bulk`) are rate-limited (10/min) and validated: `action` in `approve|reject|role`, `userIds` array of IDs, optional `reason`, and optional `idempotencyKey` for safe retries.
+- Per-user routes (`approve`, `reject`, `role`, `delete`) validate `:id` before handling.
+
 ### Analytics Endpoints
 - `GET /api/analytics/overview` - Get program analytics overview
 - `GET /api/analytics/schools` - Get school-specific analytics
@@ -326,6 +332,38 @@ npm run test:performance
 # Get test coverage report
 npm run test:coverage
 ```
+
+Frontend unit tests (admin UI and stats) run under JSDOM and mock the API layer and helpers. The test runner picks up any `**/tests/**/*.test.js` files.
+
+If you encounter missing setup files, ensure the root `tests/setupEnv.js` and `tests/setup.js` exist (they bridge to backend setups and define safe frontend shims).
+
+## Admin User Management
+
+We ship a production-ready Admin Users UI with listing, filters, pagination, individual actions, and robust bulk operations.
+
+Highlights:
+- Debounced search and URL-persisted filters
+- Accessible modals and keyboard navigation
+- Chunked bulk operations with progress, Abort (immediate cancel), and retry for deletes
+- Stats dashboard (`frontend/admin-stats.html`) with short-lived caching and activity log viewer
+
+Docs: see `docs/admin-user-guide.md` for a step-by-step guide.
+
+Enhancements:
+- Server-assisted "Select all matching" uses a dedicated IDs endpoint for efficiency and warns on very large selections.
+- Bulk updates are idempotent (safe to retry); the server returns the prior result if a duplicate key is received.
+- Accessibility improvements: aria-live announcements for selection and bulk completion; better keyboard handling in modals.
+
+## Admin Contacts Management
+
+Manage contact form submissions: search, filter by status, view details, reply, archive, delete, and perform bulk actions.
+
+Highlights:
+- Automatically marks "New" messages as "Read" when viewed
+- Reply composer with validation (minimum length), persisted reply history
+- Bulk archive/delete with selection persisted across visible rows
+
+Docs: see `docs/admin-contacts-guide.md`.
 
 ## 🤝 Contributing
 

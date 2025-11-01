@@ -5,23 +5,40 @@
 
 class AdminContactsManager {
   constructor() {
-    this.api = new APIManager();
+    // Use global api manager and auth manager
     this.contacts = [];
     this.currentContact = null;
     this.currentPage = 1;
     this.totalPages = 1;
+  this.selected = new Set();
     this.filters = {
       status: '',
       search: ''
     };
+    // aria-live region for announcements
+    try {
+      let live = document.getElementById('ariaLive');
+      if (!live) {
+        live = document.createElement('div');
+        live.id = 'ariaLive';
+        live.setAttribute('role', 'status');
+        live.setAttribute('aria-live', 'polite');
+        live.style.position = 'absolute';
+        live.style.left = '-9999px';
+        document.body.appendChild(live);
+      }
+      this._ariaLive = live;
+    } catch (_) {}
     
     this.init();
   }
 
   async init() {
-    // Check admin auth
-    await this.checkAdminAuth();
-    
+  // Enforce admin access
+    try { authManager && authManager.requireAdmin && authManager.requireAdmin(); } catch (e) {}
+  // Restore filters/page from URL
+  try { this.restoreFromUrl(); } catch (_) {}
+
     // Load initial data
     await this.loadStatistics();
     await this.loadContacts();
@@ -30,69 +47,66 @@ class AdminContactsManager {
     this.setupEventListeners();
   }
 
-  async checkAdminAuth() {
-    try {
-      const user = await this.api.getCurrentUser();
-      if (!user || user.role !== 'admin') {
-        showNotification('Access denied. Admin privileges required.', 'error');
-        setTimeout(() => window.location.href = '/dashboard.html', 2000);
-        return;
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      window.location.href = '/login.html';
-    }
-  }
-
   setupEventListeners() {
     // Filter controls
-    document.getElementById('applyFilters').addEventListener('click', () => this.applyFilters());
-    document.getElementById('clearFilters').addEventListener('click', () => this.clearFilters());
+    const applyBtn = document.getElementById('applyFilters'); if (applyBtn) applyBtn.addEventListener('click', () => this.applyFilters());
+    const clearBtn = document.getElementById('clearFilters'); if (clearBtn) clearBtn.addEventListener('click', () => this.clearFilters());
     
     // Search on Enter key
-    document.getElementById('searchInput').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        this.applyFilters();
-      }
-    });
+    const searchEl = document.getElementById('searchInput');
+    if (searchEl) {
+      searchEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') this.applyFilters(); });
+      // Debounced input for faster filtering
+      let t; searchEl.addEventListener('input', (e) => { clearTimeout(t); t = setTimeout(() => this.applyFilters(), 300); });
+    }
 
     // Reply form
-    document.getElementById('replyMessage').addEventListener('input', (e) => {
-      this.updateCharCounter(e.target.value);
-    });
+    const replyMsg = document.getElementById('replyMessage');
+    if (replyMsg) replyMsg.addEventListener('input', (e) => { this.updateCharCounter(e.target.value); });
 
-    document.getElementById('sendReply').addEventListener('click', () => this.sendReply());
-    document.getElementById('openReplyFromView').addEventListener('click', () => this.openReplyFromView());
+    const sendBtn = document.getElementById('sendReply'); if (sendBtn) sendBtn.addEventListener('click', () => this.sendReply());
+    const openReplyBtn = document.getElementById('openReplyFromView'); if (openReplyBtn) openReplyBtn.addEventListener('click', () => this.openReplyFromView());
 
     // Status filter quick select
-    document.getElementById('statusFilter').addEventListener('change', () => this.applyFilters());
+    const statusFilter = document.getElementById('statusFilter'); if (statusFilter) statusFilter.addEventListener('change', () => this.applyFilters());
+
+    // Bulk actions
+    const bulkArchiveBtn = document.getElementById('bulkArchive');
+    const bulkDeleteBtn = document.getElementById('bulkDelete');
+    const bulkUnarchiveBtn = document.getElementById('bulkUnarchive');
+    if (bulkArchiveBtn) bulkArchiveBtn.addEventListener('click', () => this.bulkArchiveSelected());
+    if (bulkDeleteBtn) bulkDeleteBtn.addEventListener('click', () => this.bulkDeleteSelected());
+    if (bulkUnarchiveBtn) bulkUnarchiveBtn.addEventListener('click', () => this.bulkUnarchiveSelected());
+
+    // Popstate restore
+    window.addEventListener('popstate', () => { this.restoreFromUrl(); this.loadContacts(this.currentPage || 1); });
   }
 
   async loadStatistics() {
     try {
-      Loading.show();
-      const response = await this.api.getContactStats();
+      loading.show('statsDashboard', 'Loading stats...');
+      const response = await api.getContactStats();
       
       if (response.success) {
         const stats = response.data;
-        
-        document.getElementById('statTotal').textContent = stats.total || 0;
-        document.getElementById('statNew').textContent = stats.byStatus?.new || 0;
-        document.getElementById('statRead').textContent = stats.byStatus?.read || 0;
-        document.getElementById('statReplied').textContent = stats.byStatus?.replied || 0;
-        document.getElementById('statArchived').textContent = stats.byStatus?.archived || 0;
+        // Guard DOM operations for test environments missing elements
+        try { const el = document.getElementById('statTotal'); if (el) el.textContent = stats.total || 0; } catch(_) {}
+        try { const el = document.getElementById('statNew'); if (el) el.textContent = stats.byStatus?.new || 0; } catch(_) {}
+        try { const el = document.getElementById('statRead'); if (el) el.textContent = stats.byStatus?.read || 0; } catch(_) {}
+        try { const el = document.getElementById('statReplied'); if (el) el.textContent = stats.byStatus?.replied || 0; } catch(_) {}
+        try { const el = document.getElementById('statArchived'); if (el) el.textContent = stats.byStatus?.archived || 0; } catch(_) {}
       }
     } catch (error) {
       console.error('Failed to load statistics:', error);
-      showNotification('Failed to load statistics', 'error');
+      notify.error('Failed to load statistics');
     } finally {
-      Loading.hide();
+      loading.hide('statsDashboard');
     }
   }
 
   async loadContacts(page = 1) {
     try {
-      Loading.show();
+      loading.show('contactsTableContainer', 'Loading contacts...');
       
       const params = {
         page,
@@ -100,7 +114,7 @@ class AdminContactsManager {
         ...this.filters
       };
 
-      const response = await this.api.getContacts(params);
+      const response = await api.getContacts(params);
       
       if (response.success) {
         this.contacts = response.data;
@@ -109,13 +123,15 @@ class AdminContactsManager {
         
         this.renderContactsTable();
         this.renderPagination();
+        // reflect state in URL
+        try { this.updateUrlParams(); } catch (_) {}
       }
     } catch (error) {
       console.error('Failed to load contacts:', error);
-      showNotification('Failed to load contacts', 'error');
+      notify.error('Failed to load contacts');
       this.renderEmptyState();
     } finally {
-      Loading.hide();
+      loading.hide('contactsTableContainer');
     }
   }
 
@@ -131,6 +147,7 @@ class AdminContactsManager {
       <table class="contacts-table">
         <thead>
           <tr>
+            <th width="4%"><input type="checkbox" id="selectAllContacts"></th>
             <th width="25%">Contact Info</th>
             <th width="15%">Subject</th>
             <th width="30%">Message</th>
@@ -146,6 +163,31 @@ class AdminContactsManager {
     `;
     
     container.innerHTML = html;
+
+    // Bind checkbox selection
+    const selectAll = document.getElementById('selectAllContacts');
+    if (selectAll) {
+      selectAll.addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        container.querySelectorAll('input[type="checkbox"][data-id]').forEach(cb => {
+          cb.checked = checked;
+          const id = cb.dataset.id;
+          if (checked) this.selected.add(id); else this.selected.delete(id);
+        });
+        this.updateBulkButtons();
+      });
+    }
+
+    container.querySelectorAll('input[type="checkbox"][data-id]').forEach(cb => {
+      // reflect current selection state
+      try { cb.checked = this.selected.has(String(cb.dataset.id)); } catch (_) {}
+      cb.addEventListener('change', (e) => {
+        const id = String(e.target.dataset.id);
+        if (e.target.checked) this.selected.add(id); else this.selected.delete(id);
+        this.updateBulkButtons();
+      });
+    });
+    this.updateBulkButtons();
   }
 
   renderContactRow(contact) {
@@ -162,6 +204,7 @@ class AdminContactsManager {
 
     return `
       <tr data-contact-id="${contact._id}">
+        <td><input type="checkbox" data-id="${contact._id}"></td>
         <td>
           <div class="contact-name">${this.escapeHtml(contact.name)}</div>
           <div class="contact-email">${this.escapeHtml(contact.email)}</div>
@@ -183,15 +226,13 @@ class AdminContactsManager {
               View
             </button>
             ${contact.status !== 'replied' ? `
-              <button class="btn-action btn-reply" onclick="adminContacts.openReplyModal('${contact._id}')">
-                Reply
-              </button>
+              <button class="btn-action btn-reply" onclick="adminContacts.openReplyModal('${contact._id}')">Reply</button>
             ` : ''}
-            ${contact.status !== 'archived' ? `
-              <button class="btn-action btn-archive" onclick="adminContacts.archiveContact('${contact._id}')">
-                Archive
-              </button>
-            ` : ''}
+            ${contact.status === 'archived' ? `
+              <button class="btn-action" onclick="adminContacts.unarchiveContact('${contact._id}')">Unarchive</button>
+            ` : `
+              <button class="btn-action btn-archive" onclick="adminContacts.archiveContact('${contact._id}')">Archive</button>
+            `}
             <button class="btn-action btn-delete" onclick="adminContacts.deleteContact('${contact._id}')">
               Delete
             </button>
@@ -199,6 +240,83 @@ class AdminContactsManager {
         </td>
       </tr>
     `;
+  }
+
+  updateBulkButtons() {
+    const count = this.selected.size;
+    const bulkArchiveBtn = document.getElementById('bulkArchive');
+    const bulkDeleteBtn = document.getElementById('bulkDelete');
+    const bulkUnarchiveBtn = document.getElementById('bulkUnarchive');
+    if (bulkArchiveBtn) bulkArchiveBtn.disabled = count === 0;
+    if (bulkDeleteBtn) bulkDeleteBtn.disabled = count === 0;
+    if (bulkUnarchiveBtn) bulkUnarchiveBtn.disabled = count === 0;
+    try { this._announce(count ? `${count} contacts selected` : 'Selection cleared'); } catch (_) {}
+  }
+
+  async bulkArchiveSelected() {
+    const ids = Array.from(this.selected);
+    if (!ids.length) { notify.info('No contacts selected'); return; }
+    notify.confirm(`Archive ${ids.length} selected contact(s)?`, async () => {
+      try {
+        loading.showFullPage('Archiving contacts...');
+        await api.bulkUpdateContacts(ids, 'archived');
+        notify.success('Selected contacts archived');
+        this._announce('Bulk archive completed');
+        this.selected.clear();
+        await this.loadStatistics();
+        await this.loadContacts(this.currentPage);
+      } catch (e) {
+        console.error(e);
+        notify.error('Failed to archive selected contacts');
+      } finally {
+        loading.hideFullPage();
+      }
+    });
+  }
+
+  async bulkUnarchiveSelected() {
+    const ids = Array.from(this.selected);
+    if (!ids.length) { notify.info('No contacts selected'); return; }
+    notify.confirm(`Unarchive ${ids.length} selected contact(s)?`, async () => {
+      try {
+        loading.showFullPage('Unarchiving contacts...');
+        await api.bulkUpdateContacts(ids, 'read');
+        notify.success('Selected contacts unarchived');
+        this._announce('Bulk unarchive completed');
+        this.selected.clear();
+        await this.loadStatistics();
+        await this.loadContacts(this.currentPage);
+      } catch (e) {
+        console.error(e);
+        notify.error('Failed to unarchive selected contacts');
+      } finally {
+        loading.hideFullPage();
+      }
+    });
+  }
+
+  async bulkDeleteSelected() {
+    const ids = Array.from(this.selected);
+    if (!ids.length) { notify.info('No contacts selected'); return; }
+    notify.confirm(`Delete ${ids.length} selected contact(s)? This cannot be undone.`, async () => {
+      try {
+        loading.showFullPage('Deleting contacts...');
+        // Delete sequentially to keep it simple and safe
+        for (const id of ids) {
+          try { await api.deleteContact(id); } catch (e) { console.warn('Delete failed for', id, e); }
+        }
+        notify.success('Selected contacts deleted');
+        this._announce('Bulk delete completed');
+        this.selected.clear();
+        await this.loadStatistics();
+        await this.loadContacts(this.currentPage);
+      } catch (e) {
+        console.error(e);
+        notify.error('Failed to delete selected contacts');
+      } finally {
+        loading.hideFullPage();
+      }
+    });
   }
 
   renderPagination() {
@@ -249,8 +367,8 @@ class AdminContactsManager {
 
   async viewContact(contactId) {
     try {
-      Loading.show();
-      const response = await this.api.getContact(contactId);
+      loading.showFullPage('Loading contact...');
+      const response = await api.getContact(contactId);
       
       if (response.success) {
         this.currentContact = response.data;
@@ -264,9 +382,9 @@ class AdminContactsManager {
       }
     } catch (error) {
       console.error('Failed to load contact details:', error);
-      showNotification('Failed to load contact details', 'error');
+      notify.error('Failed to load contact details');
     } finally {
-      Loading.hide();
+      loading.hideFullPage();
     }
   }
 
@@ -328,7 +446,7 @@ class AdminContactsManager {
 
   async markAsRead(contactId) {
     try {
-      await this.api.markContactAsRead(contactId);
+      await api.markContactAsRead(contactId);
       
       // Update local data
       const contact = this.contacts.find(c => c._id === contactId);
@@ -376,21 +494,23 @@ class AdminContactsManager {
     const message = document.getElementById('replyMessage').value.trim();
 
     if (message.length < 10) {
-      showNotification('Reply must be at least 10 characters', 'error');
+      notify.error('Reply must be at least 10 characters');
       return;
     }
 
     if (!this.currentContact) {
-      showNotification('No contact selected', 'error');
+      notify.error('No contact selected');
       return;
     }
 
     try {
-      Loading.show();
-      const response = await this.api.replyToContact(this.currentContact._id, message);
+      const sendBtn = document.getElementById('sendReply');
+      try { if (sendBtn) sendBtn.disabled = true; } catch(_) {}
+      loading.showFullPage('Sending reply...');
+      const response = await api.replyToContact(this.currentContact._id, message);
       
       if (response.success) {
-        showNotification('Reply sent successfully!', 'success');
+        notify.success('Reply sent successfully!');
         this.closeModal('replyModal');
         
         // Reload data
@@ -399,10 +519,10 @@ class AdminContactsManager {
       }
     } catch (error) {
       console.error('Failed to send reply:', error);
-      const errorMsg = error.response?.data?.message || 'Failed to send reply';
-      showNotification(errorMsg, 'error');
+      notify.error('Failed to send reply');
     } finally {
-      Loading.hide();
+      loading.hideFullPage();
+      try { const sendBtn = document.getElementById('sendReply'); if (sendBtn) sendBtn.disabled = false; } catch(_) {}
     }
   }
 
@@ -412,11 +532,14 @@ class AdminContactsManager {
     }
 
     try {
-      Loading.show();
-      const response = await this.api.archiveContact(contactId);
+      // disable row action buttons while processing
+      const row = document.querySelector(`tr[data-contact-id="${contactId}"]`);
+      try { row && row.querySelectorAll('.btn-action').forEach(b => b.disabled = true); } catch(_) {}
+      loading.showFullPage('Archiving...');
+      const response = await api.archiveContact(contactId);
       
       if (response.success) {
-        showNotification('Contact archived successfully', 'success');
+        notify.success('Contact archived successfully');
         
         // Reload data
         await this.loadStatistics();
@@ -424,9 +547,28 @@ class AdminContactsManager {
       }
     } catch (error) {
       console.error('Failed to archive contact:', error);
-      showNotification('Failed to archive contact', 'error');
+      notify.error('Failed to archive contact');
     } finally {
-      Loading.hide();
+      loading.hideFullPage();
+      try { const row = document.querySelector(`tr[data-contact-id="${contactId}"]`); row && row.querySelectorAll('.btn-action').forEach(b => b.disabled = false); } catch(_) {}
+    }
+  }
+
+  async unarchiveContact(contactId) {
+    try {
+      const row = document.querySelector(`tr[data-contact-id="${contactId}"]`);
+      try { row && row.querySelectorAll('.btn-action').forEach(b => b.disabled = true); } catch(_) {}
+      loading.showFullPage('Unarchiving...');
+      await api.bulkUpdateContacts([contactId], 'read');
+      notify.success('Contact unarchived');
+      await this.loadStatistics();
+      await this.loadContacts(this.currentPage);
+    } catch (error) {
+      console.error('Failed to unarchive contact:', error);
+      notify.error('Failed to unarchive contact');
+    } finally {
+      loading.hideFullPage();
+      try { const row = document.querySelector(`tr[data-contact-id="${contactId}"]`); row && row.querySelectorAll('.btn-action').forEach(b => b.disabled = false); } catch(_) {}
     }
   }
 
@@ -436,11 +578,13 @@ class AdminContactsManager {
     }
 
     try {
-      Loading.show();
-      const response = await this.api.deleteContact(contactId);
+      const row = document.querySelector(`tr[data-contact-id="${contactId}"]`);
+      try { row && row.querySelectorAll('.btn-action').forEach(b => b.disabled = true); } catch(_) {}
+      loading.showFullPage('Deleting...');
+      const response = await api.deleteContact(contactId);
       
       if (response.success) {
-        showNotification('Contact deleted successfully', 'success');
+        notify.success('Contact deleted successfully');
         
         // Reload data
         await this.loadStatistics();
@@ -448,9 +592,10 @@ class AdminContactsManager {
       }
     } catch (error) {
       console.error('Failed to delete contact:', error);
-      showNotification('Failed to delete contact', 'error');
+      notify.error('Failed to delete contact');
     } finally {
-      Loading.hide();
+      loading.hideFullPage();
+      try { const row = document.querySelector(`tr[data-contact-id="${contactId}"]`); row && row.querySelectorAll('.btn-action').forEach(b => b.disabled = false); } catch(_) {}
     }
   }
 
@@ -474,11 +619,45 @@ class AdminContactsManager {
     this.loadContacts(1);
   }
 
+  // URL state sync
+  updateUrlParams() {
+    try {
+      const params = new URLSearchParams();
+      if (this.filters.status) params.set('status', this.filters.status);
+      if (this.filters.search) params.set('search', this.filters.search);
+      if (this.currentPage) params.set('page', String(this.currentPage));
+      const qs = params.toString();
+      const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+      history.replaceState({}, '', newUrl);
+    } catch (_) {}
+  }
+
+  restoreFromUrl() {
+    const sp = new URLSearchParams(window.location.search);
+    const status = sp.get('status') || '';
+    const search = sp.get('search') || '';
+    const page = parseInt(sp.get('page') || '1', 10) || 1;
+    this.filters.status = status;
+    this.filters.search = search;
+    this.currentPage = page;
+    // reflect in inputs if present
+    try {
+      const sf = document.getElementById('statusFilter'); if (sf) sf.value = status;
+      const si = document.getElementById('searchInput'); if (si) si.value = search;
+    } catch (_) {}
+  }
+
+  _announce(text) {
+    try { if (this._ariaLive) this._ariaLive.textContent = String(text || ''); } catch (_) {}
+  }
+
   openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
+      // Focus trap for accessibility
+      this._trapCleanup = this._trapFocus(modal);
     }
   }
 
@@ -487,6 +666,7 @@ class AdminContactsManager {
     if (modal) {
       modal.classList.remove('active');
       document.body.style.overflow = 'auto';
+      try { this._trapCleanup && this._trapCleanup(); } catch(_) {}
     }
   }
 
@@ -494,6 +674,25 @@ class AdminContactsManager {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  // Basic focus trap implementation
+  _trapFocus(container) {
+    const focusable = container.querySelectorAll('a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])');
+    if (!focusable.length) return () => {};
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const handler = (e) => {
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    container.addEventListener('keydown', handler);
+    try { first.focus(); } catch(_) {}
+    return () => container.removeEventListener('keydown', handler);
   }
 }
 
@@ -509,4 +708,5 @@ function closeModal(modalId) {
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   adminContacts = new AdminContactsManager();
+  try { window.adminContacts = adminContacts; } catch (_) {}
 });

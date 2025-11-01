@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Stats & Activity</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/pages/admin-stats.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">Spread A Smile</div>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+        <li><a href="admin-users.html" class="nav-link">Users</a></li>
+        <li><a href="analytics.html" class="nav-link">Analytics</a></li>
+        <li><a href="profile.html" class="nav-link">Profile</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <header class="page-header">
+      <h1>Admin — Stats & Activity</h1>
+      <p>Overview of key stats and recent activity logs</p>
+    </header>
+
+    <section id="adminStats" class="stats-grid">
+      <!-- Cards populated by JS -->
+      <div class="stat-card" data-key="totalVolunteers" id="stat-totalVolunteers">
+        <div class="stat-value">—</div>
+        <div class="stat-label">Volunteers</div>
+      </div>
+      <div class="stat-card" data-key="activeVolunteers" id="stat-activeVolunteers">
+        <div class="stat-value">—</div>
+        <div class="stat-label">Active Volunteers</div>
+      </div>
+      <div class="stat-card" data-key="totalTeams" id="stat-totalTeams">
+        <div class="stat-value">—</div>
+        <div class="stat-label">Teams</div>
+      </div>
+      <div class="stat-card" data-key="volunteersWithoutTeam" id="stat-volunteersWithoutTeam">
+        <div class="stat-value">—</div>
+        <div class="stat-label">Without Team</div>
+      </div>
+    </section>
+
+    <section class="activity-section">
+      <div class="activity-filters">
+        <input id="activitySearch" placeholder="Search activity text or metadata" />
+        <select id="activityAction">
+          <option value="">All actions</option>
+          <option value="user.approve">user.approve</option>
+          <option value="user.reject">user.reject</option>
+          <option value="user.delete">user.delete</option>
+          <option value="user.role.change">user.role.change</option>
+          <option value="user.bulk.delete">user.bulk.delete</option>
+        </select>
+        <input id="activityUser" placeholder="User ID (optional)" />
+        <button id="applyActivityFilters" class="btn btn-primary">Apply</button>
+        <button id="resetActivityFilters" class="btn btn-light">Reset</button>
+      </div>
+
+      <div id="activityListContainer" class="activity-list-container">
+        <div id="activityList" class="activity-list">Loading activity…</div>
+        <div id="activityPagination" class="pagination"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/pages/admin-stats.js"></script>
+</body>
+</html>

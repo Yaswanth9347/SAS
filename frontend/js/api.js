@@ -339,6 +339,12 @@ class APIManager {
     return this.get(`/admin/users${query ? '?' + query : ''}`);
   }
 
+  // Admin - Users IDs only (server-assisted select-all)
+  async getAdminUserIds(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.get(`/admin/users/ids${query ? '?' + query : ''}`);
+  }
+
   async approveUser(userId, notes) {
     return this.put(`/admin/users/${userId}/approve`, { notes });
   }
@@ -352,7 +358,9 @@ class APIManager {
   }
 
   async bulkUpdateUsers(payload) {
-    return this.put('/admin/users/bulk', payload);
+    // Accept optional fetch options (e.g., signal for AbortController)
+    const options = arguments[1] || {};
+    return this.put('/admin/users/bulk', payload, options);
   }
 
   async deleteUser(userId) {
@@ -360,7 +368,9 @@ class APIManager {
   }
 
   async bulkDeleteUsers(userIds) {
-    return this.delete('/admin/users/bulk', { userIds });
+    // Accept optional fetch options (e.g., signal for AbortController)
+    const options = arguments[1] || {};
+    return this.delete('/admin/users/bulk', { userIds }, options);
   }
 
   async getActivityLogs(params = {}) {

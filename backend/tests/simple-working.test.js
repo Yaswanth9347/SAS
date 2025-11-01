@@ -18,7 +18,8 @@ describe('Simple Working Tests (No DB)', () => {
             .get('/api/health')
             .expect(200);
 
-        expect(response.body.status).toBe('OK');
+    // API returns lowercase 'ok'
+    expect(response.body.status).toBe('ok');
     });
 
     test('Frontend serving', async () => {
