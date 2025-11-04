@@ -923,12 +923,13 @@ exports.deleteTeam = async (req, res, next) => {
             });
         }
 
-        // Enforce non-empty team rule: cannot delete if members remain
+        // Unassign all members from this team before deleting
         if (team.members && team.members.length > 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Cannot delete a non-empty team. Remove all members first.'
-            });
+            const User = require('../models/User');
+            await User.updateMany(
+                { _id: { $in: team.members } },
+                { $unset: { team: "" } }
+            );
         }
 
         // Delete the team

@@ -419,6 +419,8 @@ const { processUploadedFiles } = require("../utils/fileProcessing");
 const fs = require("fs");
 const path = require("path");
 const { generateVisitReportPdf } = require('../utils/pdfService');
+const reportGenerator = require('../../report/services/reportGenerator');
+const dataAggregator = require('../../report/services/dataAggregator');
 
 // @desc    Upload files for visit report
 // @route   POST /api/visits/:id/upload
@@ -1196,12 +1198,50 @@ exports.finalizeReport = async (req, res) => {
       suggestions: visit.reportDraft?.suggestions ?? visit.suggestions ?? ''
     };
 
-    // Generate PDF
-    const pdfPathAbs = await generateVisitReportPdf(visit, snapshot);
+    // Generate PDF using new "Spread A Smile" template
+    console.log('📄 Generating "Spread A Smile" report for visit:', visit._id);
+    
+    // Create date range for single visit (same day)
+    const visitDate = new Date(visit.date);
+    const startOfDay = new Date(visitDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(visitDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Build report configuration for this specific visit
+    const reportConfig = {
+      template: 'visit-summary',
+      title: `Visit Report - ${visit.school?.name || 'School'}`,
+      dateRange: {
+        start: startOfDay,
+        end: endOfDay
+      },
+      filters: {
+        visits: [visit._id.toString()], // Filter to only this visit
+        schools: visit.school ? [visit.school._id.toString()] : undefined,
+        teams: visit.team ? [visit.team._id.toString()] : undefined
+      }
+    };
+
+    // Fetch data for this visit
+    const reportData = await dataAggregator.getReportData(reportConfig);
+    reportConfig.data = reportData;
+
+    // Generate PDF buffer
+    const pdfBuffer = await reportGenerator.generateReport(reportConfig);
+
+    // Save PDF to uploads folder
+    const uploadsDir = path.join(__dirname, '..', 'uploads', 'reports');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const filename = `visit-report-${visit._id}-${Date.now()}.pdf`;
+    const pdfPathAbs = path.join(uploadsDir, filename);
+    fs.writeFileSync(pdfPathAbs, pdfBuffer);
+
     // Normalize to web path
-    const rel = pdfPathAbs.replace(/\\/g, '/');
-    const idx = rel.indexOf('/uploads/');
-    const webPath = idx !== -1 ? rel.substring(idx) : '/uploads/' + path.basename(pdfPathAbs);
+    const webPath = `/uploads/reports/${filename}`;
 
     visit.reportSnapshot = snapshot;
     visit.reportPdfPath = webPath;
@@ -1209,6 +1249,7 @@ exports.finalizeReport = async (req, res) => {
     visit.reportStatus = 'final';
     await visit.save();
 
+    console.log('✅ Report finalized successfully:', webPath);
     return res.status(200).json({ success: true, message: 'Report finalized', data: { pdfPath: webPath } });
   } catch (e) {
     console.error('finalizeReport error:', e);

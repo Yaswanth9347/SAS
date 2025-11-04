@@ -1,0 +1,67 @@
+/* Mobile Navbar Touch Improvements */
+/* Add this to ensure hamburger is always clickable on mobile */
+
+@media (max-width: 1024px) {
+    /* Make hamburger highly visible and touchable */
+    .hamburger {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-radius: 8px !important;
+        padding: 12px !important;
+        margin-left: 10px !important;
+        touch-action: manipulation !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        -webkit-touch-callout: none !important;
+    }
+    
+    .hamburger:active,
+    .hamburger:focus {
+        background: rgba(255, 255, 255, 0.3) !important;
+        outline: 2px solid rgba(255, 255, 255, 0.5) !important;
+        outline-offset: 2px !important;
+    }
+    
+    /* Ensure hamburger is on top of everything */
+    .nav-container {
+        position: relative !important;
+        z-index: 1000 !important;
+    }
+    
+    .nav-container > * {
+        position: relative !important;
+    }
+    
+    .hamburger {
+        z-index: 1003 !important;
+        position: relative !important;
+    }
+    
+    /* Make sure nav-menu doesn't interfere with hamburger when closed */
+    .nav-menu:not(.active) {
+        pointer-events: none !important;
+    }
+    
+    .nav-menu.active {
+        pointer-events: auto !important;
+    }
+    
+    /* Add backdrop when menu is open */
+    .nav-menu.active::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: -1;
+    }
+}
+
+/* Debug helper - remove after testing */
+@media (max-width: 1024px) {
+    .hamburger {
+        /* Uncomment to see hamburger area clearly */
+        /* border: 2px solid yellow !important; */
+    }
+}

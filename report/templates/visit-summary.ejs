@@ -1,0 +1,111 @@
+<!-- Title: Spread A Smile (Center Aligned) -->
+<h1 class="main-title">Spread A Smile</h1>
+<!-- Month, Generated Date, and Period -->
+<div class="report-period">
+<p><strong><%= new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) %></strong></p>
+<p>Generated on: <%= new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+<% if (dateRange && dateRange.start && dateRange.end) { %>
+<p>Period: <%= new Date(dateRange.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %> to <%= new Date(dateRange.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></p>
+<% } %>
+</div>
+<!-- Summary: Total Visits, Schools, Active Teams -->
+<div class="summary-section">
+<p>Total Number of Visits: <strong><%= data.totalVisits || 0 %></strong></p>
+<p>Schools Visited: <strong><%= data.totalSchools || 0 %></strong></p>
+<p>Active Teams: <strong><%= data.totalTeams || 0 %></strong></p>
+</div>
+<!-- Visit Details: Date, Team Name, School Name, Count -->
+<% if (data.visits && data.visits.length > 0) { %>
+<div class="section">
+<h2 class="section-title">Visit Details</h2>
+<% data.visits.forEach((visit, index) => { %>
+<div class="visit-entry">
+<p><strong>Visit <%= index + 1 %>:</strong> <%= new Date(visit.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+<p><strong>Team:</strong> <%= visit.team?.name || 'N/A' %></p>
+<p><strong>School:</strong> <%= visit.school?.name || 'N/A' %></p>
+<p><strong>Students Reached:</strong> <%= visit.studentsCount || 0 %></p>
+</div>
+<% }); %>
+</div>
+<% } %>
+
+<!-- Topics Covered (School-wise with Dates) -->
+<% if (data.schoolDetails && data.schoolDetails.length > 0) { %>
+<div class="section">
+<h2 class="section-title">Topics Covered in Schools</h2>
+<% data.schoolDetails.forEach(school => { %>
+<div style="margin-bottom: 8px;">
+<p style="font-weight: bold; font-size: 13px; margin-bottom: 4px;"><%= school.name %></p>
+<% if (school.visits && school.visits.length > 0) { %>
+<% school.visits.forEach(visit => { %>
+<div style="margin-left: 15px; margin-bottom: 6px;">
+<p style="font-size: 12px; margin: 2px 0;"><strong>Date:</strong> <%= new Date(visit.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) %></p>
+<p style="font-size: 12px; margin: 2px 0;"><strong>Topics:</strong> <%= visit.topics || visit.description || 'No specific topics mentioned' %></p>
+</div>
+<% }); %>
+<% } else { %>
+<p style="margin-left: 15px; font-size: 12px; font-style: italic;">No topics recorded</p>
+<% } %>
+</div>
+<% }); %>
+</div>
+<% } %>
+
+<!-- School Details: Name, Address, Headmaster, Phone -->
+<% if (data.schools && data.schools.length > 0) { %>
+<div class="section">
+<h2 class="section-title">School Information</h2>
+<% data.schools.forEach(school => { %>
+<div class="school-info">
+<p class="school-name"><%= school.name %></p>
+<p><strong>Address:</strong> <%= school.address || school.location || 'N/A' %></p>
+<p><strong>Headmaster:</strong> <%= school.headmaster || school.principalName || 'N/A' %></p>
+<p><strong>Phone:</strong> <%= school.phone || school.contactNumber || 'N/A' %></p>
+</div>
+<% }); %>
+</div>
+<% } %>
+<!-- Team Details: Team Names with Members -->
+<% if (data.teams && data.teams.length > 0) { %>
+<div class="section">
+<h2 class="section-title">Team Information</h2>
+<% data.teams.forEach(team => { %>
+<div class="team-section">
+<p class="team-name"><%= team.name %></p>
+<% if (team.members && team.members.length > 0) { %>
+<div class="team-members">
+<p style="font-weight: 600; margin-bottom: 3px;">Team Members:</p>
+<ul style="margin: 0; padding-left: 20px;">
+<% team.members.forEach(member => { %>
+<li><%= typeof member === 'string' ? member : (member.name || 'N/A') %></li>
+<% }); %>
+</ul>
+</div>
+<% } else { %>
+<p style="margin-left: 15px; font-size: 11px; font-style: italic;">No members listed</p>
+<% } %>
+</div>
+<% }); %>
+</div>
+<% } %>
+
+<!-- Other Activities (if mentioned during visit closure) -->
+<% if (data.otherActivities && data.otherActivities.length > 0) { %>
+<div class="section">
+<h2 class="section-title">Other Activities</h2>
+<% data.otherActivities.forEach(activity => { %>
+<div class="activities-section">
+<p><strong>Date:</strong> <%= new Date(activity.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+<p><strong>School:</strong> <%= activity.school %></p>
+<p><strong>Team:</strong> <%= activity.team %></p>
+<p><strong>Activities:</strong> <%= activity.description %></p>
+</div>
+<% }); %>
+</div>
+<% } %>
+<!-- Additional Notes (if any) -->
+<% if (notes) { %>
+<div class="section">
+<p style="text-align: justify; line-height: 1.6; font-size: 12px;"><%= notes %></p>
+</div>
+<% } %>

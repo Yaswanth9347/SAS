@@ -132,9 +132,6 @@ class ReportsManager {
         
         let html = '<table class="results-table"><thead><tr>';
         html += '<th>Date</th><th>School</th><th>Team</th><th>Children</th><th>Status</th>';
-        if (authManager.isAdmin && authManager.isAdmin()) {
-          html += '<th>Report</th>';
-        }
         html += '</tr></thead><tbody>';
         
         data.data.forEach(visit => {
@@ -143,18 +140,6 @@ class ReportsManager {
           const team = visit.team?.name || 'N/A';
           const children = visit.childrenCount || 0;
           const status = visit.status || 'scheduled';
-          const reportCell = (() => {
-            if (!(authManager.isAdmin && authManager.isAdmin())) return '';
-            // Admin actions: if finalized, show download; if completed but not final, allow finalize; otherwise disabled
-            if (visit.reportStatus === 'final' && visit.reportPdfPath) {
-              const url = api.getReportDownloadUrl(visit._id);
-              return `<a class="btn btn-secondary btn-sm" href="${url}"><i class="fas fa-file-pdf"></i> Download PDF</a>`;
-            }
-            if (status === 'completed') {
-              return `<button class="btn btn-primary btn-sm" data-action="finalize" data-id="${visit._id}"><i class="fas fa-check"></i> Finalize</button>`;
-            }
-            return `<span class="muted">—</span>`;
-          })();
 
           html += `<tr>
             <td>${date}</td>
@@ -162,35 +147,11 @@ class ReportsManager {
             <td>${team}</td>
             <td>${children}</td>
             <td><span class="status-badge status-${status}">${status}</span></td>
-            ${authManager.isAdmin && authManager.isAdmin() ? `<td>${reportCell}</td>` : ''}
           </tr>`;
         });
         
         html += '</tbody></table>';
         document.getElementById('resultsContent').innerHTML = html;
-
-        // Wire finalize buttons
-        if (authManager.isAdmin && authManager.isAdmin()) {
-          document.querySelectorAll('button[data-action="finalize"]').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-              const id = e.currentTarget.getAttribute('data-id');
-              e.currentTarget.disabled = true;
-              e.currentTarget.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finalizing...';
-              try {
-                const res = await api.finalizeReportPdf(id);
-                if (res.success) {
-                  notify.success('Report finalized. Download will be available in a moment.');
-                  // Reload current view
-                  this.loadVisitsReport();
-                } else {
-                  notify.error(res.message || 'Failed to finalize report');
-                }
-              } catch (err) {
-                notify.error(err.message || 'Failed to finalize report');
-              }
-            });
-          });
-        }
       }
     } catch (error) {
       console.error('Error loading visits report:', error);
@@ -413,6 +374,290 @@ class ReportsManager {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
   }
+
+  /**
+   * PDF Generator Functions
+   */
+
+  /**
+   * Show PDF generator modal
+   */
+  async showPdfGenerator() {
+    // Check if user is admin
+    if (!this.user || this.user.role !== 'admin') {
+      alert('Only administrators can generate PDF reports');
+      return;
+    }
+
+    // Show modal
+    const modal = document.getElementById('pdfGeneratorModal');
+    modal.style.display = 'flex';
+
+    // Set default dates (current month)
+    this.setDefaultPdfDates();
+
+    // Load filters
+    await this.loadPdfFilters();
+  }
+
+  /**
+   * Close PDF generator modal
+   */
+  closePdfModal() {
+    const modal = document.getElementById('pdfGeneratorModal');
+    modal.style.display = 'none';
+  }
+
+  /**
+   * Set default date range to current month
+   */
+  setDefaultPdfDates() {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    document.getElementById('pdfStartDate').value = firstDay.toISOString().split('T')[0];
+    document.getElementById('pdfEndDate').value = lastDay.toISOString().split('T')[0];
+  }
+
+  /**
+   * Load schools and teams for filters
+   */
+  async loadPdfFilters() {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Load schools
+      const schoolsRes = await fetch('/api/schools', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const schoolsData = await schoolsRes.json();
+      
+      if (schoolsData.success) {
+        const select = document.getElementById('pdfSchoolFilter');
+        select.innerHTML = '<option value="">All Schools</option>';
+        schoolsData.data.forEach(school => {
+          const option = document.createElement('option');
+          option.value = school._id;
+          option.textContent = school.name;
+          select.appendChild(option);
+        });
+      }
+
+      // Load teams
+      const teamsRes = await fetch('/api/teams', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const teamsData = await teamsRes.json();
+      
+      if (teamsData.success) {
+        const select = document.getElementById('pdfTeamFilter');
+        select.innerHTML = '<option value="">All Teams</option>';
+        teamsData.data.forEach(team => {
+          const option = document.createElement('option');
+          option.value = team._id;
+          option.textContent = team.name;
+          select.appendChild(option);
+        });
+      }
+    } catch (error) {
+      console.error('Error loading PDF filters:', error);
+    }
+  }
+
+  /**
+   * Validate and format date string to YYYY-MM-DD
+   */
+  formatDateForReport(dateString) {
+    if (!dateString) return null;
+    
+    // If already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      return dateString;
+    }
+    
+    // Try to parse and format
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return null;
+    }
+    
+    return date.toISOString().split('T')[0];
+  }
+
+  /**
+   * Get PDF configuration from form
+   */
+  getPdfConfig() {
+    const startDateRaw = document.getElementById('pdfStartDate').value;
+    const endDateRaw = document.getElementById('pdfEndDate').value;
+    const title = document.getElementById('pdfReportTitle').value;
+
+    // Format dates to ensure YYYY-MM-DD format
+    const startDate = this.formatDateForReport(startDateRaw);
+    const endDate = this.formatDateForReport(endDateRaw);
+
+    // Get selected schools
+    const schoolSelect = document.getElementById('pdfSchoolFilter');
+    const schools = Array.from(schoolSelect.selectedOptions)
+      .map(opt => opt.value)
+      .filter(val => val);
+
+    // Get selected teams
+    const teamSelect = document.getElementById('pdfTeamFilter');
+    const teams = Array.from(teamSelect.selectedOptions)
+      .map(opt => opt.value)
+      .filter(val => val);
+
+    return {
+      template: 'visit-summary',
+      title: title || 'Monthly Activity Report',
+      dateRange: {
+        start: startDate,
+        end: endDate
+      },
+      sections: {
+        summary: true,
+        visitDetails: true,
+        topicsCovered: true,
+        schoolInfo: true,
+        teamInfo: true,
+        otherActivities: true
+      },
+      filters: {
+        schools: schools.length > 0 ? schools : undefined,
+        teams: teams.length > 0 ? teams : undefined
+      },
+      data: {}
+    };
+  }
+
+  /**
+   * Generate PDF report
+   */
+  async generatePdfReport() {
+    const startDateRaw = document.getElementById('pdfStartDate').value;
+    const endDateRaw = document.getElementById('pdfEndDate').value;
+
+    // Validate dates exist
+    if (!startDateRaw || !endDateRaw) {
+      alert('Please select both start and end dates');
+      return;
+    }
+
+    // Format and validate dates
+    const startDate = this.formatDateForReport(startDateRaw);
+    const endDate = this.formatDateForReport(endDateRaw);
+
+    if (!startDate || !endDate) {
+      alert('Invalid date format. Please use a valid date.');
+      return;
+    }
+
+    // Validate date range
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+
+    if (startDateObj > endDateObj) {
+      alert('Start date must be before or equal to end date');
+      return;
+    }
+
+    // Check if date range is too large (more than 1 year)
+    const daysDiff = (endDateObj - startDateObj) / (1000 * 60 * 60 * 24);
+    if (daysDiff > 365) {
+      const confirmLarge = confirm('You selected a date range longer than 1 year. This may take time to generate. Continue?');
+      if (!confirmLarge) return;
+    }
+
+    try {
+      // Show loading
+      const modalLoading = document.getElementById('modalLoading');
+      modalLoading.style.display = 'flex';
+
+      const config = this.getPdfConfig();
+      
+      // Verify config has valid dates
+      if (!config.dateRange.start || !config.dateRange.end) {
+        throw new Error('Invalid date configuration');
+      }
+
+      // Issue 4: Validate template name
+      const validTemplates = ['visit-summary', 'executive', 'detailed'];
+      if (!config.template || !validTemplates.includes(config.template)) {
+        throw new Error(`Invalid template name. Must be one of: ${validTemplates.join(', ')}`);
+      }
+
+      // Issue 3: Validate sections object
+      if (!config.sections || typeof config.sections !== 'object') {
+        throw new Error('Missing or invalid sections configuration');
+      }
+
+      // Check if at least one section is enabled
+      const enabledSections = Object.values(config.sections).filter(val => val === true);
+      if (enabledSections.length === 0) {
+        throw new Error('At least one report section must be enabled. Please select sections to include in the report.');
+      }
+
+      // Validate section property names
+      const validSectionNames = ['summary', 'visitDetails', 'topicsCovered', 'schoolInfo', 'teamInfo', 'otherActivities'];
+      const invalidSections = Object.keys(config.sections).filter(key => !validSectionNames.includes(key));
+      if (invalidSections.length > 0) {
+        throw new Error(`Invalid section names found: ${invalidSections.join(', ')}. Valid sections are: ${validSectionNames.join(', ')}`);
+      }
+
+      const token = localStorage.getItem('token');
+
+      const response = await fetch('/api/reports/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(config)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate report');
+      }
+
+      // Download the PDF
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `spread-a-smile-report-${startDate}-to-${endDate}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      // Hide loading and close modal
+      modalLoading.style.display = 'none';
+      this.closePdfModal();
+
+      // Show success message
+      if (window.notify) {
+        notify.success('PDF report generated successfully!');
+      } else {
+        alert('PDF report generated successfully!');
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      
+      // Hide loading
+      const modalLoading = document.getElementById('modalLoading');
+      modalLoading.style.display = 'none';
+
+      // Show error
+      if (window.notify) {
+        notify.error(error.message || 'Failed to generate PDF report');
+      } else {
+        alert(error.message || 'Failed to generate PDF report');
+      }
+    }
+  }
 }
 
 // Global instance and functions for onclick handlers
@@ -439,6 +684,25 @@ function resetFilters() {
 function exportReport() {
   if (reportsManager) {
     reportsManager.exportReport();
+  }
+}
+
+// PDF Generator global functions
+function showPdfGenerator() {
+  if (reportsManager) {
+    reportsManager.showPdfGenerator();
+  }
+}
+
+function closePdfModal() {
+  if (reportsManager) {
+    reportsManager.closePdfModal();
+  }
+}
+
+function generatePdfReport() {
+  if (reportsManager) {
+    reportsManager.generatePdfReport();
   }
 }
 

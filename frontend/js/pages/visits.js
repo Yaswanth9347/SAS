@@ -172,11 +172,13 @@ function renderVisitDetailsHtml(visit){
       mediaHtml += `<div class="media-section">
         <h4>Photos (${visit.photos.length})</h4>
         <div class="media-gallery photos-gallery">
-          ${visit.photos.map(p=>`
+          ${visit.photos.map(p=>{
+            const photoUrl = typeof p === 'string' ? p : (p.path || p.url || p);
+            return `
             <div class="media-item photo-item">
-              <img src="${toAbsoluteMediaUrl(p)}" data-media-src="${toAbsoluteMediaUrl(p)}" data-media-type="image" alt="Visit photo" loading="lazy" />
+              <img src="${toAbsoluteMediaUrl(photoUrl)}" data-media-src="${toAbsoluteMediaUrl(photoUrl)}" data-media-type="image" alt="Visit photo" loading="lazy" />
             </div>
-          `).join('')}
+          `;}).join('')}
         </div>
       </div>`;
     }
@@ -185,12 +187,14 @@ function renderVisitDetailsHtml(visit){
       mediaHtml += `<div class="media-section">
         <h4>Videos (${visit.videos.length})</h4>
         <div class="media-gallery videos-gallery">
-          ${visit.videos.map(v=>`
-            <div class="media-item video-item" data-media-src="${toAbsoluteMediaUrl(v)}" data-media-type="video">
+          ${visit.videos.map(v=>{
+            const videoUrl = typeof v === 'string' ? v : (v.path || v.url || v);
+            return `
+            <div class="media-item video-item" data-media-src="${toAbsoluteMediaUrl(videoUrl)}" data-media-type="video">
               <div class="video-play-button">▶</div>
               <span>Play Video</span>
             </div>
-          `).join('')}
+          `;}).join('')}
         </div>
       </div>`;
     }
@@ -199,12 +203,15 @@ function renderVisitDetailsHtml(visit){
       mediaHtml += `<div class="media-section">
         <h4>Documents (${visit.docs.length})</h4>
         <div class="docs-list">
-          ${visit.docs.map(d=>`
+          ${visit.docs.map(d=>{
+            const docUrl = typeof d === 'string' ? d : (d.path || d.url || d);
+            const docName = typeof d === 'string' ? d.split('/').pop() : (d.originalName || d.filename || docUrl.split('/').pop());
+            return `
             <div class="doc-item">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="none" d="M0 0h24v24H0z"/><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z" fill="#3f51b5"/></svg>
-              <a href="${d}" target="_blank">${escapeHtml(d.split('/').pop())}</a>
+              <a href="${docUrl}" target="_blank">${escapeHtml(docName)}</a>
             </div>
-          `).join('')}
+          `;}).join('')}
         </div>
       </div>`;
     }

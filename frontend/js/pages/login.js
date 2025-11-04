@@ -54,6 +54,11 @@ document.getElementById("loginForm").addEventListener("submit", async function (
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       
+      // Store server instance ID for session validation
+      if (data.serverInstanceId) {
+        localStorage.setItem("serverInstanceId", data.serverInstanceId);
+      }
+      
       // Redirect all users to dashboard
       window.location.href = "dashboard.html";
     } else {

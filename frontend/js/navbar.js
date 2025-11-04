@@ -182,7 +182,10 @@ class NavbarManager {
     if (!this.hamburger) {
       // Create hamburger menu element
       const navContainer = document.querySelector('.nav-container');
-      if (!navContainer) return;
+      if (!navContainer) {
+        console.warn('Nav container not found');
+        return;
+      }
       
       this.hamburger = document.createElement('div');
       this.hamburger.className = 'hamburger';
@@ -196,31 +199,72 @@ class NavbarManager {
       this.hamburger.setAttribute('aria-label', 'Toggle navigation menu');
       this.hamburger.setAttribute('aria-expanded', 'false');
       
-      // Insert hamburger before the nav menu
+      // Insert hamburger at the end of nav container (after nav-menu)
       navContainer.appendChild(this.hamburger);
+      
+      console.log('✅ Hamburger menu created and added to navbar');
+    } else {
+      console.log('✅ Hamburger already exists in HTML');
     }
     
-    // Add click and keyboard event listeners
-    this.hamburger.addEventListener('click', () => this.toggleMobileMenu());
+    // Remove any existing event listeners to prevent duplicates
+    const newHamburger = this.hamburger.cloneNode(true);
+    this.hamburger.parentNode.replaceChild(newHamburger, this.hamburger);
+    this.hamburger = newHamburger;
+    
+    // Single unified event handler for all interaction types
+    const handleToggle = (e) => {
+      console.log('🍔 Hamburger interaction detected:', e.type);
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Small delay to ensure event is fully processed
+      setTimeout(() => {
+        this.toggleMobileMenu();
+      }, 10);
+      
+      return false;
+    };
+    
+    // Add all event types
+    this.hamburger.addEventListener('click', handleToggle, { capture: true });
+    this.hamburger.addEventListener('touchend', handleToggle, { passive: false, capture: true });
     this.hamburger.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
+        console.log('⌨️ Keyboard interaction detected');
         e.preventDefault();
         this.toggleMobileMenu();
       }
     });
     
-    // Close menu when clicking outside
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.nav-container') && this.navMenu.classList.contains('active')) {
-        this.closeMobileMenu();
+    console.log('✅ Event listeners attached to hamburger');
+    
+    // Close menu when clicking/touching outside
+    const closeHandler = (e) => {
+      if (this.navMenu && this.navMenu.classList.contains('active')) {
+        if (!e.target.closest('.nav-container')) {
+          console.log('🚪 Closing menu - clicked outside');
+          this.closeMobileMenu();
+        }
       }
-    });
+    };
+    
+    // Use a slight delay to avoid conflicts with hamburger click
+    setTimeout(() => {
+      document.addEventListener('click', closeHandler);
+      document.addEventListener('touchend', closeHandler);
+    }, 100);
   }
 
   /**
    * Toggle mobile menu open/close
    */
   toggleMobileMenu() {
+    if (!this.hamburger || !this.navMenu) {
+      console.warn('Hamburger or nav menu not found');
+      return;
+    }
+    
     this.hamburger.classList.toggle('active');
     this.navMenu.classList.toggle('active');
     const expanded = this.navMenu.classList.contains('active');
@@ -229,8 +273,10 @@ class NavbarManager {
     // Prevent body scroll when menu is open
     if (this.navMenu.classList.contains('active')) {
       document.body.style.overflow = 'hidden';
+      console.log('Mobile menu opened');
     } else {
       document.body.style.overflow = '';
+      console.log('Mobile menu closed');
     }
   }
 

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Report - SAS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .report-builder-container {
+            max-width: 1200px;
+            margin: 100px auto 40px;
+            padding: 30px;
+        }
+
+        .builder-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .builder-header h1 {
+            color: #2563eb;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .builder-header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .builder-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .builder-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 25px;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i {
+            color: #2563eb;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .checkbox-item:hover {
+            background: #f3f4f6;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .date-range-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .multi-select {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #2563eb;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .template-options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .template-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .template-card:hover {
+            border-color: #2563eb;
+            background: #f0f9ff;
+        }
+
+        .template-card.selected {
+            border-color: #2563eb;
+            background: #dbeafe;
+        }
+
+        .template-card h4 {
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .template-card p {
+            color: #666;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .builder-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .date-range-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>SAS - Reports</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="visits.html">Visits</a></li>
+                <li><a href="analytics.html">Analytics</a></li>
+                <li><a href="report-generator.html" class="active">Reports</a></li>
+                <li><a href="profile.html">Profile</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Report Builder -->
+    <div class="report-builder-container">
+        <div class="builder-header">
+            <h1><i class="fas fa-file-pdf"></i> Report Generator</h1>
+            <p>Create customized PDF reports with your preferred data and sections</p>
+        </div>
+
+        <div class="builder-grid">
+            <!-- Basic Information -->
+            <div class="builder-card">
+                <h3 class="card-title">
+                    <i class="fas fa-info-circle"></i>
+                    Basic Information
+                </h3>
+                <div class="form-group">
+                    <label for="reportTitle">Report Title *</label>
+                    <input type="text" id="reportTitle" placeholder="e.g., Monthly Visit Report" value="SAS Activity Report">
+                </div>
+                <div class="form-group">
+                    <label for="reportSubtitle">Subtitle</label>
+                    <input type="text" id="reportSubtitle" placeholder="e.g., January 2024" value="Student Activity Service">
+                </div>
+                <div class="form-group">
+                    <label for="reportNotes">Additional Notes</label>
+                    <textarea id="reportNotes" placeholder="Any additional information to include..."></textarea>
+                </div>
+            </div>
+
+            <!-- Template Selection -->
+            <div class="builder-card">
+                <h3 class="card-title">
+                    <i class="fas fa-layer-group"></i>
+                    Report Template
+                </h3>
+                <div class="template-options" id="templateOptions">
+                    <div class="template-card selected" data-template="visit-summary">
+                        <h4>📊 Visit Summary Report</h4>
+                        <p>Comprehensive overview with all statistics and details</p>
+                    </div>
+                    <div class="template-card" data-template="executive-summary">
+                        <h4>📋 Executive Summary</h4>
+                        <p>High-level overview for leadership and stakeholders</p>
+                    </div>
+                    <div class="template-card" data-template="detailed-report">
+                        <h4>📄 Detailed Report</h4>
+                        <p>Complete report with all available information</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sections to Include -->
+            <div class="builder-card">
+                <h3 class="card-title">
+                    <i class="fas fa-list-check"></i>
+                    Sections to Include
+                </h3>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="section-summary" checked>
+                        <label for="section-summary">Summary Statistics</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="section-visits" checked>
+                        <label for="section-visits">Visit Details</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="section-schools" checked>
+                        <label for="section-schools">School Breakdown</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="section-teams" checked>
+                        <label for="section-teams">Team Performance</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="builder-card">
+                <h3 class="card-title">
+                    <i class="fas fa-filter"></i>
+                    Data Filters
+                </h3>
+                <div class="form-group">
+                    <label>Date Range</label>
+                    <div class="date-range-grid">
+                        <input type="date" id="dateStart" placeholder="Start Date">
+                        <input type="date" id="dateEnd" placeholder="End Date">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="filterSchools">Filter by Schools</label>
+                    <select id="filterSchools" multiple class="multi-select">
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filterTeams">Filter by Teams</label>
+                    <select id="filterTeams" multiple class="multi-select">
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filterStatus">Filter by Status</label>
+                    <select id="filterStatus">
+                        <option value="">All Statuses</option>
+                        <option value="scheduled">Scheduled</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="button-group">
+            <button class="btn btn-secondary" id="resetBtn">
+                <i class="fas fa-undo"></i>
+                Reset
+            </button>
+            <button class="btn btn-primary" id="generateBtn">
+                <i class="fas fa-file-pdf"></i>
+                Generate PDF Report
+            </button>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div class="loading" id="loadingIndicator">
+            <div class="loading-spinner"></div>
+            <p>Generating your report, please wait...</p>
+        </div>
+    </div>
+
+    <script src="js/authManager.js"></script>
+    <script src="js/report-builder.js"></script>
+</body>
+</html>

@@ -7,6 +7,83 @@ class AuthManager {
   constructor() {
     this.token = localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
     this.user = this.getUser();
+    this.serverInstanceId = localStorage.getItem('serverInstanceId');
+    
+    // Check server instance on initialization (detects server restart)
+    this.checkServerInstance();
+  }
+
+  /**
+   * Check if server has restarted by verifying instance ID
+   * If server restarted, automatically logout user
+   */
+  async checkServerInstance() {
+    // Only check if user is logged in
+    if (!this.isAuthenticated()) {
+      return;
+    }
+
+    try {
+      // Make a lightweight API call to get current server instance ID
+      const response = await fetch('/api/test', {
+        headers: {
+          'Authorization': `Bearer ${this.getToken()}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const currentInstanceId = data.serverInstanceId;
+        
+        // If we have a stored instance ID and it doesn't match current, server restarted
+        if (this.serverInstanceId && currentInstanceId && this.serverInstanceId !== currentInstanceId) {
+          console.log('🔄 Server restart detected. Logging out for security...');
+          this.clearAuth();
+          alert('Server was restarted. Please log in again.');
+          window.location.href = 'login.html';
+          return;
+        }
+        
+        // Store/update the current instance ID
+        if (currentInstanceId) {
+          localStorage.setItem('serverInstanceId', currentInstanceId);
+          this.serverInstanceId = currentInstanceId;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking server instance:', error);
+      // Don't logout on network errors, only on instance mismatch
+    }
+  }
+
+  /**
+   * Validate server instance ID from API response
+   * Call this after every API request to detect server restarts
+   */
+  validateServerInstance(responseData) {
+    if (!responseData || typeof responseData !== 'object') {
+      return true; // No data to validate
+    }
+
+    const currentInstanceId = responseData.serverInstanceId;
+    
+    // If response has instance ID, validate it
+    if (currentInstanceId) {
+      // If we have a stored instance ID and it doesn't match, server restarted
+      if (this.serverInstanceId && this.serverInstanceId !== currentInstanceId) {
+        console.log('🔄 Server restart detected. Logging out for security...');
+        this.clearAuth();
+        alert('Server was restarted. Please log in again.');
+        window.location.href = 'login.html';
+        return false;
+      }
+      
+      // Update stored instance ID
+      localStorage.setItem('serverInstanceId', currentInstanceId);
+      this.serverInstanceId = currentInstanceId;
+    }
+    
+    return true;
   }
 
   /**
@@ -32,11 +109,17 @@ class AuthManager {
   /**
    * Set authentication data
    */
-  setAuth(token, user) {
+  setAuth(token, user, serverInstanceId = null) {
     localStorage.setItem(CONFIG.STORAGE_KEYS.TOKEN, token);
     localStorage.setItem(CONFIG.STORAGE_KEYS.USER, JSON.stringify(user));
     this.token = token;
     this.user = user;
+    
+    // Store server instance ID if provided
+    if (serverInstanceId) {
+      localStorage.setItem('serverInstanceId', serverInstanceId);
+      this.serverInstanceId = serverInstanceId;
+    }
   }
 
   /**
@@ -45,8 +128,10 @@ class AuthManager {
   clearAuth() {
     localStorage.removeItem(CONFIG.STORAGE_KEYS.TOKEN);
     localStorage.removeItem(CONFIG.STORAGE_KEYS.USER);
+    localStorage.removeItem('serverInstanceId');
     this.token = null;
     this.user = null;
+    this.serverInstanceId = null;
   }
 
   /**

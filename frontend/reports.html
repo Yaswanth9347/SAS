@@ -39,6 +39,22 @@
 
       <!-- Report Types -->
       <div class="report-types">
+        <!-- PDF Report Card (Admin Only) -->
+        <div class="report-card report-card-featured" id="pdfReportCard" onclick="showPdfGenerator()">
+          <div class="report-card-header">
+            <div class="report-icon pdf-icon">
+              <i class="fas fa-file-pdf"></i>
+            </div>
+            <h3>Generate PDF Report <span class="admin-badge">Admin</span></h3>
+          </div>
+          <p>Generate professional "Spread A Smile" PDF reports with customizable date ranges and filters.</p>
+          <div class="report-features">
+            <span><i class="fas fa-check"></i> Visit Summary</span>
+            <span><i class="fas fa-check"></i> School Details</span>
+            <span><i class="fas fa-check"></i> Team Information</span>
+          </div>
+        </div>
+
         <div class="report-card" onclick="showReport('visits')">
           <div class="report-card-header">
             <div class="report-icon">
@@ -120,47 +136,6 @@
         </div>
       </div>
 
-      <!-- Filters Card -->
-      <div class="filters-card">
-        <h2><i class="fas fa-filter"></i> Filter Reports</h2>
-        <div class="filters-grid">
-          <div class="form-group">
-            <label for="dateFrom">From Date</label>
-            <input type="date" id="dateFrom">
-          </div>
-          <div class="form-group">
-            <label for="dateTo">To Date</label>
-            <input type="date" id="dateTo">
-          </div>
-          <div class="form-group">
-            <label for="statusFilter">Status</label>
-            <select id="statusFilter">
-              <option value="">All Status</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="schoolFilter">School</label>
-            <select id="schoolFilter">
-              <option value="">All Schools</option>
-            </select>
-          </div>
-        </div>
-        <div class="filter-actions">
-          <button class="btn btn-secondary" onclick="resetFilters()">
-            <i class="fas fa-redo"></i> Reset
-          </button>
-          <button class="btn btn-primary" onclick="applyFilters()">
-            <i class="fas fa-search"></i> Apply Filters
-          </button>
-          <button class="btn btn-export" onclick="exportReport()">
-            <i class="fas fa-download"></i> Export CSV
-          </button>
-        </div>
-      </div>
-
       <!-- Results Section -->
       <div class="results-section" id="resultsSection">
         <div class="results-header">
@@ -176,6 +151,74 @@
       </div>
     </div>
   </section>
+
+  <!-- PDF Generator Modal -->
+  <div class="modal" id="pdfGeneratorModal" style="display: none;">
+    <div class="modal-content pdf-modal">
+      <div class="modal-header">
+        <h2><i class="fas fa-file-pdf"></i> Generate PDF Report</h2>
+        <button class="close-btn" onclick="closePdfModal()">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Report Title -->
+        <div class="form-section">
+          <h3>Report Title</h3>
+          <input type="text" id="pdfReportTitle" placeholder="Monthly Activity Report" class="full-width-input">
+        </div>
+
+        <!-- Date Range -->
+        <div class="form-section">
+          <h3>Report Period</h3>
+          <div class="date-range-grid">
+            <div class="form-group">
+              <label>Start Date</label>
+              <input type="date" id="pdfStartDate" required>
+            </div>
+            <div class="form-group">
+              <label>End Date</label>
+              <input type="date" id="pdfEndDate" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="form-section">
+          <h3>Filters (Optional)</h3>
+          <div class="filters-grid">
+            <div class="form-group">
+              <label>Schools</label>
+              <select id="pdfSchoolFilter" multiple>
+                <option value="">Loading...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Teams</label>
+              <select id="pdfTeamFilter" multiple>
+                <option value="">Loading...</option>
+              </select>
+            </div>
+          </div>
+          <p class="help-text">Hold Ctrl (Cmd on Mac) to select multiple items</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closePdfModal()">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+        <button class="btn btn-primary" onclick="generatePdfReport()">
+          <i class="fas fa-download"></i> Generate PDF
+        </button>
+      </div>
+
+      <!-- Loading Overlay -->
+      <div class="modal-loading" id="modalLoading" style="display: none;">
+        <div class="spinner"></div>
+        <p>Generating PDF report, please wait...</p>
+      </div>
+    </div>
+  </div>
 
   <!-- Shared JavaScript Modules -->
   <script src="js/config.js"></script>

@@ -54,6 +54,15 @@ class APIManager {
         throw new Error(data.message || `HTTP error! status: ${response.status}`);
       }
 
+      // Validate server instance ID if authManager is available and user is authenticated
+      if (typeof authManager !== 'undefined' && authManager && authManager.isAuthenticated()) {
+        const isValid = authManager.validateServerInstance(data);
+        if (!isValid) {
+          // Server restarted, user will be logged out by validateServerInstance
+          throw new Error('Server restarted. Please log in again.');
+        }
+      }
+
       return data;
     } catch (error) {
       console.error('API Request Error:', error);
