@@ -8,12 +8,8 @@ echo "🔨 Starting Render build process..."
 # Navigate to backend
 cd backend
 
-# Install Node dependencies
+# Clean install to ensure Puppeteer is properly installed
 echo "📦 Installing Node.js dependencies..."
-npm install
-
-# Install Puppeteer with Chromium
-echo "🌐 Installing Puppeteer with Chromium..."
-npm install puppeteer --save
+npm ci --omit=dev --legacy-peer-deps 2>/dev/null || npm install --legacy-peer-deps
 
 echo "✅ Build completed successfully!"
