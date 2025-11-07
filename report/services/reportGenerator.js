@@ -18,7 +18,7 @@ class ReportGenerator {
      */
     async initBrowser() {
         if (!this.browser) {
-            this.browser = await puppeteer.launch({
+            const launchOptions = {
                 headless: 'new',
                 args: [
                     '--no-sandbox',
@@ -32,12 +32,13 @@ class ReportGenerator {
                     '--no-zygote',
                     '--single-process',
                     '--disable-extensions'
-                ],
-                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || 
-                               (process.env.NODE_ENV === 'production' 
-                                 ? '/usr/bin/chromium-browser' 
-                                 : undefined)
-            });
+                ]
+            };
+
+            // On Render and other cloud platforms, Puppeteer will use its bundled Chromium
+            // No need to specify executablePath unless using a custom Chromium installation
+            
+            this.browser = await puppeteer.launch(launchOptions);
             console.log('✅ Browser launched successfully');
         }
         return this.browser;

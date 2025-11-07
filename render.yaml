@@ -5,17 +5,13 @@ services:
     env: node
     region: singapore  # Closest to India
     plan: free
-    buildCommand: cd backend && npm install
+    buildCommand: bash render-build.sh
     startCommand: cd backend && npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000  # Render's default port
-      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-        value: true
-      - key: PUPPETEER_EXECUTABLE_PATH
-        value: /usr/bin/chromium-browser
       - key: MONGODB_URI
         sync: false  # Set to: mongodb+srv://spreadasmile22_db_user:DYRtTZl0bxwXQc74@sas.qs5tfqz.mongodb.net/sas_database?retryWrites=true&w=majority&appName=SAS
       - key: JWT_SECRET
