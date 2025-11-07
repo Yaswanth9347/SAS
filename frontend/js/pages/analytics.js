@@ -59,7 +59,7 @@ class AnalyticsDashboard {
     try {
       const [overviewData, volunteerData] = await Promise.all([
         api.getAnalyticsOverview(),
-        api.getAnalyticsVolunteers()
+        api.getVolunteersAnalytics()
       ]);
 
       if (overviewData.success) {
@@ -317,7 +317,7 @@ class AnalyticsDashboard {
    */
   async loadVolunteerAnalytics() {
     try {
-      const data = await api.getAnalyticsVolunteers();
+      const data = await api.getVolunteersAnalytics();
       
       if (data.success) {
         const topVolunteersList = document.getElementById('topVolunteersList');

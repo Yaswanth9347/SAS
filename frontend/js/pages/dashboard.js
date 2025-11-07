@@ -92,27 +92,59 @@ class DashboardManager {
    */
   async loadUpcomingVisits() {
     try {
+      console.log('📊 [Dashboard] Loading visits...');
       const data = await api.getVisits();
       
+      console.log('📊 [Dashboard] Visits response:', data);
+      
       if (data.success) {
-        const upcoming = data.data.filter(visit => visit.status === 'scheduled');
+        const allVisits = data.data || [];
+        console.log('📊 [Dashboard] Total visits:', allVisits.length);
+        
+        const upcoming = allVisits.filter(visit => visit.status === 'scheduled');
+        const visited = allVisits.filter(visit => visit.status === 'visited');
+        const completed = allVisits.filter(visit => visit.status === 'completed');
+        
+        console.log('📊 [Dashboard] Upcoming:', upcoming.length, 'Visited:', visited.length, 'Completed:', completed.length);
+        
+        // Update activity summary stats
+        const statsElements = document.querySelectorAll('#quickStats .stat-item');
+        console.log('📊 [Dashboard] Found stat elements:', statsElements.length);
+        
+        if (statsElements.length >= 3) {
+          statsElements[0].querySelector('.stat-number').textContent = allVisits.length;
+          statsElements[1].querySelector('.stat-number').textContent = upcoming.length;
+          statsElements[2].querySelector('.stat-number').textContent = completed.length;
+          console.log('📊 [Dashboard] Updated stats display');
+        }
+        
+        // Update upcoming visits list
         const visitsContainer = document.getElementById('upcomingVisits');
         
-        if (upcoming.length > 0) {
-          visitsContainer.innerHTML = upcoming.map(visit => `
+        // Show both scheduled and visited visits as "upcoming activities"
+        const upcomingActivities = [...upcoming, ...visited].sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        if (upcomingActivities.length > 0) {
+          console.log('📊 [Dashboard] Displaying', upcomingActivities.length, 'upcoming activities');
+          visitsContainer.innerHTML = upcomingActivities.map(visit => `
             <div class="visit-item">
               <h4>📅 ${utils.formatDate(visit.date)}</h4>
               <p>🏫 ${visit.school?.name || 'School'}</p>
-              <p>👥 Class: ${visit.assignedClass}</p>
-              <span class="status-badge upcoming">Scheduled</span>
+              <p>👥 Class: ${visit.assignedClass || 'Not assigned'}</p>
+              <span class="status-badge ${visit.status}">${visit.status === 'scheduled' ? 'Scheduled' : 'Visited - Upload Media'}</span>
             </div>
           `).join('');
         } else {
-          visitsContainer.innerHTML = '<p>No upcoming visits scheduled.</p>';
+          console.log('📊 [Dashboard] No upcoming activities found');
+          visitsContainer.innerHTML = '<p>No upcoming visits or activities.</p>';
         }
+      } else {
+        console.warn('📊 [Dashboard] API returned success=false:', data);
+        const visitsContainer = document.getElementById('upcomingVisits');
+        visitsContainer.innerHTML = '<p>Unable to load visits.</p>';
       }
     } catch (error) {
-      console.error('Error loading visits:', error);
+      console.error('📊 [Dashboard] Error loading visits:', error);
       renderError('upcomingVisits', 'Failed to load upcoming visits');
     }
   }
@@ -122,28 +154,38 @@ class DashboardManager {
    */
   async loadLatestVisitGallery() {
     try {
-      // Get all completed visits
-      const data = await api.getVisits({ status: 'completed' });
+      console.log('🖼️ [Dashboard] Loading latest visit gallery...');
       
-      if (data.success && data.data.length > 0) {
-        // Sort by date descending to get the most recent
+      // Get all visits (not just completed ones with filter, to avoid backend filtering issues)
+      const data = await api.getVisits();
+      
+      console.log('🖼️ [Dashboard] Gallery API response:', data);
+      
+      if (data.success && data.data && data.data.length > 0) {
+        // Filter and sort by date descending to get the most recent completed visit
         const completedVisits = data.data
           .filter(visit => visit.status === 'completed')
           .sort((a, b) => new Date(b.date) - new Date(a.date));
 
+        console.log('🖼️ [Dashboard] Found', completedVisits.length, 'completed visits');
+
         if (completedVisits.length === 0) {
+          console.log('🖼️ [Dashboard] No completed visits found');
           this.showNoGallery();
           return;
         }
 
         // Get the latest completed visit
         const latestVisit = completedVisits[0];
+        console.log('🖼️ [Dashboard] Latest visit:', latestVisit.school?.name, 'on', latestVisit.date);
         
         // Fetch gallery for this visit
         const galleryData = await api.getVisitGallery(latestVisit._id);
+        console.log('🖼️ [Dashboard] Gallery data response:', galleryData);
         
         if (galleryData.success && galleryData.data) {
           const { photos = [], videos = [] } = galleryData.data;
+          console.log('🖼️ [Dashboard] Photos:', photos.length, 'Videos:', videos.length);
           
           // Helper to ensure absolute URLs
           const toAbsoluteUrl = (url) => {
@@ -169,19 +211,23 @@ class DashboardManager {
           ];
 
           if (this.galleryMedia.length > 0) {
+            console.log('🖼️ [Dashboard] Displaying gallery with', this.galleryMedia.length, 'items');
             this.displayGallery(latestVisit);
             this.startAutoScroll();
           } else {
+            console.log('🖼️ [Dashboard] No media in gallery');
             this.showNoGallery();
           }
         } else {
+          console.warn('🖼️ [Dashboard] Gallery API returned no data or failed');
           this.showNoGallery();
         }
       } else {
+        console.log('🖼️ [Dashboard] No visits data or empty array');
         this.showNoGallery();
       }
     } catch (error) {
-      console.error('Error loading latest visit gallery:', error);
+      console.error('🖼️ [Dashboard] Error loading latest visit gallery:', error);
       this.showNoGallery();
     }
   }
@@ -227,11 +273,6 @@ class DashboardManager {
       </div>
       <div class="gallery-indicators">
         ${indicatorsHTML}
-      </div>
-      <div class="gallery-controls">
-        <button class="gallery-btn" onclick="dashboardManager.prevSlide()">⬅️ Previous</button>
-        <button class="gallery-btn" onclick="dashboardManager.toggleAutoScroll()" id="autoScrollBtn">⏸️ Pause</button>
-        <button class="gallery-btn" onclick="dashboardManager.nextSlide()">Next ➡️</button>
       </div>
     `;
 

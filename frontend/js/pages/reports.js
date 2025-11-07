@@ -33,8 +33,8 @@ class ReportsManager {
     try {
       const [overview, volunteers, schools] = await Promise.all([
         api.getAnalyticsOverview(),
-        api.getAnalyticsVolunteers(),
-        api.getAnalyticsSchools()
+        api.getVolunteersAnalytics(),
+        api.getSchoolsAnalytics()
       ]);
 
       if (overview.success) {
@@ -68,8 +68,14 @@ class ReportsManager {
     try {
       const data = await api.getSchools();
       
-      if (data.success) {
-        const select = document.getElementById('schoolFilter');
+      if (data.success && data.data) {
+        const select = document.getElementById('pdfSchoolFilter');
+        
+        if (!select) {
+          console.warn('pdfSchoolFilter element not found');
+          return;
+        }
+        
         data.data.forEach(school => {
           const option = document.createElement('option');
           option.value = school._id;
@@ -319,7 +325,10 @@ class ReportsManager {
     document.getElementById('dateFrom').value = '';
     document.getElementById('dateTo').value = '';
     document.getElementById('statusFilter').value = '';
-    document.getElementById('schoolFilter').value = '';
+    const schoolFilter = document.getElementById('pdfSchoolFilter');
+    if (schoolFilter && schoolFilter.tagName === 'SELECT' && !schoolFilter.multiple) {
+      schoolFilter.value = '';
+    }
   }
 
   /**

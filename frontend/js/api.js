@@ -401,6 +401,10 @@ class APIManager {
     return this.post('/feedback', feedbackData);
   }
 
+  async getFeedbackStats() {
+    return this.get('/feedback/stats');
+  }
+
   // ==================== CONTACT ENDPOINTS ====================
   
   // Public - Submit contact form

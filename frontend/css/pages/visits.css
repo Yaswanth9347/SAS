@@ -95,6 +95,7 @@
 
 /* Badges */
 .status-badge.scheduled { background: #e3f2fd; color: #1565c0; }
+.status-badge.visited { background: #fff3e0; color: #ef6c00; }
 .status-badge.cancelled { background: #ffebee; color: #c62828; }
 .status-badge.completed { background: #d4edda; color: #2e7d32; }
 
@@ -144,6 +145,122 @@
   margin-top: -6px;
   padding: 0 16px 12px 16px;
   box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+
+/* ============================================
+   VISIT INFO MODAL - CENTERED VIEW
+   ============================================ */
+#visit_info_overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+#visit_info_overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+#visit_info_modal {
+  background: #fff;
+  padding: 30px;
+  border-radius: 16px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  transform: scale(0.9) translateY(20px);
+  transition: transform 0.3s ease;
+  position: relative;
+}
+
+#visit_info_overlay.open #visit_info_modal {
+  transform: scale(1) translateY(0);
+}
+
+#visit_info_modal h2 {
+  margin: 0 0 20px 0;
+  color: #2e7d32;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+#visit_info_modal .close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: #f5f5f5;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+#visit_info_modal .close-btn:hover {
+  background: #e0e0e0;
+  color: #333;
+  transform: rotate(90deg);
+}
+
+#visit_info_body {
+  margin-top: 12px;
+  overflow-y: auto;
+}
+
+/* Responsive modal */
+@media (max-width: 768px) {
+  #visit_info_modal {
+    max-width: 95%;
+    padding: 25px 20px;
+    max-height: 90vh;
+  }
+  
+  #visit_info_modal h2 {
+    font-size: 1.5rem;
+    padding-right: 40px;
+  }
+  
+  #visit_info_modal .close-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  #visit_info_overlay {
+    padding: 10px;
+  }
+  
+  #visit_info_modal {
+    max-width: 100%;
+    padding: 20px 15px;
+    border-radius: 12px;
+  }
+  
+  #visit_info_modal h2 {
+    font-size: 1.35rem;
+  }
 }
 
 @media (max-width: 520px) {

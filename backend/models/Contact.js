@@ -47,9 +47,42 @@ const ContactSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for faster queries
+// ============================================
+// DATABASE INDEXES FOR PERFORMANCE OPTIMIZATION
+// ============================================
+
+// Existing indexes enhanced
 ContactSchema.index({ status: 1, createdAt: -1 });
 ContactSchema.index({ email: 1 });
+
+// Additional indexes for better performance
+// Index for status-based queries
+ContactSchema.index({ status: 1 });
+
+// Index for email-based lookups
+ContactSchema.index({ email: 1, createdAt: -1 });
+
+// Text index for search functionality (name, email, subject, message)
+ContactSchema.index({
+  name: 'text',
+  email: 'text',
+  subject: 'text',
+  message: 'text'
+});
+
+// Index for reply status
+ContactSchema.index({ 'reply.repliedBy': 1, 'reply.repliedAt': -1 });
+
+// Index for date-based queries
+ContactSchema.index({ createdAt: -1 });
+
+// TTL index to automatically delete old contacts after 365 days (optional)
+// Uncomment if you want to auto-delete old contact submissions
+// ContactSchema.index({ createdAt: 1 }, { expireAfterSeconds: 365 * 24 * 60 * 60 });
+
+// ============================================
+// VIRTUAL PROPERTIES
+// ============================================
 
 // Virtual for days since creation
 ContactSchema.virtual('age').get(function() {

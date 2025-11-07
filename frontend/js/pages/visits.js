@@ -24,6 +24,7 @@ function toAbsoluteMediaUrl(url) {
 function statusClassName(status) {
   const s = (status || 'scheduled').toLowerCase();
   if (s === 'completed') return 'completed';
+  if (s === 'visited') return 'visited';
   if (s === 'cancelled') return 'cancelled';
   return 'scheduled';
 }
@@ -82,7 +83,14 @@ async function aSYNC_loadVisits(){
           <button class="icon-btn btn-cancel-visit" data-action="cancel" title="Cancel Visit" aria-label="Cancel">${iconCancel}</button>
           <button class="icon-btn btn-delete" title="Delete" aria-label="Delete">${iconDelete}</button>
         `;
+      } else if (sClass === 'visited') {
+        // Visited status: can view details and upload media, but can't edit or cancel
+        actions.innerHTML = `
+          <button class="icon-btn btn-edit" title="View & Upload" aria-label="View & Upload">${iconEdit}</button>
+          <button class="icon-btn btn-delete" title="Delete" aria-label="Delete">${iconDelete}</button>
+        `;
       } else {
+        // Completed: view only
         actions.innerHTML = `
           <button class="icon-btn btn-edit" title="View Details" aria-label="View Details">${iconEdit}</button>
           <button class="icon-btn btn-delete" title="Delete" aria-label="Delete">${iconDelete}</button>
@@ -91,12 +99,6 @@ async function aSYNC_loadVisits(){
 
       card.appendChild(main);
       card.appendChild(actions);
-
-      // details
-      const details = document.createElement('div');
-      details.className = 'visit-details';
-      details.style.display = 'none';
-      details.innerHTML = renderVisitDetailsHtml(visit);
 
       // Wire actions
       actions.querySelector('.btn-edit').addEventListener('click', (e)=>{
@@ -136,19 +138,12 @@ async function aSYNC_loadVisits(){
         });
       }
 
-      // Toggle details behavior: for scheduled visits, open a centered modal with info and uploads
+      // All visit cards open centered modal on click
       card.addEventListener('click', ()=>{
-        if (sClass === 'scheduled') {
-          openVisitInfoModal(visit);
-        } else {
-          details.style.display = details.style.display === 'none' ? 'block' : 'none';
-        }
+        openVisitInfoModal(visit);
       });
 
-      const wrapper = document.createElement('div');
-      wrapper.appendChild(card);
-      wrapper.appendChild(details);
-      list.appendChild(wrapper);
+      list.appendChild(card);
     });
 
     attachDetailsHandlers();

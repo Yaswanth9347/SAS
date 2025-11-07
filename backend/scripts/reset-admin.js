@@ -17,8 +17,10 @@ const updateAdmin = async () => {
         const usersCollection = db.collection('users');
         
         // Hash the password with bcrypt (the same way our User model does it)
+        // Use password from .env or default to Admin@123
+        const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash('Admin@13', salt);
+        const hashedPassword = await bcrypt.hash(adminPassword, salt);
         
         // Check if admin user exists
         const existingAdmin = await usersCollection.findOne({ role: 'admin' });
@@ -27,13 +29,16 @@ const updateAdmin = async () => {
             console.log('Updating existing admin user...');
             
             // Update the admin user with new credentials
+            const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+            const adminEmail = process.env.ADMIN_EMAIL || 'spreadasmile22@gmail.com';
+            
             await usersCollection.updateOne(
                 { role: 'admin' },
                 { 
                     $set: {
                         name: 'Admin',
-                        username: 'admin',
-                        email: 'admin@sas.org',
+                        username: adminUsername,
+                        email: adminEmail,
                         password: hashedPassword,
                         collegeId: 'ADMIN001',
                         department: 'ADMIN',
@@ -48,11 +53,15 @@ const updateAdmin = async () => {
         } else {
             console.log('Creating new admin user...');
             
+            const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+            const adminEmail = process.env.ADMIN_EMAIL || 'spreadasmile2025@gmail.com';
+            const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
+            
             // Create a new admin user
             await usersCollection.insertOne({
                 name: 'Admin',
-                username: 'admin',
-                email: 'admin@sas.org',
+                username: adminUsername,
+                email: adminEmail,
                 password: hashedPassword,
                 collegeId: 'ADMIN001',
                 department: 'ADMIN',
@@ -66,8 +75,9 @@ const updateAdmin = async () => {
         }
         
         console.log('✅ Admin credentials reset successfully!');
-        console.log('Username: Admin');
-        console.log('Password: Admin@13');
+        console.log('Username:', process.env.ADMIN_USERNAME || 'admin');
+        console.log('Email:', process.env.ADMIN_EMAIL || 'spreadasmile2025@gmail.com');
+        console.log('Password:', process.env.ADMIN_PASSWORD || 'Admin@123');
 
         // Verify admin exists
         const admin = await usersCollection.findOne({ role: 'admin' });

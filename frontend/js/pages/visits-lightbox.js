@@ -11,7 +11,7 @@
   overlay.style.display = 'none';
   overlay.style.alignItems = 'center';
   overlay.style.justifyContent = 'center';
-  overlay.style.zIndex = '1000';
+  overlay.style.zIndex = '20000';
 
   overlay.innerHTML = `
     <div id="lightboxContent" style="max-width:90%;max-height:90%;position:relative">

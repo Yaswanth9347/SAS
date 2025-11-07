@@ -416,6 +416,8 @@ exports.cancelVisit = async (req, res, next) => {
 
 const { uploadVisitFiles } = require("../middleware/upload");
 const { processUploadedFiles } = require("../utils/fileProcessing");
+const { normalizeUploadedFiles, deleteUploadedFile } = require("../middleware/hybridUpload");
+const { isCloudinaryConfigured } = require("../config/cloudinary");
 const fs = require("fs");
 const path = require("path");
 const { generateVisitReportPdf } = require('../utils/pdfService');
@@ -429,6 +431,8 @@ exports.uploadVisitFiles = uploadVisitFiles;
 
 exports.handleFileUpload = async (req, res, next) => {
   try {
+    const useCloudinary = isCloudinaryConfigured();
+    console.log(`📦 File Upload Mode: ${useCloudinary ? 'CLOUDINARY' : 'LOCAL'}`);
     console.log("HandleFileUpload received files:", req.files);
     console.log("HandleFileUpload received body:", req.body);
 
@@ -437,26 +441,25 @@ exports.handleFileUpload = async (req, res, next) => {
     if (!visit) {
       // Clean up uploaded files if visit doesn't exist
       if (req.files) {
-        if (Array.isArray(req.files)) {
-          // Handle array of files from multer.any()
-          req.files.forEach((file) => {
+        const filesList = Array.isArray(req.files) ? req.files : Object.values(req.files).flat();
+        for (const file of filesList) {
+          if (useCloudinary && file.public_id) {
+            // Delete from Cloudinary
+            const { deleteFromCloudinary, getResourceType } = require('../config/cloudinary');
+            try {
+              const resourceType = getResourceType(file.path);
+              await deleteFromCloudinary(file.public_id, resourceType);
+            } catch (e) {
+              console.error("Error deleting from Cloudinary:", e);
+            }
+          } else if (file.path && fs.existsSync(file.path)) {
+            // Delete from local storage
             try {
               fs.unlinkSync(file.path);
             } catch (e) {
               console.error("Error deleting file:", e);
             }
-          });
-        } else {
-          // Handle object of file arrays from multer.fields()
-          Object.values(req.files).forEach((files) => {
-            files.forEach((file) => {
-              try {
-                fs.unlinkSync(file.path);
-              } catch (e) {
-                console.error("Error deleting file:", e);
-              }
-            });
-          });
+          }
         }
       }
       return res.status(404).json({
@@ -488,112 +491,90 @@ exports.handleFileUpload = async (req, res, next) => {
       return res.status(403).json({ success: false, message: msg });
     }
 
-    const fileData = {
-      photos: [],
-      videos: [],
-      docs: [],
-    };
+    // Use hybrid upload normalizer
+    const fileData = normalizeUploadedFiles(req);
 
-    // Process uploaded files with enhanced metadata (Hybrid Approach)
-    if (req.files) {
-      if (Array.isArray(req.files)) {
-        // Handle files from multer.any()
-        const photoFiles = req.files.filter(
-          (file) => file.fieldname === "photos"
-        );
-        const videoFiles = req.files.filter(
-          (file) => file.fieldname === "videos"
-        );
-        const docFiles = req.files.filter((file) => file.fieldname === "docs");
+    // If using Cloudinary, files are already processed
+    // If using local storage, we need to process them
+    if (!useCloudinary) {
+      // Process local files with image optimization, etc.
+      const photoFiles = req.files && Array.isArray(req.files) 
+        ? req.files.filter(f => f.fieldname === "photos")
+        : (req.files && req.files.photos) || [];
+      
+      const videoFiles = req.files && Array.isArray(req.files)
+        ? req.files.filter(f => f.fieldname === "videos")
+        : (req.files && req.files.videos) || [];
+      
+      const docFiles = req.files && Array.isArray(req.files)
+        ? req.files.filter(f => f.fieldname === "docs")
+        : (req.files && req.files.docs) || [];
 
-        if (photoFiles.length > 0) {
-          const processedPhotos = await processUploadedFiles(
-            photoFiles,
-            "photos"
-          );
-          fileData.photos = processedPhotos;
-          visit.photos = (visit.photos || []).concat(processedPhotos);
-        }
-
-        if (videoFiles.length > 0) {
-          const processedVideos = await processUploadedFiles(
-            videoFiles,
-            "videos"
-          );
-          fileData.videos = processedVideos;
-          visit.videos = (visit.videos || []).concat(processedVideos);
-        }
-
-        if (docFiles.length > 0) {
-          const processedDocs = await processUploadedFiles(docFiles, "docs");
-          fileData.docs = processedDocs;
-          visit.docs = (visit.docs || []).concat(processedDocs);
-        }
-      } else {
-        // Handle files from multer.fields()
-        if (req.files.photos) {
-          const processedPhotos = await processUploadedFiles(
-            req.files.photos,
-            "photos"
-          );
-          fileData.photos = processedPhotos;
-          visit.photos = (visit.photos || []).concat(processedPhotos);
-        }
-        if (req.files.videos) {
-          const processedVideos = await processUploadedFiles(
-            req.files.videos,
-            "videos"
-          );
-          fileData.videos = processedVideos;
-          visit.videos = (visit.videos || []).concat(processedVideos);
-        }
-        if (req.files.docs) {
-          const processedDocs = await processUploadedFiles(
-            req.files.docs,
-            "docs"
-          );
-          fileData.docs = processedDocs;
-          visit.docs = (visit.docs || []).concat(processedDocs);
-        }
+      if (photoFiles.length > 0) {
+        const processedPhotos = await processUploadedFiles(photoFiles, "photos");
+        fileData.photos = processedPhotos;
       }
-      // persist visit with new media metadata
-      await visit.save();
+
+      if (videoFiles.length > 0) {
+        const processedVideos = await processUploadedFiles(videoFiles, "videos");
+        fileData.videos = processedVideos;
+      }
+
+      if (docFiles.length > 0) {
+        const processedDocs = await processUploadedFiles(docFiles, "docs");
+        fileData.docs = processedDocs;
+      }
     }
+
+    // Append new files to visit
+    if (fileData.photos.length > 0) {
+      visit.photos = (visit.photos || []).concat(fileData.photos);
+    }
+    if (fileData.videos.length > 0) {
+      visit.videos = (visit.videos || []).concat(fileData.videos);
+    }
+    if (fileData.docs.length > 0) {
+      visit.docs = (visit.docs || []).concat(fileData.docs);
+    }
+
+    // Save visit with new media metadata
+    await visit.save();
 
     res.status(200).json({
       success: true,
       data: fileData,
-      message: "Files uploaded successfully with metadata",
+      message: `Files uploaded successfully to ${useCloudinary ? 'Cloudinary' : 'local storage'}`,
+      storageType: useCloudinary ? 'cloud' : 'local'
     });
   } catch (error) {
+    console.error("File upload error:", error);
+    
     // Clean up files on error
+    const useCloudinary = isCloudinaryConfigured();
     if (req.files) {
-      if (Array.isArray(req.files)) {
-        // Handle array of files from multer.any()
-        req.files.forEach((file) => {
-          if (fs.existsSync(file.path)) {
-            try {
-              fs.unlinkSync(file.path);
-            } catch (e) {
-              console.error("Error deleting file:", e);
-            }
+      const filesList = Array.isArray(req.files) ? req.files : Object.values(req.files).flat();
+      
+      for (const file of filesList) {
+        if (useCloudinary && file.public_id) {
+          // Delete from Cloudinary
+          const { deleteFromCloudinary, getResourceType } = require('../config/cloudinary');
+          try {
+            const resourceType = getResourceType(file.path);
+            await deleteFromCloudinary(file.public_id, resourceType);
+          } catch (e) {
+            console.error("Error deleting from Cloudinary:", e);
           }
-        });
-      } else {
-        // Handle object of file arrays from multer.fields()
-        Object.values(req.files).forEach((files) => {
-          files.forEach((file) => {
-            if (fs.existsSync(file.path)) {
-              try {
-                fs.unlinkSync(file.path);
-              } catch (e) {
-                console.error("Error deleting file:", e);
-              }
-            }
-          });
-        });
+        } else if (file.path && fs.existsSync(file.path)) {
+          // Delete from local storage
+          try {
+            fs.unlinkSync(file.path);
+          } catch (e) {
+            console.error("Error deleting file:", e);
+          }
+        }
       }
     }
+    
     res.status(400).json({
       success: false,
       message: error.message,
@@ -1114,13 +1095,89 @@ function normalizeFilePath(p) {
 // Auto-fix inconsistent records only (do NOT auto-complete purely by date)
 async function updatePastVisits() {
   try {
-    // If, due to earlier bugs, a submitted report exists but status didn't flip
-    await Visit.updateMany(
-      { status: "scheduled", submittedBy: { $ne: null } },
+    const now = new Date();
+    
+    // STATUS FLOW:
+    // 1. scheduled -> visited: After 12:00 PM IST on visit date
+    // 2. visited -> completed: 48 hours after visitedAt timestamp
+    // 3. Manual completion: When submittedBy exists (report submitted)
+    
+    console.log('⏰ Running updatePastVisits at:', now.toISOString());
+    
+    // Step 1: Update scheduled visits to "visited" if visit date has passed 12 PM IST
+    const scheduledVisits = await Visit.find({ 
+      status: "scheduled"
+    });
+    
+    for (const visit of scheduledVisits) {
+      // Get the visit date (stored as Date object in DB - usually stored as start of day UTC)
+      const visitDate = new Date(visit.date);
+      
+      // Get just the date parts (year, month, day) from the visit date
+      // Use toLocaleDateString to parse properly regardless of timezone
+      const dateStr = visitDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      const [year, month, day] = dateStr.split('-').map(Number);
+      
+      // Create 12:00 PM IST for that visit date
+      // Method: Create the date in IST timezone, then get UTC representation
+      // 12:00 PM IST = 6:30 AM UTC (IST is UTC+5:30)
+      const noonIST_UTC = new Date(`${dateStr}T06:30:00.000Z`);
+      
+      console.log(`🔍 Visit ${visit._id}: VisitDate=${visitDate.toISOString()}, NoonIST_UTC=${noonIST_UTC.toISOString()}, Now=${now.toISOString()}, ShouldBeVisited=${now >= noonIST_UTC}`);
+      
+      // Only mark as visited if:
+      // 1. Current time (now) is AFTER 12 PM IST (6:30 AM UTC) on the visit date
+      // 2. The visit date is not in the future
+      const visitDateOnly = new Date(dateStr + 'T00:00:00.000Z');
+      const todayDateOnly = new Date(now.toISOString().split('T')[0] + 'T00:00:00.000Z');
+      
+      // Visit date must be today or in the past, AND current time must be after noon IST
+      if (visitDateOnly <= todayDateOnly && now >= noonIST_UTC) {
+        visit.status = "visited";
+        visit.visitedAt = now; // Record the actual time it became visited
+        await visit.save();
+        console.log(`✅ Visit ${visit._id} marked as 'visited' (date: ${visitDate.toISOString()})`);
+      } else {
+        console.log(`⏳ Visit ${visit._id} stays 'scheduled' - not yet time`);
+      }
+    }
+    
+    // Step 2: Update visited to completed after 48 hours
+    const visitedVisits = await Visit.find({ 
+      status: "visited",
+      visitedAt: { $exists: true }
+    });
+    
+    for (const visit of visitedVisits) {
+      // Calculate 48 hours after visitedAt
+      const completionTime = new Date(visit.visitedAt.getTime() + (48 * 60 * 60 * 1000));
+      
+      console.log(`🔍 Visited visit ${visit._id}: visitedAt=${visit.visitedAt.toISOString()}, completionTime=${completionTime.toISOString()}, now=${now.toISOString()}`);
+      
+      // If 48 hours have passed, mark as completed
+      if (now >= completionTime) {
+        visit.status = "completed";
+        await visit.save();
+        console.log(`✅ Visit ${visit._id} marked as 'completed' (48 hours passed)`);
+      }
+    }
+    
+    // Step 3: Handle manual completion (when report is submitted)
+    // If submittedBy exists but status is still scheduled/visited, mark as completed
+    const manualCompleted = await Visit.updateMany(
+      { 
+        status: { $in: ["scheduled", "visited"] },
+        submittedBy: { $ne: null }
+      },
       { $set: { status: "completed" } }
     );
+    
+    if (manualCompleted.modifiedCount > 0) {
+      console.log(`✅ ${manualCompleted.modifiedCount} visits manually marked as completed (report submitted)`);
+    }
+    
   } catch (e) {
-    console.warn("updatePastVisits failed:", e.message);
+    console.error("⚠️ updatePastVisits failed:", e.message, e.stack);
   }
 }
 

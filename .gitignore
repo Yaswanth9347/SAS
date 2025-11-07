@@ -25,6 +25,11 @@ yarn.lock
 /backend/.env.*
 /frontend/.env
 
+# ALWAYS keep the .env.example files for reference!
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
 # ============================================
 # UPLOADS & USER DATA
 # ============================================
@@ -129,3 +134,31 @@ Desktop.ini
 *.pid
 *.seed
 *.pid.lock
+
+# ============================================
+# SECURITY & SENSITIVE FILES
+# ============================================
+# Certificates and keys
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+credentials.json
+service-account.json
+
+# Database dumps
+*.dump
+*.sql
+*.sqlite
+*.db
+
+# ============================================
+# DOCUMENTATION TO KEEP
+# ============================================
+# Keep important documentation files
+!README.md
+!LICENSE
+!CHANGELOG.md
+!.gitkeep

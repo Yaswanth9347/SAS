@@ -545,6 +545,11 @@ exports.resetPassword = async (req, res, next) => {
 // @access  Private
 exports.uploadAvatar = async (req, res, next) => {
     try {
+        const { isCloudinaryConfigured } = require('../config/cloudinary');
+        const useCloudinary = isCloudinaryConfigured();
+        
+        console.log(`📸 Avatar Upload Mode: ${useCloudinary ? 'CLOUDINARY' : 'LOCAL'}`);
+        
         // multer's upload.any() will populate req.files (array) or req.file
         const files = req.files || [];
         if (!files || files.length === 0) {
@@ -552,35 +557,65 @@ exports.uploadAvatar = async (req, res, next) => {
         }
 
         const file = files[0];
+        let avatarUrl;
+        let optimizationInfo = null;
         
-        // Optimize avatar image (resize to 320x320, compress)
-        console.log('Optimizing avatar:', file.path);
-        const optimizeResult = await optimizeAvatar(file.path);
-        
-        if (!optimizeResult.success) {
-            console.error('Avatar optimization failed:', optimizeResult.error);
-            // Continue anyway with original file
+        if (useCloudinary) {
+            // Cloudinary automatically handles optimization
+            avatarUrl = file.path; // Cloudinary URL
+            
+            optimizationInfo = {
+                storage: 'cloudinary',
+                publicId: file.public_id,
+                format: file.format,
+                width: file.width,
+                height: file.height,
+                size: file.bytes,
+                url: file.secure_url || file.path
+            };
+            
+            console.log('Avatar uploaded to Cloudinary:', optimizationInfo);
         } else {
-            console.log('Avatar optimized:', optimizeResult);
-        }
-        
-        const path = require('path');
-        const rel = path.relative(path.join(__dirname, '../uploads'), file.path).replace(/\\/g, '/');
-        const url = `/uploads/${rel}`;
-
-        const user = await User.findByIdAndUpdate(req.user.id, { profileImage: url }, { new: true }).select('-password');
-        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-
-        res.status(200).json({ 
-            success: true, 
-            message: 'Avatar uploaded and optimized', 
-            data: { 
-                profileImage: url,
-                optimization: optimizeResult.success ? {
+            // Local storage - optimize avatar image (resize to 320x320, compress)
+            console.log('Optimizing avatar:', file.path);
+            const optimizeResult = await optimizeAvatar(file.path);
+            
+            if (!optimizeResult.success) {
+                console.error('Avatar optimization failed:', optimizeResult.error);
+                // Continue anyway with original file
+            } else {
+                console.log('Avatar optimized:', optimizeResult);
+                optimizationInfo = {
+                    storage: 'local',
                     originalSize: optimizeResult.originalSize,
                     optimizedSize: optimizeResult.optimizedSize,
                     reduction: optimizeResult.reduction
-                } : null
+                };
+            }
+            
+            const path = require('path');
+            const rel = path.relative(path.join(__dirname, '../uploads'), file.path).replace(/\\/g, '/');
+            avatarUrl = `/uploads/${rel}`;
+        }
+
+        // Update user profile with new avatar URL
+        const user = await User.findByIdAndUpdate(
+            req.user.id, 
+            { profileImage: avatarUrl }, 
+            { new: true }
+        ).select('-password');
+        
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            message: `Avatar uploaded successfully to ${useCloudinary ? 'Cloudinary' : 'local storage'}`, 
+            data: { 
+                profileImage: avatarUrl,
+                storageType: useCloudinary ? 'cloud' : 'local',
+                optimization: optimizationInfo
             } 
         });
     } catch (error) {

@@ -1,6 +1,6 @@
 const express = require('express');
 const debugUpload = require('../middleware/debugUpload');
-const { uploadAnyFiles, validateMimeType } = require('../middleware/upload');
+const { hybridUploadAny } = require('../middleware/hybridUpload');
 const {
     getVisits,
     getVisit,
@@ -30,7 +30,7 @@ router.get('/stats', protect, getVisitStats);
 router.get('/:id', protect, getVisit);
 router.get('/:id/gallery', protect, getVisitGallery);
 router.post('/', protect, createVisit); // Both admin and volunteers can create visits
-router.post('/:id/upload', protect, debugUpload, uploadAnyFiles, validateMimeType, handleFileUpload);
+router.post('/:id/upload', protect, debugUpload, hybridUploadAny, handleFileUpload);
 router.put('/:id/submit', protect, submitVisitReport);
 router.get("/gallery/all", protect, getAllGalleryMedia); // Must be before /:id routes
 router.put('/:id', protect, updateVisit);

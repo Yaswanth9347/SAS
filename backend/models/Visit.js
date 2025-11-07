@@ -144,8 +144,12 @@ const visitSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["scheduled", "completed", "cancelled"],
+      enum: ["scheduled", "visited", "completed", "cancelled"],
       default: "scheduled",
+    },
+    // Track when visit was marked as visited (for 48-hour completion rule)
+    visitedAt: {
+      type: Date,
     },
     submittedBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -313,8 +317,67 @@ visitSchema.methods.toJSON = function () {
   return visit;
 };
 
-// Index for better query performance
+// ============================================
+// DATABASE INDEXES FOR PERFORMANCE OPTIMIZATION
+// ============================================
+
+// Existing compound indexes
 visitSchema.index({ date: 1, team: 1 });
 visitSchema.index({ school: 1, status: 1 });
+
+// Index for status-based queries (scheduled, visited, completed, cancelled)
+visitSchema.index({ status: 1 });
+
+// Index for date-based queries (sorted by date descending for recent visits)
+visitSchema.index({ date: -1 });
+
+// Compound index for team visits by date
+visitSchema.index({ team: 1, date: -1 });
+
+// Compound index for school visits by date
+visitSchema.index({ school: 1, date: -1 });
+
+// Index for submitted visits
+visitSchema.index({ submittedBy: 1, submissionDate: -1 });
+
+// Index for report status queries
+visitSchema.index({ reportStatus: 1 });
+
+// Compound index for visits with reports by date
+visitSchema.index({ reportStatus: 1, date: -1 });
+
+// Index for upload window queries
+visitSchema.index({ uploadWindowStartUtc: 1, uploadWindowEndUtc: 1 });
+
+// Compound index for active visits within upload window
+visitSchema.index({ status: 1, uploadWindowStartUtc: 1, uploadWindowEndUtc: 1 });
+
+// Index for visited date tracking (48-hour completion rule)
+visitSchema.index({ visitedAt: 1, status: 1 });
+
+// Index for notification flags (avoid duplicate sends)
+visitSchema.index({ 
+    windowOpenNotified: 1, 
+    windowClosingNotified: 1, 
+    windowClosedNotified: 1 
+});
+
+// Text index for search functionality
+visitSchema.index({
+    name: 'text',
+    topicsCovered: 'text',
+    challengesFaced: 'text',
+    suggestions: 'text'
+});
+
+// Compound index for analytics queries (team performance over time)
+visitSchema.index({ team: 1, status: 1, date: -1 });
+
+// Compound index for school analytics
+visitSchema.index({ school: 1, status: 1, date: -1 });
+
+// Index for timestamps (createdAt, updatedAt)
+visitSchema.index({ createdAt: -1 });
+visitSchema.index({ updatedAt: -1 });
 
 module.exports = mongoose.model("Visit", visitSchema);

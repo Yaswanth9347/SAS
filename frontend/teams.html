@@ -39,71 +39,86 @@
       </div>
 
       <div class="team-creator">
-        <h2>Create New Team</h2>
+        <div class="creator-header">
+          <h2><i class="fa fa-users-cog"></i> Create New Team</h2>
+          <p class="creator-subtitle">Build your volunteer team by selecting members below</p>
+        </div>
+        
         <form id="teamForm">
-          <div class="form-group">
-            <label>Select Team Members</label>
-            <div class="user-toolbar" aria-label="Search and filters">
-              <div class="team-name-inline">
-                <label for="teamName" class="sr-only">Team Name</label>
-                <input 
-                  id="teamName" 
-                  name="name" 
-                  required 
-                  placeholder="Team name" 
-                  autocomplete="off"
-                />
-              </div>
-              <div class="user-search">
-                <i class="fa fa-search"></i>
+          <!-- Team Name Section -->
+          <div class="team-name-section">
+            <label for="teamName" class="section-label">
+              <i class="fa fa-tag"></i> Team Name
+            </label>
+            <input 
+              id="teamName" 
+              name="name" 
+              required 
+              placeholder="Enter a unique team name..." 
+              autocomplete="off"
+              class="team-name-input"
+            />
+          </div>
+
+          <!-- Member Selection Section -->
+          <div class="member-selection-section">
+            <label class="section-label">
+              <i class="fa fa-user-plus"></i> Select Team Members
+            </label>
+            
+            <!-- Search and Filter Bar -->
+            <div class="search-filter-bar">
+              <div class="search-box">
+                <i class="fa fa-search search-icon"></i>
                 <input 
                   type="text" 
                   id="userSearchInput" 
-                  placeholder="Search users by name..." 
+                  placeholder="Search by name, department, or year..." 
                   autocomplete="off"
+                  class="search-input"
                 />
               </div>
-              <div class="filter-row">
-                <div class="filter-col">
-                  <label for="filterDepartment" class="sr-only">Department</label>
-                  <select id="filterDepartment" aria-label="Filter by department">
-                    <option value="">All Departments</option>
-                    <option value="CSE">CSE</option>
-                    <option value="IT">IT</option>
-                    <option value="ECE">ECE</option>
-                    <option value="EEE">EEE</option>
-                    <option value="MECH">MECH</option>
-                    <option value="CIVIL">CIVIL</option>
-                    <option value="MBA">MBA</option>
-                    <option value="Others">Others</option>
-                  </select>
-                </div>
-                <div class="filter-col">
-                  <label for="filterYear" class="sr-only">Year</label>
-                  <select id="filterYear" aria-label="Filter by year">
-                    <option value="">All Years</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">Others</option>
-                  </select>
-                </div>
-                <div class="filter-col available-only">
-                  <label class="toggle">
-                    <input type="checkbox" id="filterAvailableOnly" />
-                    <span>Available only</span>
-                  </label>
-                </div>
+              
+              <div class="filters-group">
+                <select id="filterDepartment" class="filter-select" aria-label="Filter by department">
+                  <option value="">All Departments</option>
+                  <option value="CSE">CSE</option>
+                  <option value="IT">IT</option>
+                  <option value="ECE">ECE</option>
+                  <option value="EEE">EEE</option>
+                  <option value="MECH">MECH</option>
+                  <option value="CIVIL">CIVIL</option>
+                  <option value="MBA">MBA</option>
+                  <option value="Others">Others</option>
+                </select>
+                
+                <select id="filterYear" class="filter-select" aria-label="Filter by year">
+                  <option value="">All Years</option>
+                  <option value="1">Year 1</option>
+                  <option value="2">Year 2</option>
+                  <option value="3">Year 3</option>
+                  <option value="4">Year 4</option>
+                  <option value="5">Others</option>
+                </select>
+                
+                <label class="available-toggle">
+                  <input type="checkbox" id="filterAvailableOnly" />
+                  <span class="toggle-slider"></span>
+                  <span class="toggle-label">Available only</span>
+                </label>
               </div>
             </div>
-            <div id="usersList" class="users-list">Loading users...</div>
+
+            <!-- Members Grid -->
+            <div id="usersList" class="members-grid">Loading users...</div>
           </div>
 
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary">
+          <!-- Action Button -->
+          <div class="form-actions-modern">
+            <button type="submit" class="btn-create-team">
               <i class="fa fa-plus-circle"></i>
               <span>Create Team</span>
+              <i class="fa fa-arrow-right"></i>
             </button>
           </div>
         </form>

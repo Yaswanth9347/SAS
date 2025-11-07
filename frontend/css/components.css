@@ -408,6 +408,11 @@
   color: #1976d2;
 }
 
+.status-badge.visited {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
 .status-badge.completed {
   background: #e8eaf6;
   color: #3f51b5;
@@ -627,7 +632,7 @@
 .lightbox {
   display: none;
   position: fixed;
-  z-index: 1020;
+  z-index: 20000;
   left: 0;
   top: 0;
   width: 100%;
@@ -646,7 +651,7 @@
   font-size: 40px;
   font-weight: bold;
   cursor: pointer;
-  z-index: 1021;
+  z-index: 20001;
 }
 
 .lightbox-content {
@@ -694,6 +699,10 @@
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 20px;
   text-align: center;
+}
+
+.admin-stats {
+  margin-bottom: 40px;
 }
 
 .stat-item {

@@ -6,6 +6,7 @@
     "supertest": "^7.1.4"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "ejs": "^3.1.10",
     "puppeteer": "^24.27.0"
   }
