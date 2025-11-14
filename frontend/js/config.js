@@ -1,57 +1,14 @@
 /**
  * Application Configuration
  * Central configuration for the SAS application
- * Supports development and production environments
  */
 
-// Environment detection
-const isProduction = () => {
-  if (typeof window === 'undefined') return false;
-  
-  const hostname = window.location.hostname;
-  
-  // Production indicators
-  return (
-    hostname.includes('onrender.com') ||
-    hostname.includes('render.com') ||
-    hostname.includes('herokuapp.com') ||
-    hostname.includes('vercel.app') ||
-    hostname.includes('netlify.app') ||
-    (!hostname.includes('localhost') && !hostname.includes('127.0.0.1') && hostname !== '')
-  );
-};
-
-// Get API base URL based on environment
-const getApiBaseUrl = () => {
-  if (typeof window === 'undefined') {
-    return 'http://localhost:5001/api';
-  }
-  
-  // Production environment - use environment variable or current origin
-  if (isProduction()) {
-    // Check if REACT_APP_API_URL is defined (for build-time configuration)
-    if (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) {
-      return process.env.REACT_APP_API_URL;
-    }
-    
-    // If backend and frontend are on same domain (recommended for Render)
-    // This works when both are served from the same Render service
-    return window.location.origin + '/api';
-    
-    // Alternative: If backend is on different subdomain/domain, uncomment and configure:
-    // return 'https://your-backend.onrender.com/api';
-  }
-  
-  // Development environment - use localhost
-  return window.location.origin + '/api';
-};
-
 const CONFIG = {
-  // Environment
-  IS_PRODUCTION: isProduction(),
-  
   // API Configuration
-  API_BASE_URL: getApiBaseUrl(),
+  // Prefer current origin at runtime; fallback to 5002 for local dev
+  API_BASE_URL: (typeof window !== 'undefined' && window.location && window.location.origin
+    ? window.location.origin
+    : 'http://localhost:5002') + '/api',
   
   // Storage Keys
   STORAGE_KEYS: {
@@ -92,20 +49,8 @@ const CONFIG = {
   USER_ROLES: {
     ADMIN: 'admin',
     VOLUNTEER: 'volunteer'
-  },
-  
-  // Debug mode (only in development)
-  DEBUG: !isProduction()
+  }
 };
-
-// Log configuration in development
-if (CONFIG.DEBUG) {
-  console.log('🔧 App Configuration:', {
-    environment: CONFIG.IS_PRODUCTION ? 'production' : 'development',
-    apiBaseUrl: CONFIG.API_BASE_URL,
-    hostname: window.location.hostname
-  });
-}
 
 // Freeze config to prevent modifications
 Object.freeze(CONFIG);

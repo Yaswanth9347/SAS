@@ -1,6 +1,6 @@
 const express = require('express');
 const debugUpload = require('../middleware/debugUpload');
-const { hybridUploadAny } = require('../middleware/hybridUpload');
+const { uploadAnyFiles, validateMimeType } = require('../middleware/upload');
 const {
     getVisits,
     getVisit,
@@ -10,16 +10,12 @@ const {
     cancelVisit,
     uploadVisitFiles,
     handleFileUpload,
-    getAllGalleryMedia,
     submitCompleteReport,
     getVisitGallery,
+    getAllGalleryMedia,
     updateVisit,
     deleteVisit,
-    deleteMedia,
-    getReportDraft,
-    saveReportDraft,
-    finalizeReport,
-    downloadReportPdf
+    deleteMedia
 } = require('../controllers/visitController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -27,22 +23,16 @@ const router = express.Router();
 
 router.get('/', protect, getVisits);
 router.get('/stats', protect, getVisitStats);
+router.get('/gallery/all', protect, getAllGalleryMedia); // Must be BEFORE /:id routes
 router.get('/:id', protect, getVisit);
 router.get('/:id/gallery', protect, getVisitGallery);
 router.post('/', protect, createVisit); // Both admin and volunteers can create visits
-router.post('/:id/upload', protect, debugUpload, hybridUploadAny, handleFileUpload);
+router.post('/:id/upload', protect, debugUpload, uploadAnyFiles, validateMimeType, handleFileUpload);
 router.put('/:id/submit', protect, submitVisitReport);
-router.get("/gallery/all", protect, getAllGalleryMedia); // Must be before /:id routes
 router.put('/:id', protect, updateVisit);
 router.delete('/:id', protect, deleteVisit);
 router.delete('/:id/media', protect, deleteMedia);
 router.put('/:id/complete-report', protect, submitCompleteReport);
 router.put('/:id/cancel', protect, cancelVisit); // All users can cancel visits (removed role restriction)
-
-// Report Draft/Finalize/Download (Admin only)
-router.get('/:id/report/draft', protect, authorize('admin'), getReportDraft);
-router.put('/:id/report/draft', protect, authorize('admin'), saveReportDraft);
-router.post('/:id/report/finalize', protect, authorize('admin'), finalizeReport);
-router.get('/:id/report/download', protect, authorize('admin'), downloadReportPdf);
 
 module.exports = router;

@@ -37,38 +37,6 @@ const schoolSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// ============================================
-// DATABASE INDEXES FOR PERFORMANCE OPTIMIZATION
-// ============================================
-
-// Index for school name (frequently searched)
-schoolSchema.index({ name: 1 });
-
-// Index for active schools (common filter)
-schoolSchema.index({ isActive: 1 });
-
-// Compound index for active schools sorted by name
-schoolSchema.index({ isActive: 1, name: 1 });
-
-// Index for location-based queries
-schoolSchema.index({ 'address.city': 1, 'address.state': 1 });
-schoolSchema.index({ 'address.pincode': 1 });
-
-// Text index for search functionality (name, address)
-schoolSchema.index({
-    name: 'text',
-    'address.street': 'text',
-    'address.city': 'text',
-    'address.state': 'text'
-});
-
-// Index for schools with available classes
-schoolSchema.index({ availableClasses: 1, isActive: 1 });
-
-// ============================================
-// SCHEMA MIDDLEWARE
-// ============================================
-
 // Update availableClasses when totalClasses changes
 schoolSchema.pre('save', function(next) {
     if (this.isModified('totalClasses') && !this.isModified('availableClasses')) {

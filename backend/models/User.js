@@ -126,47 +126,6 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// ============================================
-// DATABASE INDEXES FOR PERFORMANCE OPTIMIZATION
-// ============================================
-
-// Index for authentication - email must be unique and frequently queried
-userSchema.index({ email: 1 }, { unique: true });
-
-// Index for username lookups - username must be unique
-userSchema.index({ username: 1 }, { unique: true });
-
-// Index for role-based queries (e.g., find all admins, all volunteers)
-userSchema.index({ role: 1 });
-
-// Compound index for active users by role (common query pattern)
-userSchema.index({ role: 1, isActive: 1 });
-
-// Index for verification status queries (admin approval workflow)
-userSchema.index({ verificationStatus: 1, isActive: 1 });
-
-// Index for team assignments
-userSchema.index({ team: 1 });
-
-// Index for password reset tokens
-userSchema.index({ resetPasswordToken: 1 });
-userSchema.index({ resetPasswordExpire: 1 });
-
-// Compound index for filtering active, verified users by role
-userSchema.index({ role: 1, isActive: 1, isVerified: 1 });
-
-// Text index for search functionality (name, email, username)
-userSchema.index({ 
-    name: 'text', 
-    email: 'text', 
-    username: 'text',
-    department: 'text'
-});
-
-// ============================================
-// SCHEMA METHODS
-// ============================================
-
 // Encrypt password using bcrypt
 userSchema.pre('save', async function(next) {
     if (!this.isModified('password')) {

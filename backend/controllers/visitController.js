@@ -7,422 +7,336 @@ const { optimizePhoto, generateThumbnail } = require('../utils/imageOptimizer');
 // @route   GET /api/visits
 // @access  Private
 exports.getVisits = async (req, res, next) => {
-  try {
-    // Auto-update past scheduled visits to completed
-    await updatePastVisits();
+    try {
+        let query;
+        const { status, month, year, team } = req.query;
+        
+        // All users can see all visits (removed role-based restrictions)
+        query = Visit.find();
 
-    let query;
-    const { status, month, year, team } = req.query;
+        // Apply team filter if provided
+        if (team) {
+            query = query.where('team').equals(team);
+        }
 
-    // All users can see all visits (removed role-based restrictions)
-    query = Visit.find();
+        // Apply status filter if provided
+        if (status && ['scheduled', 'completed', 'cancelled'].includes(status)) {
+            query = query.where('status').equals(status);
+        }
 
-    // Apply team filter if provided
-    if (team) {
-      query = query.where("team").equals(team);
+        // Apply date filter if provided
+        if (month && year) {
+            const startDate = new Date(year, month - 1, 1);
+            const endDate = new Date(year, month, 0);
+            query = query.where('date').gte(startDate).lte(endDate);
+        }
+
+        const visits = await query
+            .populate('school', 'name address contactPerson')
+            .populate('team', 'name')
+            .populate('submittedBy', 'name role')
+            .sort({ date: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: visits.length,
+            data: visits
+        });
+    } catch (error) {
+        console.error('Error in getVisits:', error);
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
     }
-
-    // Apply status filter if provided
-    if (status && ["scheduled", "completed", "cancelled"].includes(status)) {
-      query = query.where("status").equals(status);
-    }
-
-    // Apply date filter if provided
-    if (month && year) {
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0);
-      query = query.where("date").gte(startDate).lte(endDate);
-    }
-
-    const visits = await query
-      .populate("school", "name address contactPerson")
-      .populate("team", "name")
-      .populate("submittedBy", "name role")
-      .sort({ date: -1 });
-
-    res.status(200).json({
-      success: true,
-      count: visits.length,
-      data: visits,
-    });
-  } catch (error) {
-    console.error("Error in getVisits:", error);
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
-  }
 };
 
 // @desc    Get single visit
 // @route   GET /api/visits/:id
 // @access  Private
 exports.getVisit = async (req, res, next) => {
-  try {
-    const visit = await Visit.findById(req.params.id)
-      .populate("school", "name address contactPerson")
-      .populate("team", "name")
-      .populate("submittedBy", "name email role");
+    try {
+        const visit = await Visit.findById(req.params.id)
+            .populate('school', 'name address contactPerson')
+            .populate('team', 'name')
+            .populate('submittedBy', 'name email role');
 
-    if (!visit) {
-      return res.status(404).json({
-        success: false,
-        message: "Visit not found",
-      });
+        if (!visit) {
+            return res.status(404).json({
+                success: false,
+                message: 'Visit not found'
+            });
+        }
+
+        // All authenticated users can view all visits (removed role-based restrictions)
+
+        res.status(200).json({
+            success: true,
+            data: visit
+        });
+    } catch (error) {
+        console.error('Error in getVisit:', error);
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
     }
-
-    // All authenticated users can view all visits (removed role-based restrictions)
-
-    res.status(200).json({
-      success: true,
-      data: visit,
-    });
-  } catch (error) {
-    console.error("Error in getVisit:", error);
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
-  }
 };
-
-// Helpers for IST window
-function computeIstUploadWindow(date) {
-  // date: JS Date assumed UTC instant of the scheduled visit date/time
-  // We want windowStart at 12:00 PM IST on that visit's calendar day, and windowEnd +48h
-  // IST offset is +5:30 hours, no DST.
-  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-  const utcMs = new Date(date).getTime();
-  const istMs = utcMs + IST_OFFSET_MS;
-  const ist = new Date(istMs);
-  const y = ist.getUTCFullYear();
-  const m = ist.getUTCMonth();
-  const d = ist.getUTCDate();
-  // Midnight IST in UTC = 00:00 IST -> subtract offset from UTC midnight
-  const midnightIstUtcMs = Date.UTC(y, m, d, 0, 0, 0) - IST_OFFSET_MS;
-  const windowStartUtc = new Date(midnightIstUtcMs + 12 * 60 * 60 * 1000); // 12:00 IST in UTC
-  const windowEndUtc = new Date(windowStartUtc.getTime() + 48 * 60 * 60 * 1000);
-  return { windowStartUtc, windowEndUtc };
-}
-
-function isWithinUploadWindow(visit, now = new Date()) {
-  if (!visit.uploadWindowStartUtc || !visit.uploadWindowEndUtc) return false;
-  const n = now.getTime();
-  return n >= new Date(visit.uploadWindowStartUtc).getTime() && n <= new Date(visit.uploadWindowEndUtc).getTime();
-}
-
-async function requireTeamMemberOrAdmin(req, visit) {
-  if (req.user?.role === 'admin') return true;
-  try {
-    const team = await Team.findById(visit.team).select('members');
-    const userId = String(req.user.id);
-    return team && Array.isArray(team.members) && team.members.map(String).includes(userId);
-  } catch (_) {
-    return false;
-  }
-}
 
 // @desc    Create new visit
 // @route   POST /api/visits
 // @access  Private (Both admin and volunteer with appropriate validation)
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 exports.createVisit = async (req, res, next) => {
-  try {
-    // Validate required fields
-    if (!req.body.team || !mongoose.Types.ObjectId.isValid(req.body.team)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid or missing team ID" });
-    }
-    if (!req.body.school || !mongoose.Types.ObjectId.isValid(req.body.school)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid or missing school ID" });
-    }
-    if (!req.body.date) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Visit date is required" });
-    }
-    if (!req.body.assignedClass) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Assigned class is required" });
-    }
-
-    // Ensure referenced team and school exist
-    const teamExists = await Team.findById(req.body.team).select("_id name members");
-    if (!teamExists) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Team not found" });
-    }
-
-    const schoolExists = await School.findById(req.body.school).select(
-      "_id name"
-    );
-    if (!schoolExists) {
-      return res
-        .status(404)
-        .json({ success: false, message: "School not found" });
-    }
-
-    // Check if team is available on that date (prevent double booking)
-    const visitDate = new Date(req.body.date);
-    const startOfDay = new Date(
-      visitDate.getFullYear(),
-      visitDate.getMonth(),
-      visitDate.getDate()
-    );
-    const endOfDay = new Date(
-      visitDate.getFullYear(),
-      visitDate.getMonth(),
-      visitDate.getDate(),
-      23,
-      59,
-      59
-    );
-
-    const existingVisit = await Visit.findOne({
-      team: req.body.team,
-      date: { $gte: startOfDay, $lte: endOfDay },
-      status: { $in: ["scheduled", "completed"] },
-    });
-
-    if (existingVisit) {
-      return res.status(400).json({
-        success: false,
-        message: "Team already has a visit scheduled on this date",
-      });
-    }
-
-    // Create the visit with proper default values
-    const visitData = {
-      ...req.body,
-      status: req.body.status || "scheduled",
-      submittedBy: req.user.id,
-      childrenCount: req.body.childrenCount || 30,
-      totalClasses: req.body.totalClasses || 1,
-      classesVisited: req.body.classesVisited || 0,
-    };
-
-    // Compute upload window based on scheduled date (12:00 IST -> +48h)
-    const win = computeIstUploadWindow(visitData.date);
-    const visit = await Visit.create({
-      ...visitData,
-      uploadWindowStartUtc: win.windowStartUtc,
-      uploadWindowEndUtc: win.windowEndUtc,
-      uploadVisibility: 'public',
-      timezone: 'Asia/Kolkata'
-    });
-
-    // Populate the created visit for response
-    const populatedVisit = await Visit.findById(visit._id)
-      .populate("school", "name address contactPerson")
-      .populate("team", "name")
-      .populate("submittedBy", "name role");
-
-    // Notify: broadcast to all users as per requirement
     try {
-      const { notifyUsers } = require("../utils/notificationService");
-      const User = require('../models/User');
-      const allUsers = await User.find({}).select('_id');
-      const allIds = allUsers.map(u => u._id.toString());
-      await notifyUsers(allIds, {
-        title: "New Visit Scheduled",
-        message: `${schoolExists.name}: ${new Date(visit.date).toLocaleDateString()} (uploads open 12:00 PM IST on visit day)`,
-        type: "visit",
-        link: `/frontend/visits.html`,
-        meta: { visitId: visit._id, date: visit.date, schoolName: schoolExists.name },
-        emailTemplate: "visitScheduled",
-      });
-    } catch (e) {
-      console.warn("Notify visit schedule failed:", e.message);
-    }
+        // Validate required fields
+        if (!req.body.team || !mongoose.Types.ObjectId.isValid(req.body.team)) {
+            return res.status(400).json({ success: false, message: 'Invalid or missing team ID' });
+        }
+        if (!req.body.school || !mongoose.Types.ObjectId.isValid(req.body.school)) {
+            return res.status(400).json({ success: false, message: 'Invalid or missing school ID' });
+        }
+        if (!req.body.date) {
+            return res.status(400).json({ success: false, message: 'Visit date is required' });
+        }
+        if (!req.body.assignedClass) {
+            return res.status(400).json({ success: false, message: 'Assigned class is required' });
+        }
 
-    res.status(201).json({
-      success: true,
-      data: populatedVisit,
-      message: `Visit created successfully and assigned to ${teamExists.name}`,
-    });
-  } catch (error) {
-    console.error("Error in createVisit:", error);
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
-  }
+        // Ensure referenced team and school exist
+        const teamExists = await Team.findById(req.body.team).select('_id name');
+        if (!teamExists) {
+            return res.status(404).json({ success: false, message: 'Team not found' });
+        }
+        
+        const schoolExists = await School.findById(req.body.school).select('_id name');
+        if (!schoolExists) {
+            return res.status(404).json({ success: false, message: 'School not found' });
+        }
+
+        // All users can create visits for any team (removed role-based restrictions)
+
+        // Check if team is available on that date (prevent double booking)
+        const visitDate = new Date(req.body.date);
+        const startOfDay = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate());
+        const endOfDay = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate(), 23, 59, 59);
+        
+        const existingVisit = await Visit.findOne({
+            team: req.body.team,
+            date: { $gte: startOfDay, $lte: endOfDay },
+            status: { $in: ['scheduled', 'completed'] }
+        });
+
+        if (existingVisit) {
+            return res.status(400).json({
+                success: false,
+                message: 'Team already has a visit scheduled on this date'
+            });
+        }
+
+        // Create the visit with proper default values
+        const visitData = {
+            ...req.body,
+            status: req.body.status || 'scheduled', // Ensure default status
+            submittedBy: req.user.id, // Track who created the visit
+            childrenCount: req.body.childrenCount || 30, // Default expected children
+            totalClasses: req.body.totalClasses || 1, // Default total classes
+            classesVisited: req.body.classesVisited || 0 // Default classes visited
+        };
+        
+    const visit = await Visit.create(visitData);
+
+        // Populate the created visit for response
+        const populatedVisit = await Visit.findById(visit._id)
+            .populate('school', 'name address contactPerson')
+            .populate('team', 'name')
+            .populate('submittedBy', 'name role');
+
+        res.status(201).json({
+            success: true,
+            data: populatedVisit,
+            message: `Visit created successfully and assigned to ${teamExists.name}`
+        });
+    } catch (error) {
+        console.error('Error in createVisit:', error);
+        // Notify team members about scheduled visit
+        try {
+            const populatedTeam = await Team.findById(visit.team).populate('members', '_id');
+            const memberIds = (populatedTeam?.members || []).map(m => m._id);
+            if (memberIds.length > 0) {
+                const { notifyUsers } = require('../utils/notificationService');
+                await notifyUsers(memberIds, {
+                    title: 'Visit Scheduled',
+                    message: `A visit has been scheduled on ${new Date(visit.date).toLocaleDateString()}`,
+                    type: 'visit',
+                    link: `/frontend/visits.html`,
+                    meta: { visitId: visit._id, date: visit.date, schoolName: visit.school?.name },
+                    emailTemplate: 'visitScheduled'
+                });
+            }
+        } catch (e) { console.warn('Notify visit schedule failed:', e.message); }
+
+        res.status(201).json({
+            success: false,
+            message: error.message
+        });
+    }
 };
 
 // @desc    Submit visit report
 // @route   PUT /api/visits/:id/submit
 // @access  Private
 exports.submitVisitReport = async (req, res, next) => {
-  try {
-    const visit = await Visit.findById(req.params.id);
+    try {
+        const visit = await Visit.findById(req.params.id);
 
-    if (!visit) {
-      return res.status(404).json({
-        success: false,
-        message: "Visit not found",
-      });
+        if (!visit) {
+            return res.status(404).json({
+                success: false,
+                message: 'Visit not found'
+            });
+        }
+
+        // All users can submit reports (removed role-based restrictions)
+
+        const reportData = {
+            ...req.body,
+            status: 'completed',
+            submittedBy: req.user.id,
+            submissionDate: new Date()
+        };
+
+        const updatedVisit = await Visit.findByIdAndUpdate(
+            req.params.id, 
+            reportData, 
+            { new: true, runValidators: true }
+        )
+        .populate('school')
+        .populate('team')
+        .populate('submittedBy', 'name');
+
+        res.status(200).json({
+            success: true,
+            data: updatedVisit
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
     }
-
-    // Enforce window and membership for submit
-    if (!visit.uploadWindowStartUtc || !visit.uploadWindowEndUtc) {
-      const win = computeIstUploadWindow(visit.date);
-      visit.uploadWindowStartUtc = win.windowStartUtc;
-      visit.uploadWindowEndUtc = win.windowEndUtc;
-      await visit.save();
-    }
-    const isMember = await requireTeamMemberOrAdmin(req, visit);
-    if (!isMember) return res.status(403).json({ success: false, message: 'Only assigned team members or admins can submit report.' });
-    if (new Date() > new Date(visit.uploadWindowEndUtc)) {
-      const end = new Date(visit.uploadWindowEndUtc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-      return res.status(403).json({ success: false, message: `Uploads and edits closed at ${end}.` });
-    }
-
-    const reportData = {
-      ...req.body,
-      status: "completed",
-      submittedBy: req.user.id,
-      submissionDate: new Date(),
-    };
-
-    const updatedVisit = await Visit.findByIdAndUpdate(
-      req.params.id,
-      reportData,
-      { new: true, runValidators: true }
-    )
-      .populate("school")
-      .populate("team")
-      .populate("submittedBy", "name");
-
-    res.status(200).json({
-      success: true,
-      data: updatedVisit,
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
-  }
 };
 
 // @desc    Get visits statistics
 // @route   GET /api/visits/stats
 // @access  Private
 exports.getVisitStats = async (req, res, next) => {
-  try {
-    let matchQuery = {};
+    try {
+        let matchQuery = {};
+        
+        // All users can see all statistics (removed role-based restrictions)
 
-    // All users can see all statistics (removed role-based restrictions)
+        const stats = await Visit.aggregate([
+            { $match: matchQuery },
+            {
+                $group: {
+                    _id: null,
+                    totalVisits: { $sum: 1 },
+                    completedVisits: { 
+                        $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } 
+                    },
+                    scheduledVisits: { 
+                        $sum: { $cond: [{ $eq: ['$status', 'scheduled'] }, 1, 0] } 
+                    },
+                    cancelledVisits: { 
+                        $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] } 
+                    },
+                    totalChildren: { $sum: '$childrenCount' },
+                    averageChildren: { $avg: '$childrenCount' }
+                }
+            }
+        ]);
 
-    const stats = await Visit.aggregate([
-      { $match: matchQuery },
-      {
-        $group: {
-          _id: null,
-          totalVisits: { $sum: 1 },
-          completedVisits: {
-            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
-          },
-          scheduledVisits: {
-            $sum: { $cond: [{ $eq: ["$status", "scheduled"] }, 1, 0] },
-          },
-          cancelledVisits: {
-            $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
-          },
-          totalChildren: { $sum: "$childrenCount" },
-          averageChildren: { $avg: "$childrenCount" },
-        },
-      },
-    ]);
+        // Get monthly stats for the last 6 months
+        const monthlyStats = await Visit.aggregate([
+            { $match: matchQuery },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$date' },
+                        month: { $month: '$date' }
+                    },
+                    visits: { $sum: 1 },
+                    children: { $sum: '$childrenCount' },
+                    completedVisits: { 
+                        $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } 
+                    }
+                }
+            },
+            { $sort: { '_id.year': -1, '_id.month': -1 } },
+            { $limit: 6 }
+        ]);
 
-    // Get monthly stats for the last 6 months
-    const monthlyStats = await Visit.aggregate([
-      { $match: matchQuery },
-      {
-        $group: {
-          _id: {
-            year: { $year: "$date" },
-            month: { $month: "$date" },
-          },
-          visits: { $sum: 1 },
-          children: { $sum: "$childrenCount" },
-          completedVisits: {
-            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
-          },
-        },
-      },
-      { $sort: { "_id.year": -1, "_id.month": -1 } },
-      { $limit: 6 },
-    ]);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        ...(stats[0] || {
-          totalVisits: 0,
-          completedVisits: 0,
-          scheduledVisits: 0,
-          cancelledVisits: 0,
-          totalChildren: 0,
-          averageChildren: 0,
-        }),
-        monthlyStats,
-      },
-    });
-  } catch (error) {
-    console.error("Error in getVisitStats:", error);
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
-  }
+        res.status(200).json({
+            success: true,
+            data: {
+                ...(stats[0] || {
+                    totalVisits: 0,
+                    completedVisits: 0,
+                    scheduledVisits: 0,
+                    cancelledVisits: 0,
+                    totalChildren: 0,
+                    averageChildren: 0
+                }),
+                monthlyStats
+            }
+        });
+    } catch (error) {
+        console.error('Error in getVisitStats:', error);
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
 };
 
 // @desc    Cancel a visit
 // @route   PUT /api/visits/:id/cancel
 // @access  Private/Admin
 exports.cancelVisit = async (req, res, next) => {
-  try {
-    const visit = await Visit.findByIdAndUpdate(
-      req.params.id,
-      { status: "cancelled" },
-      { new: true }
-    );
+    try {
+        const visit = await Visit.findByIdAndUpdate(
+            req.params.id,
+            { status: 'cancelled' },
+            { new: true }
+        );
 
-    if (!visit) {
-      return res.status(404).json({
-        success: false,
-        message: "Visit not found",
-      });
+        if (!visit) {
+            return res.status(404).json({
+                success: false,
+                message: 'Visit not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: visit
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
     }
-
-    res.status(200).json({
-      success: true,
-      data: visit,
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
-  }
 };
 
-const { uploadVisitFiles } = require("../middleware/upload");
-const { processUploadedFiles } = require("../utils/fileProcessing");
-const { normalizeUploadedFiles, deleteUploadedFile } = require("../middleware/hybridUpload");
-const { isCloudinaryConfigured } = require("../config/cloudinary");
-const fs = require("fs");
-const path = require("path");
-const { generateVisitReportPdf } = require('../utils/pdfService');
-const reportGenerator = require('../../report/services/reportGenerator');
-const dataAggregator = require('../../report/services/dataAggregator');
+
+
+const { uploadVisitFiles } = require('../middleware/upload');
+const { processUploadedFiles } = require('../utils/fileProcessing');
+const fs = require('fs');
+const path = require('path');
 
 // @desc    Upload files for visit report
 // @route   POST /api/visits/:id/upload
@@ -430,907 +344,383 @@ const dataAggregator = require('../../report/services/dataAggregator');
 exports.uploadVisitFiles = uploadVisitFiles;
 
 exports.handleFileUpload = async (req, res, next) => {
-  try {
-    const useCloudinary = isCloudinaryConfigured();
-    console.log(`📦 File Upload Mode: ${useCloudinary ? 'CLOUDINARY' : 'LOCAL'}`);
-    console.log("HandleFileUpload received files:", req.files);
-    console.log("HandleFileUpload received body:", req.body);
+    try {
+        console.log('HandleFileUpload received files:', req.files);
+        console.log('HandleFileUpload received body:', req.body);
+        
+        const visit = await Visit.findById(req.params.id);
 
-    const visit = await Visit.findById(req.params.id);
-
-    if (!visit) {
-      // Clean up uploaded files if visit doesn't exist
-      if (req.files) {
-        const filesList = Array.isArray(req.files) ? req.files : Object.values(req.files).flat();
-        for (const file of filesList) {
-          if (useCloudinary && file.public_id) {
-            // Delete from Cloudinary
-            const { deleteFromCloudinary, getResourceType } = require('../config/cloudinary');
-            try {
-              const resourceType = getResourceType(file.path);
-              await deleteFromCloudinary(file.public_id, resourceType);
-            } catch (e) {
-              console.error("Error deleting from Cloudinary:", e);
+        if (!visit) {
+            // Clean up uploaded files if visit doesn't exist
+            if (req.files) {
+                if (Array.isArray(req.files)) {
+                    // Handle array of files from multer.any()
+                    req.files.forEach(file => {
+                        try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
+                    });
+                } else {
+                    // Handle object of file arrays from multer.fields()
+                    Object.values(req.files).forEach(files => {
+                        files.forEach(file => {
+                            try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
+                        });
+                    });
+                }
             }
-          } else if (file.path && fs.existsSync(file.path)) {
-            // Delete from local storage
-            try {
-              fs.unlinkSync(file.path);
-            } catch (e) {
-              console.error("Error deleting file:", e);
+            return res.status(404).json({
+                success: false,
+                message: 'Visit not found'
+            });
+        }
+
+        // All users can upload files (removed role-based restrictions)
+
+        const fileData = {
+            photos: [],
+            videos: [],
+            docs: []
+        };
+
+        // Process uploaded files with enhanced metadata (Hybrid Approach)
+        if (req.files) {
+            if (Array.isArray(req.files)) {
+                // Handle files from multer.any()
+                const photoFiles = req.files.filter(file => file.fieldname === 'photos');
+                const videoFiles = req.files.filter(file => file.fieldname === 'videos');
+                const docFiles = req.files.filter(file => file.fieldname === 'docs');
+                
+                if (photoFiles.length > 0) {
+                    const processedPhotos = await processUploadedFiles(photoFiles, 'photos');
+                    fileData.photos = processedPhotos;
+                    visit.photos = (visit.photos || []).concat(processedPhotos);
+                }
+                
+                if (videoFiles.length > 0) {
+                    const processedVideos = await processUploadedFiles(videoFiles, 'videos');
+                    fileData.videos = processedVideos;
+                    visit.videos = (visit.videos || []).concat(processedVideos);
+                }
+                
+                if (docFiles.length > 0) {
+                    const processedDocs = await processUploadedFiles(docFiles, 'docs');
+                    fileData.docs = processedDocs;
+                    visit.docs = (visit.docs || []).concat(processedDocs);
+                }
+            } else {
+                // Handle files from multer.fields()
+                if (req.files.photos) {
+                    const processedPhotos = await processUploadedFiles(req.files.photos, 'photos');
+                    fileData.photos = processedPhotos;
+                    visit.photos = (visit.photos || []).concat(processedPhotos);
+                }
+                if (req.files.videos) {
+                    const processedVideos = await processUploadedFiles(req.files.videos, 'videos');
+                    fileData.videos = processedVideos;
+                    visit.videos = (visit.videos || []).concat(processedVideos);
+                }
+                if (req.files.docs) {
+                    const processedDocs = await processUploadedFiles(req.files.docs, 'docs');
+                    fileData.docs = processedDocs;
+                    visit.docs = (visit.docs || []).concat(processedDocs);
+                }
             }
-          }
+            // persist visit with new media metadata
+            await visit.save();
         }
-      }
-      return res.status(404).json({
-        success: false,
-        message: "Visit not found",
-      });
-    }
 
-    // Enforce upload window and membership
-    if (!visit.uploadWindowStartUtc || !visit.uploadWindowEndUtc) {
-      const win = computeIstUploadWindow(visit.date);
-      visit.uploadWindowStartUtc = win.windowStartUtc;
-      visit.uploadWindowEndUtc = win.windowEndUtc;
-      await visit.save();
-    }
-
-    const within = isWithinUploadWindow(visit);
-    const isMember = await requireTeamMemberOrAdmin(req, visit);
-    if (!isMember) {
-      return res.status(403).json({ success: false, message: 'Only assigned team members or admins can upload files for this visit.' });
-    }
-    if (!within) {
-      const now = new Date();
-      const start = new Date(visit.uploadWindowStartUtc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-      const end = new Date(visit.uploadWindowEndUtc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-      const msg = now < new Date(visit.uploadWindowStartUtc)
-        ? `Uploads open at 12:00 PM IST on the visit date (${start}).`
-        : `Uploads closed at ${end} (48 hours after start).`;
-      return res.status(403).json({ success: false, message: msg });
-    }
-
-    // Use hybrid upload normalizer
-    const fileData = normalizeUploadedFiles(req);
-
-    // If using Cloudinary, files are already processed
-    // If using local storage, we need to process them
-    if (!useCloudinary) {
-      // Process local files with image optimization, etc.
-      const photoFiles = req.files && Array.isArray(req.files) 
-        ? req.files.filter(f => f.fieldname === "photos")
-        : (req.files && req.files.photos) || [];
-      
-      const videoFiles = req.files && Array.isArray(req.files)
-        ? req.files.filter(f => f.fieldname === "videos")
-        : (req.files && req.files.videos) || [];
-      
-      const docFiles = req.files && Array.isArray(req.files)
-        ? req.files.filter(f => f.fieldname === "docs")
-        : (req.files && req.files.docs) || [];
-
-      if (photoFiles.length > 0) {
-        const processedPhotos = await processUploadedFiles(photoFiles, "photos");
-        fileData.photos = processedPhotos;
-      }
-
-      if (videoFiles.length > 0) {
-        const processedVideos = await processUploadedFiles(videoFiles, "videos");
-        fileData.videos = processedVideos;
-      }
-
-      if (docFiles.length > 0) {
-        const processedDocs = await processUploadedFiles(docFiles, "docs");
-        fileData.docs = processedDocs;
-      }
-    }
-
-    // Append new files to visit
-    if (fileData.photos.length > 0) {
-      visit.photos = (visit.photos || []).concat(fileData.photos);
-    }
-    if (fileData.videos.length > 0) {
-      visit.videos = (visit.videos || []).concat(fileData.videos);
-    }
-    if (fileData.docs.length > 0) {
-      visit.docs = (visit.docs || []).concat(fileData.docs);
-    }
-
-    // Save visit with new media metadata
-    await visit.save();
-
-    res.status(200).json({
-      success: true,
-      data: fileData,
-      message: `Files uploaded successfully to ${useCloudinary ? 'Cloudinary' : 'local storage'}`,
-      storageType: useCloudinary ? 'cloud' : 'local'
-    });
-  } catch (error) {
-    console.error("File upload error:", error);
-    
-    // Clean up files on error
-    const useCloudinary = isCloudinaryConfigured();
-    if (req.files) {
-      const filesList = Array.isArray(req.files) ? req.files : Object.values(req.files).flat();
-      
-      for (const file of filesList) {
-        if (useCloudinary && file.public_id) {
-          // Delete from Cloudinary
-          const { deleteFromCloudinary, getResourceType } = require('../config/cloudinary');
-          try {
-            const resourceType = getResourceType(file.path);
-            await deleteFromCloudinary(file.public_id, resourceType);
-          } catch (e) {
-            console.error("Error deleting from Cloudinary:", e);
-          }
-        } else if (file.path && fs.existsSync(file.path)) {
-          // Delete from local storage
-          try {
-            fs.unlinkSync(file.path);
-          } catch (e) {
-            console.error("Error deleting file:", e);
-          }
+        res.status(200).json({
+            success: true,
+            data: fileData,
+            message: 'Files uploaded successfully with metadata'
+        });
+    } catch (error) {
+        // Clean up files on error
+        if (req.files) {
+            if (Array.isArray(req.files)) {
+                // Handle array of files from multer.any()
+                req.files.forEach(file => {
+                    if (fs.existsSync(file.path)) {
+                        try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
+                    }
+                });
+            } else {
+                // Handle object of file arrays from multer.fields()
+                Object.values(req.files).forEach(files => {
+                    files.forEach(file => {
+                        if (fs.existsSync(file.path)) {
+                            try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
+                        }
+                    });
+                });
+            }
         }
-      }
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
     }
-    
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
-  }
 };
 
 // @desc    Submit complete visit report with files
 // @route   PUT /api/visits/:id/complete-report
 // @access  Private
 exports.submitCompleteReport = async (req, res, next) => {
-  try {
-    const visit = await Visit.findById(req.params.id);
+    try {
+        const visit = await Visit.findById(req.params.id);
 
-    if (!visit) {
-      return res.status(404).json({
-        success: false,
-        message: "Visit not found",
-      });
-    }
+        if (!visit) {
+            return res.status(404).json({
+                success: false,
+                message: 'Visit not found'
+            });
+        }
 
-    // Only team members/admins may submit; enforce time window
-    if (!visit.uploadWindowStartUtc || !visit.uploadWindowEndUtc) {
-      const win = computeIstUploadWindow(visit.date);
-      visit.uploadWindowStartUtc = win.windowStartUtc;
-      visit.uploadWindowEndUtc = win.windowEndUtc;
-      await visit.save();
-    }
-    const isMember = await requireTeamMemberOrAdmin(req, visit);
-    if (!isMember) return res.status(403).json({ success: false, message: 'Only assigned team members or admins can submit report.' });
-    // Block submissions before window opens (e.g., before 12:00 PM IST on visit date)
-    if (new Date() < new Date(visit.uploadWindowStartUtc)) {
-      const start = new Date(visit.uploadWindowStartUtc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-      return res.status(403).json({ success: false, message: `Report submissions open at 12:00 PM IST on the visit date (${start}).` });
-    }
-    if (new Date() > new Date(visit.uploadWindowEndUtc)) {
-      const end = new Date(visit.uploadWindowEndUtc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-      return res.status(403).json({ success: false, message: `Uploads and edits closed at ${end}.` });
-    }
+        // All users can submit reports (removed role-based restrictions)
 
-    const reportData = {
-      ...req.body,
-      topicsCovered: req.body.topicsCovered
-        ? req.body.topicsCovered.split(",").map((topic) => topic.trim())
-        : [],
-      teachingMethods: req.body.teachingMethods
-        ? req.body.teachingMethods.split(",").map((method) => method.trim())
-        : [],
-      status: "completed",
-      submittedBy: req.user.id,
-      submissionDate: new Date(),
-    };
+        const reportData = {
+            ...req.body,
+            topicsCovered: req.body.topicsCovered ? req.body.topicsCovered.split(',').map(topic => topic.trim()) : [],
+            teachingMethods: req.body.teachingMethods ? req.body.teachingMethods.split(',').map(method => method.trim()) : [],
+            status: 'completed',
+            submittedBy: req.user.id,
+            submissionDate: new Date()
+        };
 
-    const updatedVisit = await Visit.findByIdAndUpdate(
-      req.params.id,
-      reportData,
-      { new: true, runValidators: true }
-    )
-      .populate("school")
-      .populate("team")
-      .populate("submittedBy", "name");
+        const updatedVisit = await Visit.findByIdAndUpdate(
+            req.params.id, 
+            reportData, 
+            { new: true, runValidators: true }
+        )
+        .populate('school')
+        .populate('team')
+        .populate('submittedBy', 'name');
 
-    res.status(200).json({
-      success: true,
-      data: updatedVisit,
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-// @desc    Get all gallery media from all visits with filters
-// @route   GET /api/visits/gallery/all
-// @access  Private
-exports.getAllGalleryMedia = async (req, res, next) => {
-  try {
-    // Auto-update past scheduled visits to completed
-    await updatePastVisits();
-
-    const {
-      team,
-      school,
-      startDate,
-      endDate,
-      recent,
-      page = 1,
-      limit = 50,
-      sortBy = "recent",
-    } = req.query;
-
-    // Build query for visits (any status) with media so media is visible to all authenticated users
-    let query = Visit.find({
-      $or: [
-        { photos: { $exists: true, $not: { $size: 0 } } },
-        { videos: { $exists: true, $not: { $size: 0 } } },
-        { docs: { $exists: true, $not: { $size: 0 } } },
-      ],
-    });
-
-    // Apply filters
-    if (team) {
-      query = query.where("team").equals(team);
-    }
-
-    if (school) {
-      query = query.where("school").equals(school);
-    }
-
-    // Date range filter
-    if (startDate && endDate) {
-      query = query
-        .where("date")
-        .gte(new Date(startDate))
-        .lte(new Date(endDate));
-    }
-
-    // Recent filter (last N days)
-    if (recent) {
-      const daysAgo = new Date();
-      daysAgo.setDate(daysAgo.getDate() - parseInt(recent));
-      query = query.where("date").gte(daysAgo);
-    }
-
-    // Sort by date (most recent first by default)
-    if (sortBy === "recent" || sortBy === "date") {
-      query = query.sort({ date: -1 });
-    } else if (sortBy === "oldest") {
-      query = query.sort({ date: 1 });
-    }
-
-    // Populate related data
-    query = query
-      .populate("school", "name address")
-      .populate("team", "name")
-      .select("photos videos date school team name");
-
-    // Execute query
-    const visits = await query;
-
-    // Aggregate all media from visits
-    const allMedia = [];
-    visits.forEach((visit) => {
-      // Process photos
-      if (visit.photos && visit.photos.length > 0) {
-        visit.photos.forEach((photo) => {
-          // Handle both object (with metadata) and string (legacy) formats
-          let photoUrl =
-            typeof photo === "object" ? photo.cloudUrl || photo.path : photo;
-
-          // Normalize the path (convert absolute paths to web paths)
-          photoUrl = normalizeFilePath(photoUrl);
-
-          allMedia.push({
-            url: photoUrl,
-            type: "photo",
-            visitId: visit._id,
-            visitName: visit.name || "",
-            visitDate: visit.date,
-            school: visit.school
-              ? {
-                  id: visit.school._id,
-                  name: visit.school.name,
-                }
-              : null,
-            team: visit.team
-              ? {
-                  id: visit.team._id,
-                  name: visit.team.name,
-                }
-              : null,
-          });
+        res.status(200).json({
+            success: true,
+            data: updatedVisit
         });
-      }
-
-      // Process videos
-      if (visit.videos && visit.videos.length > 0) {
-        visit.videos.forEach((video) => {
-          // Handle both object (with metadata) and string (legacy) formats
-          let videoUrl =
-            typeof video === "object" ? video.cloudUrl || video.path : video;
-
-          // Normalize the path (convert absolute paths to web paths)
-          videoUrl = normalizeFilePath(videoUrl);
-
-          allMedia.push({
-            url: videoUrl,
-            type: "video",
-            visitId: visit._id,
-            visitName: visit.name || "",
-            visitDate: visit.date,
-            school: visit.school
-              ? {
-                  id: visit.school._id,
-                  name: visit.school.name,
-                }
-              : null,
-            team: visit.team
-              ? {
-                  id: visit.team._id,
-                  name: visit.team.name,
-                }
-              : null,
-          });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message
         });
-      }
-
-      // Process documents
-      if (visit.docs && visit.docs.length > 0) {
-        visit.docs.forEach((doc) => {
-          let docUrl =
-            typeof doc === "object" ? doc.cloudUrl || doc.path : doc;
-
-          docUrl = normalizeFilePath(docUrl);
-
-          allMedia.push({
-            url: docUrl,
-            type: "doc",
-            name: typeof doc === "object" ? (doc.originalName || doc.filename || "Document") : "Document",
-            visitId: visit._id,
-            visitName: visit.name || "",
-            visitDate: visit.date,
-            school: visit.school
-              ? {
-                  id: visit.school._id,
-                  name: visit.school.name,
-                }
-              : null,
-            team: visit.team
-              ? {
-                  id: visit.team._id,
-                  name: visit.team.name,
-                }
-              : null,
-          });
-        });
-      }
-    });
-
-    // Apply pagination
-    const startIndex = (parseInt(page) - 1) * parseInt(limit);
-    const endIndex = startIndex + parseInt(limit);
-    const paginatedMedia = allMedia.slice(startIndex, endIndex);
-
-    res.status(200).json({
-      success: true,
-      count: allMedia.length,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalPages: Math.ceil(allMedia.length / parseInt(limit)),
-      data: paginatedMedia,
-    });
-  } catch (error) {
-    console.error("Error in getAllGalleryMedia:", error);
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
-  }
+    }
 };
 
 // @desc    Get visit gallery (photos and videos)
 // @route   GET /api/visits/:id/gallery
 // @access  Private
 exports.getVisitGallery = async (req, res, next) => {
-  try {
-    const visit = await Visit.findById(req.params.id)
-      .select("photos videos docs school date")
-      .populate("school", "name");
+    try {
+        const visit = await Visit.findById(req.params.id)
+            .select('photos videos school date')
+            .populate('school', 'name');
 
-    if (!visit) {
-      return res.status(404).json({
-        success: false,
-        message: "Visit not found",
-      });
+        if (!visit) {
+            return res.status(404).json({
+                success: false,
+                message: 'Visit not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                photos: visit.photos || [],
+                videos: visit.videos || [],
+                school: visit.school,
+                date: visit.date
+            }
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
     }
+};
 
-    // Normalize photo and video paths
-    const normalizedPhotos = (visit.photos || []).map((photo) => {
-      if (typeof photo === "object" && photo !== null) {
-        return {
-          ...photo.toObject(),
-          path: normalizeFilePath(photo.cloudUrl || photo.path),
-        };
-      }
-      return normalizeFilePath(photo);
-    });
-
-    const normalizedVideos = (visit.videos || []).map((video) => {
-      if (typeof video === "object" && video !== null) {
-        return {
-          ...video.toObject(),
-          path: normalizeFilePath(video.cloudUrl || video.path),
-        };
-      }
-      return normalizeFilePath(video);
-    });
-
-    const normalizedDocs = (visit.docs || []).map((doc) => {
-      if (typeof doc === "object" && doc !== null) {
-        return {
-          ...doc.toObject(),
-          path: normalizeFilePath(doc.cloudUrl || doc.path),
-        };
-      }
-      return normalizeFilePath(doc);
-    });
-
-    res.status(200).json({
-      success: true,
-      data: {
-        photos: normalizedPhotos,
-        videos: normalizedVideos,
-        docs: normalizedDocs,
-        school: visit.school,
-        date: visit.date,
-      },
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
-  }
+// @desc    Get all gallery media from all visits
+// @route   GET /api/visits/gallery/all
+// @access  Private
+exports.getAllGalleryMedia = async (req, res, next) => {
+    try {
+        const { team, school, startDate, endDate, limit = 500 } = req.query;
+        
+        // Build filter query
+        const filter = { status: 'completed' };
+        
+        if (team) filter.team = team;
+        if (school) filter.school = school;
+        if (startDate && endDate) {
+            filter.date = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+        
+        // Get visits with media
+        const visits = await Visit.find(filter)
+            .select('photos videos documents school team date')
+            .populate('school', 'name')
+            .populate('team', 'name')
+            .sort('-date')
+            .limit(parseInt(limit));
+        
+        // Flatten all media into a single array
+        const allMedia = [];
+        
+        visits.forEach(visit => {
+            // Add photos
+            if (visit.photos && visit.photos.length > 0) {
+                visit.photos.forEach(photo => {
+                    allMedia.push({
+                        type: 'photo',
+                        url: photo,
+                        visitId: visit._id,
+                        visitDate: visit.date,
+                        school: visit.school,
+                        team: visit.team
+                    });
+                });
+            }
+            
+            // Add videos
+            if (visit.videos && visit.videos.length > 0) {
+                visit.videos.forEach(video => {
+                    allMedia.push({
+                        type: 'video',
+                        url: video,
+                        visitId: visit._id,
+                        visitDate: visit.date,
+                        school: visit.school,
+                        team: visit.team
+                    });
+                });
+            }
+            
+            // Add documents
+            if (visit.documents && visit.documents.length > 0) {
+                visit.documents.forEach(doc => {
+                    allMedia.push({
+                        type: 'doc',
+                        url: doc,
+                        name: doc.split('/').pop(), // Extract filename
+                        visitId: visit._id,
+                        visitDate: visit.date,
+                        school: visit.school,
+                        team: visit.team
+                    });
+                });
+            }
+        });
+        
+        res.status(200).json({
+            success: true,
+            count: allMedia.length,
+            data: allMedia
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
 };
 
 // @desc    Update visit
 // @route   PUT /api/visits/:id
 // @access  Private
 exports.updateVisit = async (req, res, next) => {
-  try {
-    const visit = await Visit.findById(req.params.id);
-    if (!visit)
-      return res
-        .status(404)
-        .json({ success: false, message: "Visit not found" });
+    try {
+        const visit = await Visit.findById(req.params.id);
+        if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
 
-    // Enforce window for edits (block after windowEnd)
-    if (!visit.uploadWindowStartUtc || !visit.uploadWindowEndUtc) {
-      const win = computeIstUploadWindow(visit.date);
-      visit.uploadWindowStartUtc = win.windowStartUtc;
-      visit.uploadWindowEndUtc = win.windowEndUtc;
-      await visit.save();
-    }
-    if (new Date() > new Date(visit.uploadWindowEndUtc)) {
-      const end = new Date(visit.uploadWindowEndUtc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-      return res.status(403).json({ success: false, message: `Edits are closed for this visit as of ${end}.` });
-    }
+        // All users can update all visits (removed role-based restrictions)
 
-    // If team or school are provided in update, validate them
-    if (req.body.team && !mongoose.Types.ObjectId.isValid(req.body.team)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid team id" });
-    }
-    if (req.body.school && !mongoose.Types.ObjectId.isValid(req.body.school)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid school id" });
-    }
-    if (req.body.team) {
-      const teamExists = await Team.findById(req.body.team).select("_id");
-      if (!teamExists)
-        return res
-          .status(404)
-          .json({ success: false, message: "Team not found" });
-    }
-    if (req.body.school) {
-      const schoolExists = await School.findById(req.body.school).select("_id");
-      if (!schoolExists)
-        return res
-          .status(404)
-          .json({ success: false, message: "School not found" });
-    }
+        // If team or school are provided in update, validate them
+        if (req.body.team && !mongoose.Types.ObjectId.isValid(req.body.team)) {
+            return res.status(400).json({ success: false, message: 'Invalid team id' });
+        }
+        if (req.body.school && !mongoose.Types.ObjectId.isValid(req.body.school)) {
+            return res.status(400).json({ success: false, message: 'Invalid school id' });
+        }
+        if (req.body.team) {
+            const teamExists = await Team.findById(req.body.team).select('_id');
+            if (!teamExists) return res.status(404).json({ success: false, message: 'Team not found' });
+        }
+        if (req.body.school) {
+            const schoolExists = await School.findById(req.body.school).select('_id');
+            if (!schoolExists) return res.status(404).json({ success: false, message: 'School not found' });
+        }
 
-    // Recompute window if date is updated
-    let body = { ...req.body };
-    if (req.body.date) {
-      const win = computeIstUploadWindow(req.body.date);
-      body.uploadWindowStartUtc = win.windowStartUtc;
-      body.uploadWindowEndUtc = win.windowEndUtc;
+        const updated = await Visit.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
+            .populate('school')
+            .populate('team')
+            .populate('submittedBy', 'name');
+
+        res.status(200).json({ success: true, data: updated });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
     }
-
-    const updated = await Visit.findByIdAndUpdate(req.params.id, body, {
-      new: true,
-      runValidators: true,
-    })
-      .populate("school")
-      .populate("team")
-      .populate("submittedBy", "name");
-
-    res.status(200).json({ success: true, data: updated });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
-  }
 };
 
 // @desc    Delete visit
 // @route   DELETE /api/visits/:id
 // @access  Private
 exports.deleteVisit = async (req, res, next) => {
-  try {
-    const visit = await Visit.findById(req.params.id);
-    if (!visit)
-      return res
-        .status(404)
-        .json({ success: false, message: "Visit not found" });
+    try {
+        const visit = await Visit.findById(req.params.id);
+        if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
 
-    // All users can delete all visits (removed role-based restrictions)
+        // All users can delete all visits (removed role-based restrictions)
 
-    // delete upload directory if exists
-    const uploadDir = path.join(__dirname, "../uploads", String(visit._id));
-    if (fs.existsSync(uploadDir)) {
-      fs.rmSync(uploadDir, { recursive: true, force: true });
+        // delete upload directory if exists
+        const uploadDir = path.join(__dirname, '../uploads', String(visit._id));
+        if (fs.existsSync(uploadDir)) {
+            fs.rmSync(uploadDir, { recursive: true, force: true });
+        }
+
+        await Visit.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({ success: true, message: 'Visit deleted' });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
     }
-
-    await Visit.findByIdAndDelete(req.params.id);
-
-    res.status(200).json({ success: true, message: "Visit deleted" });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
-  }
 };
 
 // @desc    Delete a media URL from visit (photos/videos/docs)
 // @route   DELETE /api/visits/:id/media
 // @access  Private
 exports.deleteMedia = async (req, res, next) => {
-  try {
-    const { url } = req.body;
-    if (!url)
-      return res
-        .status(400)
-        .json({ success: false, message: "Media url required" });
-    const visit = await Visit.findById(req.params.id);
-    if (!visit)
-      return res
-        .status(404)
-        .json({ success: false, message: "Visit not found" });
+    try {
+        const { url } = req.body;
+        if (!url) return res.status(400).json({ success: false, message: 'Media url required' });
+        const visit = await Visit.findById(req.params.id);
+        if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
 
-    // Enforce window and membership for delete
-    if (!visit.uploadWindowStartUtc || !visit.uploadWindowEndUtc) {
-      const win = computeIstUploadWindow(visit.date);
-      visit.uploadWindowStartUtc = win.windowStartUtc;
-      visit.uploadWindowEndUtc = win.windowEndUtc;
-      await visit.save();
-    }
-    const isMember = await requireTeamMemberOrAdmin(req, visit);
-    if (!isMember) return res.status(403).json({ success: false, message: 'Only assigned team members or admins can modify media.' });
-    if (new Date() > new Date(visit.uploadWindowEndUtc)) {
-      const end = new Date(visit.uploadWindowEndUtc).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-      return res.status(403).json({ success: false, message: `Edits are closed as of ${end}.` });
-    }
+        // All users can delete media (removed role-based restrictions)
 
-    const removeFrom = (arr) => {
-      if (!arr) return false;
-      const idx = arr.indexOf(url);
-      if (idx === -1) return false;
-      arr.splice(idx, 1);
-      return true;
-    };
+        const removeFrom = (arr) => {
+            if (!arr) return false;
+            const idx = arr.indexOf(url);
+            if (idx === -1) return false;
+            arr.splice(idx, 1);
+            return true;
+        };
 
-    let removed =
-      removeFrom(visit.photos) ||
-      removeFrom(visit.videos) ||
-      removeFrom(visit.docs);
-    if (!removed)
-      return res
-        .status(404)
-        .json({ success: false, message: "Media not found on visit" });
+        let removed = removeFrom(visit.photos) || removeFrom(visit.videos) || removeFrom(visit.docs);
+        if (!removed) return res.status(404).json({ success: false, message: 'Media not found on visit' });
 
-    // delete file on disk
-    const filename = path.basename(url);
-    const filePath = path.join(
-      __dirname,
-      "../uploads",
-      String(visit._id),
-      filename
-    );
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        // delete file on disk
+        const filename = path.basename(url);
+        const filePath = path.join(__dirname, '../uploads', String(visit._id), filename);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
-    await visit.save();
-
-    res.status(200).json({ success: true, message: "Media removed" });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
-  }
-};
-
-// ================================
-// Helpers
-// ================================
-
-// Normalize file paths to web-accessible URLs beginning with /uploads/
-function normalizeFilePath(p) {
-  if (!p) return p;
-  let urlPath = typeof p === "string" ? p : String(p);
-  // Normalize slashes
-  urlPath = urlPath.replace(/\\/g, "/");
-  // Extract from '/uploads/' if present
-  const idx = urlPath.indexOf("/uploads/");
-  if (idx !== -1) {
-    return urlPath.substring(idx);
-  }
-  const idxAlt = urlPath.indexOf("uploads/");
-  if (idxAlt !== -1) {
-    return "/" + urlPath.substring(idxAlt);
-  }
-  // Fallback: ensure prefix
-  if (!urlPath.startsWith("/uploads/")) {
-    return "/uploads/" + urlPath.replace(/^\/?/, "");
-  }
-  return urlPath;
-}
-
-// Auto-fix inconsistent records only (do NOT auto-complete purely by date)
-async function updatePastVisits() {
-  try {
-    const now = new Date();
-    
-    // STATUS FLOW:
-    // 1. scheduled -> visited: After 12:00 PM IST on visit date
-    // 2. visited -> completed: 48 hours after visitedAt timestamp
-    // 3. Manual completion: When submittedBy exists (report submitted)
-    
-    console.log('⏰ Running updatePastVisits at:', now.toISOString());
-    
-    // Step 1: Update scheduled visits to "visited" if visit date has passed 12 PM IST
-    const scheduledVisits = await Visit.find({ 
-      status: "scheduled"
-    });
-    
-    for (const visit of scheduledVisits) {
-      // Get the visit date (stored as Date object in DB - usually stored as start of day UTC)
-      const visitDate = new Date(visit.date);
-      
-      // Get just the date parts (year, month, day) from the visit date
-      // Use toLocaleDateString to parse properly regardless of timezone
-      const dateStr = visitDate.toISOString().split('T')[0]; // YYYY-MM-DD
-      const [year, month, day] = dateStr.split('-').map(Number);
-      
-      // Create 12:00 PM IST for that visit date
-      // Method: Create the date in IST timezone, then get UTC representation
-      // 12:00 PM IST = 6:30 AM UTC (IST is UTC+5:30)
-      const noonIST_UTC = new Date(`${dateStr}T06:30:00.000Z`);
-      
-      console.log(`🔍 Visit ${visit._id}: VisitDate=${visitDate.toISOString()}, NoonIST_UTC=${noonIST_UTC.toISOString()}, Now=${now.toISOString()}, ShouldBeVisited=${now >= noonIST_UTC}`);
-      
-      // Only mark as visited if:
-      // 1. Current time (now) is AFTER 12 PM IST (6:30 AM UTC) on the visit date
-      // 2. The visit date is not in the future
-      const visitDateOnly = new Date(dateStr + 'T00:00:00.000Z');
-      const todayDateOnly = new Date(now.toISOString().split('T')[0] + 'T00:00:00.000Z');
-      
-      // Visit date must be today or in the past, AND current time must be after noon IST
-      if (visitDateOnly <= todayDateOnly && now >= noonIST_UTC) {
-        visit.status = "visited";
-        visit.visitedAt = now; // Record the actual time it became visited
         await visit.save();
-        console.log(`✅ Visit ${visit._id} marked as 'visited' (date: ${visitDate.toISOString()})`);
-      } else {
-        console.log(`⏳ Visit ${visit._id} stays 'scheduled' - not yet time`);
-      }
+
+        res.status(200).json({ success: true, message: 'Media removed' });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
     }
-    
-    // Step 2: Update visited to completed after 48 hours
-    const visitedVisits = await Visit.find({ 
-      status: "visited",
-      visitedAt: { $exists: true }
-    });
-    
-    for (const visit of visitedVisits) {
-      // Calculate 48 hours after visitedAt
-      const completionTime = new Date(visit.visitedAt.getTime() + (48 * 60 * 60 * 1000));
-      
-      console.log(`🔍 Visited visit ${visit._id}: visitedAt=${visit.visitedAt.toISOString()}, completionTime=${completionTime.toISOString()}, now=${now.toISOString()}`);
-      
-      // If 48 hours have passed, mark as completed
-      if (now >= completionTime) {
-        visit.status = "completed";
-        await visit.save();
-        console.log(`✅ Visit ${visit._id} marked as 'completed' (48 hours passed)`);
-      }
-    }
-    
-    // Step 3: Handle manual completion (when report is submitted)
-    // If submittedBy exists but status is still scheduled/visited, mark as completed
-    const manualCompleted = await Visit.updateMany(
-      { 
-        status: { $in: ["scheduled", "visited"] },
-        submittedBy: { $ne: null }
-      },
-      { $set: { status: "completed" } }
-    );
-    
-    if (manualCompleted.modifiedCount > 0) {
-      console.log(`✅ ${manualCompleted.modifiedCount} visits manually marked as completed (report submitted)`);
-    }
-    
-  } catch (e) {
-    console.error("⚠️ updatePastVisits failed:", e.message, e.stack);
-  }
-}
-
-// ================================
-// Report Draft/Finalize/Download
-// ================================
-
-// @desc    Get or build report draft snapshot for a visit
-// @route   GET /api/visits/:id/report/draft
-// @access  Private/Admin
-exports.getReportDraft = async (req, res) => {
-  try {
-    const visit = await Visit.findById(req.params.id)
-      .populate('school', 'name address contactPerson')
-      .populate('team', 'name');
-    if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
-    if (req.user?.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin only' });
-
-    const draft = visit.reportDraft || {
-      childrenCount: visit.childrenCount,
-      childrenResponse: visit.childrenResponse,
-      topicsCovered: visit.topicsCovered || [],
-      teachingMethods: visit.teachingMethods || [],
-      challengesFaced: visit.challengesFaced || '',
-      suggestions: visit.suggestions || ''
-    };
-
-    return res.status(200).json({ success: true, data: { draft, reportStatus: visit.reportStatus } });
-  } catch (e) {
-    return res.status(400).json({ success: false, message: e.message });
-  }
-};
-
-// @desc    Save/update report draft
-// @route   PUT /api/visits/:id/report/draft
-// @access  Private/Admin
-exports.saveReportDraft = async (req, res) => {
-  try {
-    const visit = await Visit.findById(req.params.id);
-    if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
-    if (req.user?.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin only' });
-
-    const payload = req.body || {};
-    visit.reportDraft = payload;
-    visit.reportStatus = 'draft';
-    visit.reportDraftUpdatedAt = new Date();
-    await visit.save();
-    return res.status(200).json({ success: true, message: 'Draft saved', data: { reportStatus: visit.reportStatus } });
-  } catch (e) {
-    return res.status(400).json({ success: false, message: e.message });
-  }
-};
-
-// @desc    Finalize report and generate PDF (only if visit is completed)
-// @route   POST /api/visits/:id/report/finalize
-// @access  Private/Admin
-exports.finalizeReport = async (req, res) => {
-  try {
-    const visit = await Visit.findById(req.params.id)
-      .populate('school', 'name address contactPerson')
-      .populate('team', 'name');
-    if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
-    if (req.user?.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin only' });
-    if (visit.status !== 'completed') {
-      return res.status(400).json({ success: false, message: 'Report can be finalized only after visit is completed.' });
-    }
-
-    // Build snapshot from draft or current data
-    const snapshot = {
-      childrenCount: visit.childrenCount,
-      childrenResponse: visit.childrenResponse,
-      topicsCovered: (visit.reportDraft?.topicsCovered ?? visit.topicsCovered) || [],
-      teachingMethods: (visit.reportDraft?.teachingMethods ?? visit.teachingMethods) || [],
-      challengesFaced: visit.reportDraft?.challengesFaced ?? visit.challengesFaced ?? '',
-      suggestions: visit.reportDraft?.suggestions ?? visit.suggestions ?? ''
-    };
-
-    // Generate PDF using new "Spread A Smile" template
-    console.log('📄 Generating "Spread A Smile" report for visit:', visit._id);
-    
-    // Create date range for single visit (same day)
-    const visitDate = new Date(visit.date);
-    const startOfDay = new Date(visitDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(visitDate);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    // Build report configuration for this specific visit
-    const reportConfig = {
-      template: 'visit-summary',
-      title: `Visit Report - ${visit.school?.name || 'School'}`,
-      dateRange: {
-        start: startOfDay,
-        end: endOfDay
-      },
-      filters: {
-        visits: [visit._id.toString()], // Filter to only this visit
-        schools: visit.school ? [visit.school._id.toString()] : undefined,
-        teams: visit.team ? [visit.team._id.toString()] : undefined
-      }
-    };
-
-    // Fetch data for this visit
-    const reportData = await dataAggregator.getReportData(reportConfig);
-    reportConfig.data = reportData;
-
-    // Generate PDF buffer
-    const pdfBuffer = await reportGenerator.generateReport(reportConfig);
-
-    // Save PDF to uploads folder
-    const uploadsDir = path.join(__dirname, '..', 'uploads', 'reports');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
-    const filename = `visit-report-${visit._id}-${Date.now()}.pdf`;
-    const pdfPathAbs = path.join(uploadsDir, filename);
-    fs.writeFileSync(pdfPathAbs, pdfBuffer);
-
-    // Normalize to web path
-    const webPath = `/uploads/reports/${filename}`;
-
-    visit.reportSnapshot = snapshot;
-    visit.reportPdfPath = webPath;
-    visit.reportFinalizedAt = new Date();
-    visit.reportStatus = 'final';
-    await visit.save();
-
-    console.log('✅ Report finalized successfully:', webPath);
-    return res.status(200).json({ success: true, message: 'Report finalized', data: { pdfPath: webPath } });
-  } catch (e) {
-    console.error('finalizeReport error:', e);
-    return res.status(400).json({ success: false, message: e.message });
-  }
-};
-
-// @desc    Download finalized report PDF
-// @route   GET /api/visits/:id/report/download
-// @access  Private/Admin
-exports.downloadReportPdf = async (req, res) => {
-  try {
-    const visit = await Visit.findById(req.params.id);
-    if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
-    if (req.user?.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin only' });
-    if (!visit.reportPdfPath) return res.status(404).json({ success: false, message: 'No finalized report for this visit' });
-
-    // Convert web path to disk path
-    const diskPath = path.join(__dirname, '..', visit.reportPdfPath.replace(/^\/?uploads\//, 'uploads/'));
-    if (!fs.existsSync(diskPath)) return res.status(404).json({ success: false, message: 'Report file missing' });
-    res.setHeader('Content-Disposition', `attachment; filename="Report-${visit._id}.pdf"`);
-    res.setHeader('Content-Type', 'application/pdf');
-    fs.createReadStream(diskPath).pipe(res);
-  } catch (e) {
-    return res.status(400).json({ success: false, message: e.message });
-  }
 };
