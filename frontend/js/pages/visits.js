@@ -31,14 +31,14 @@ function statusClassName(status) {
 
 // Load all visits and render as cards
 aSYNC_loadVisits();
-async function aSYNC_loadVisits(){
-  try{
+async function aSYNC_loadVisits() {
+  try {
     loading.show('visitsList', 'Loading visits...');
     const data = await api.getVisits();
     loading.hide('visitsList');
 
     const list = document.getElementById('visitsList');
-    if(!data.success || !Array.isArray(data.data) || data.data.length===0){
+    if (!data.success || !Array.isArray(data.data) || data.data.length === 0) {
       renderNoData('visitsList', 'No visits found yet. Schedule your first visit!');
       return;
     }
@@ -101,45 +101,45 @@ async function aSYNC_loadVisits(){
       card.appendChild(actions);
 
       // Wire actions
-      actions.querySelector('.btn-edit').addEventListener('click', (e)=>{
+      actions.querySelector('.btn-edit').addEventListener('click', (e) => {
         e.stopPropagation();
         openVisitModal(visit);
       });
 
       const cancelBtn = actions.querySelector('[data-action="cancel"]');
       if (cancelBtn) {
-        cancelBtn.addEventListener('click', async (e)=>{
+        cancelBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
           notify.confirm('Are you sure you want to cancel this visit?', async () => {
-            try{
+            try {
               loading.showFullPage('Cancelling visit...');
               const result = await api.cancelVisit(visit._id);
               loading.hideFullPage();
-              if(result.success){ notify.success('Visit cancelled successfully!'); aSYNC_loadVisits(); }
+              if (result.success) { notify.success('Visit cancelled successfully!'); aSYNC_loadVisits(); }
               else { notify.error(result.message || 'Failed to cancel visit'); }
-            }catch(err){ loading.hideFullPage(); handleAPIError(err); }
+            } catch (err) { loading.hideFullPage(); handleAPIError(err); }
           });
         });
       }
 
       const deleteBtn = actions.querySelector('.btn-delete');
       if (deleteBtn) {
-        deleteBtn.addEventListener('click', async (e)=>{
+        deleteBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
           notify.confirm('Delete this visit? This action cannot be undone.', async () => {
-            try{
+            try {
               loading.showFullPage('Deleting visit...');
               const result = await api.deleteVisit(visit._id);
               loading.hideFullPage();
-              if(result.success){ notify.success('Visit successfully deleted!'); aSYNC_loadVisits(); }
+              if (result.success) { notify.success('Visit successfully deleted!'); aSYNC_loadVisits(); }
               else { notify.error(result.message || 'Failed to delete visit'); }
-            }catch(err){ loading.hideFullPage(); handleAPIError(err); }
+            } catch (err) { loading.hideFullPage(); handleAPIError(err); }
           });
         });
       }
 
       // All visit cards open centered modal on click
-      card.addEventListener('click', ()=>{
+      card.addEventListener('click', () => {
         openVisitInfoModal(visit);
       });
 
@@ -147,66 +147,69 @@ async function aSYNC_loadVisits(){
     });
 
     attachDetailsHandlers();
-  }catch(err){
+  } catch (err) {
     loading.hide('visitsList');
     renderError('visitsList', 'Failed to load visits');
   }
 }
 
-function renderVisitDetailsHtml(visit){
-  const membersHtml = (visit.members && visit.members.length)? `<p><strong>Team Members:</strong> ${escapeHtml(visit.members.join(', '))}</p>` : '';
-  const assignedClass = visit.assignedClass? `<p><strong>Assigned Class:</strong> ${escapeHtml(visit.assignedClass)}</p>` : '';
-  const children = visit.childrenCount? `<p><strong>Expected Children:</strong> <span class="highlight-count">${visit.childrenCount}</span></p>` : '';
+function renderVisitDetailsHtml(visit) {
+  const membersHtml = (visit.members && visit.members.length) ? `<p><strong>Team Members:</strong> ${escapeHtml(visit.members.join(', '))}</p>` : '';
+  const assignedClass = visit.assignedClass ? `<p><strong>Assigned Class:</strong> ${escapeHtml(visit.assignedClass)}</p>` : '';
+  const children = visit.childrenCount ? `<p><strong>Expected Children:</strong> <span class="highlight-count">${visit.childrenCount}</span></p>` : '';
 
   let mediaHtml = '';
-  if((visit.photos && visit.photos.length) || (visit.videos && visit.videos.length) || (visit.docs && visit.docs.length)){
+  if ((visit.photos && visit.photos.length) || (visit.videos && visit.videos.length) || (visit.docs && visit.docs.length)) {
     mediaHtml += '<div class="visit-details-section">';
     mediaHtml += '<h3>Visit Media</h3>';
 
-    if(visit.photos && visit.photos.length) {
+    if (visit.photos && visit.photos.length) {
       mediaHtml += `<div class="media-section">
         <h4>Photos (${visit.photos.length})</h4>
         <div class="media-gallery photos-gallery">
-          ${visit.photos.map(p=>{
-            const photoUrl = typeof p === 'string' ? p : (p.path || p.url || p);
-            return `
+          ${visit.photos.map(p => {
+        const photoUrl = typeof p === 'string' ? p : (p.path || p.url || p);
+        return `
             <div class="media-item photo-item">
               <img src="${toAbsoluteMediaUrl(photoUrl)}" data-media-src="${toAbsoluteMediaUrl(photoUrl)}" data-media-type="image" alt="Visit photo" loading="lazy" />
             </div>
-          `;}).join('')}
+          `;
+      }).join('')}
         </div>
       </div>`;
     }
 
-    if(visit.videos && visit.videos.length) {
+    if (visit.videos && visit.videos.length) {
       mediaHtml += `<div class="media-section">
         <h4>Videos (${visit.videos.length})</h4>
         <div class="media-gallery videos-gallery">
-          ${visit.videos.map(v=>{
-            const videoUrl = typeof v === 'string' ? v : (v.path || v.url || v);
-            return `
+          ${visit.videos.map(v => {
+        const videoUrl = typeof v === 'string' ? v : (v.path || v.url || v);
+        return `
             <div class="media-item video-item" data-media-src="${toAbsoluteMediaUrl(videoUrl)}" data-media-type="video">
               <div class="video-play-button">▶</div>
               <span>Play Video</span>
             </div>
-          `;}).join('')}
+          `;
+      }).join('')}
         </div>
       </div>`;
     }
 
-    if(visit.docs && visit.docs.length) {
+    if (visit.docs && visit.docs.length) {
       mediaHtml += `<div class="media-section">
         <h4>Documents (${visit.docs.length})</h4>
         <div class="docs-list">
-          ${visit.docs.map(d=>{
-            const docUrl = typeof d === 'string' ? d : (d.path || d.url || d);
-            const docName = typeof d === 'string' ? d.split('/').pop() : (d.originalName || d.filename || docUrl.split('/').pop());
-            return `
+          ${visit.docs.map(d => {
+        const docUrl = typeof d === 'string' ? d : (d.path || d.url || d);
+        const docName = typeof d === 'string' ? d.split('/').pop() : (d.originalName || d.filename || docUrl.split('/').pop());
+        return `
             <div class="doc-item">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="none" d="M0 0h24v24H0z"/><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z" fill="#3f51b5"/></svg>
               <a href="${docUrl}" target="_blank">${escapeHtml(docName)}</a>
             </div>
-          `;}).join('')}
+          `;
+      }).join('')}
         </div>
       </div>`;
     }
@@ -236,14 +239,14 @@ function renderVisitDetailsHtml(visit){
           <div class="info-column">
             <div class="detail-row"><div class="detail-label">School</div><div class="detail-value">${escapeHtml(visit.school && visit.school.name || '-')}</div></div>
             <div class="detail-row"><div class="detail-label">Team</div><div class="detail-value">${escapeHtml(visit.team && visit.team.name || '-')}</div></div>
-            ${assignedClass? `<div class="detail-row"><div class="detail-label">Assigned Class</div><div class="detail-value">${escapeHtml(visit.assignedClass)}</div></div>` : ''}
-            <div class="detail-row"><div class="detail-label">Status</div><div class="detail-value">${escapeHtml(visit.status||'Scheduled')}</div></div>
+            ${assignedClass ? `<div class="detail-row"><div class="detail-label">Assigned Class</div><div class="detail-value">${escapeHtml(visit.assignedClass)}</div></div>` : ''}
+            <div class="detail-row"><div class="detail-label">Status</div><div class="detail-value">${escapeHtml(visit.status || 'Scheduled')}</div></div>
           </div>
           <div class="info-column">
-            ${membersHtml? `<div class="detail-row"><div class="detail-label">Members</div><div class="detail-value">${escapeHtml(visit.members.join(', '))}</div></div>` : ''}
-            ${children? `<div class="detail-row"><div class="detail-label">Expected Children</div><div class="detail-value"><span class="highlight-count">${visit.childrenCount}</span></div></div>` : ''}
+            ${membersHtml ? `<div class="detail-row"><div class="detail-label">Members</div><div class="detail-value">${escapeHtml(visit.members.join(', '))}</div></div>` : ''}
+            ${children ? `<div class="detail-row"><div class="detail-label">Expected Children</div><div class="detail-value"><span class="highlight-count">${visit.childrenCount}</span></div></div>` : ''}
             <div class="detail-row"><div class="detail-label">Classes</div><div class="detail-value">${visit.classesVisited || 0} visited of ${visit.totalClasses || 0}</div></div>
-            <div class="detail-row"><div class="detail-label">Visit Date</div><div class="detail-value">${new Date(visit.date).toLocaleDateString('en-US', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</div></div>
+            <div class="detail-row"><div class="detail-label">Visit Date</div><div class="detail-value">${new Date(visit.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div></div>
           </div>
         </div>
       </div>
@@ -253,8 +256,8 @@ function renderVisitDetailsHtml(visit){
   `;
 }
 
-function attachDetailsHandlers(){
-  document.querySelectorAll('.upload-btn').forEach(btn=>{
+function attachDetailsHandlers() {
+  document.querySelectorAll('.upload-btn').forEach(btn => {
     btn.removeEventListener('click', onUploadClick);
     btn.addEventListener('click', onUploadClick);
   });
@@ -282,13 +285,13 @@ function attachDetailsHandlers(){
   });
 }
 
-async function onUploadClick(e){
+async function onUploadClick(e) {
   const visitId = e.currentTarget.dataset.visitId;
   const input = document.querySelector(`input.media-input[data-visit-id="${visitId}"]`);
   const alertEl = document.querySelector(`.upload-alert[data-visit-id="${visitId}"]`);
   const showInline = (msg, level = 'warning') => {
     if (!alertEl) return;
-    alertEl.classList.remove('is-error','is-success','is-info','is-warning');
+    alertEl.classList.remove('is-error', 'is-success', 'is-info', 'is-warning');
     alertEl.classList.add(`is-${level}`);
     alertEl.innerHTML = escapeHtml(msg);
     alertEl.style.display = 'block';
@@ -297,45 +300,64 @@ async function onUploadClick(e){
     alertEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
   const clearInline = () => { if (alertEl) { alertEl.style.display = 'none'; alertEl.textContent = ''; } };
-  if(!input || !input.files || !input.files.length){ 
+  if (!input || !input.files || !input.files.length) {
     showInline('Please select files to upload', 'warning');
-    return; 
+    return;
   }
 
   const form = new FormData();
   let fileCount = 0;
-  for(const file of input.files){
+  for (const file of input.files) {
     fileCount++;
-    if(file.type.startsWith('image/')) form.append('photos', file);
-    else if(file.type.startsWith('video/')) form.append('videos', file);
+    if (file.type.startsWith('image/')) form.append('photos', file);
+    else if (file.type.startsWith('video/')) form.append('videos', file);
     else form.append('docs', file);
   }
 
-  try{
+  try {
     loading.showFullPage(`Uploading ${fileCount} file${fileCount !== 1 ? 's' : ''}...`);
     const result = await api.uploadVisitMedia(visitId, form);
     loading.hideFullPage();
-    if(result.success){ 
+    if (result.success) {
       clearInline();
       notify.success(`Successfully uploaded ${fileCount} file${fileCount !== 1 ? 's' : ''}!`);
-      aSYNC_loadVisits(); 
+
+      // Refresh the modal content with updated visit data
+      try {
+        const visitResponse = await api.getVisit(visitId);
+        if (visitResponse.success && visitResponse.data) {
+          const modalBody = document.getElementById('visit_info_body');
+          if (modalBody) {
+            // Re-render the modal content with updated data
+            modalBody.innerHTML = renderVisitDetailsHtml(visitResponse.data);
+            // Re-attach event handlers for the new content
+            attachDetailsHandlers();
+            // Clear the file input
+            input.value = '';
+          }
+        }
+      } catch (refreshError) {
+        console.error('Failed to refresh modal:', refreshError);
+        // Still reload visits list as fallback
+        aSYNC_loadVisits();
+      }
     }
-    else { 
+    else {
       // Prefer inline error near upload area
       const msg = result.message || 'Upload failed';
       const isWindowMsg = /Uploads (open|closed)/i.test(msg) || /12:00\s*PM/i.test(msg);
       showInline(msg, isWindowMsg ? 'warning' : 'error');
     }
-  }catch(err){ 
-    loading.hideFullPage(); 
+  } catch (err) {
+    loading.hideFullPage();
     const msg = err?.message || 'Upload failed';
     showInline(escapeHtml(msg), 'error');
   }
 }
 
 // Drawer creation and handlers
-(function createDrawer(){
-  if(document.getElementById('visits_drawer')) return;
+(function createDrawer() {
+  if (document.getElementById('visits_drawer')) return;
   const backdrop = document.createElement('div'); backdrop.className = 'drawer-backdrop'; backdrop.id = 'drawer_backdrop';
   const drawer = document.createElement('div'); drawer.className = 'drawer'; drawer.id = 'visits_drawer';
 
@@ -374,48 +396,48 @@ async function onUploadClick(e){
   document.body.appendChild(drawer);
 
   backdrop.addEventListener('click', closeDrawer);
-  drawer.querySelectorAll('.btn-cancel').forEach(b=>b.addEventListener('click', closeDrawer));
+  drawer.querySelectorAll('.btn-cancel').forEach(b => b.addEventListener('click', closeDrawer));
 })();
 
-async function openVisitModal(visit=null){
+async function openVisitModal(visit = null) {
   const drawer = document.getElementById('visits_drawer');
   const backdrop = document.getElementById('drawer_backdrop');
   const title = drawer.querySelector('.drawer-title');
   title.textContent = visit ? 'Edit Visit' : 'Add Visit';
 
-  drawer.querySelector('#v_name').value = visit? (visit.name||'') : '';
-  drawer.querySelector('#v_date').value = visit? (new Date(visit.date).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0];
-  drawer.querySelector('#v_assigned').value = visit? (visit.assignedClass||'') : '';
-  drawer.querySelector('#v_members').value = visit && visit.members? visit.members.join(', ') : '';
-  drawer.querySelector('#v_total').value = visit? (visit.totalClasses||0) : 0;
-  drawer.querySelector('#v_visited').value = visit? (visit.classesVisited||0) : 0;
-  drawer.querySelector('#v_children').value = visit? (visit.childrenCount||30) : 30;
+  drawer.querySelector('#v_name').value = visit ? (visit.name || '') : '';
+  drawer.querySelector('#v_date').value = visit ? (new Date(visit.date).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0];
+  drawer.querySelector('#v_assigned').value = visit ? (visit.assignedClass || '') : '';
+  drawer.querySelector('#v_members').value = visit && visit.members ? visit.members.join(', ') : '';
+  drawer.querySelector('#v_total').value = visit ? (visit.totalClasses || 0) : 0;
+  drawer.querySelector('#v_visited').value = visit ? (visit.classesVisited || 0) : 0;
+  drawer.querySelector('#v_children').value = visit ? (visit.childrenCount || 30) : 30;
 
-  try{
+  try {
     const [teamsData, schoolsData] = await Promise.all([
-      api.getTeams().catch(()=>({ success: false })),
+      api.getTeams().catch(() => ({ success: false })),
       api.getSchools()
     ]);
 
     const teamSelect = drawer.querySelector('#v_team');
-    if(teamsData && teamsData.success){ 
-      teamSelect.innerHTML = '<option value="">Select team</option>' + 
-        teamsData.data.map(t=>`<option value="${t._id}">${escapeHtml(t.name)}</option>`).join('');
+    if (teamsData && teamsData.success) {
+      teamSelect.innerHTML = '<option value="">Select team</option>' +
+        teamsData.data.map(t => `<option value="${t._id}">${escapeHtml(t.name)}</option>`).join('');
     }
 
     const schoolSelect = drawer.querySelector('#v_school');
-    if(schoolsData.success){ 
-      schoolSelect.innerHTML = '<option value="">Select school</option>' + 
-        schoolsData.data.map(s=>`<option value="${s._id}">${escapeHtml(s.name)}</option>`).join('');
+    if (schoolsData.success) {
+      schoolSelect.innerHTML = '<option value="">Select school</option>' +
+        schoolsData.data.map(s => `<option value="${s._id}">${escapeHtml(s.name)}</option>`).join('');
     }
 
-    if(visit){ 
-      if(visit.team) teamSelect.value = visit.team._id || visit.team; 
-      if(visit.school) schoolSelect.value = visit.school._id || visit.school;
+    if (visit) {
+      if (visit.team) teamSelect.value = visit.team._id || visit.team;
+      if (visit.school) schoolSelect.value = visit.school._id || visit.school;
     }
-  }catch(err){ 
-    console.warn('Failed to load teams/schools',err);
-    notify.warning('Could not load teams or schools'); 
+  } catch (err) {
+    console.warn('Failed to load teams/schools', err);
+    notify.warning('Could not load teams or schools');
   }
 
   backdrop.classList.add('open');
@@ -439,10 +461,10 @@ async function openVisitModal(visit=null){
         team: drawer.querySelector('#v_team').value,
         school: drawer.querySelector('#v_school').value,
         assignedClass: drawer.querySelector('#v_assigned').value.trim(),
-        members: (drawer.querySelector('#v_members').value||'').split(',').map(s=>s.trim()).filter(Boolean),
-        totalClasses: parseInt(drawer.querySelector('#v_total').value,10)||0,
-        classesVisited: parseInt(drawer.querySelector('#v_visited').value,10)||0,
-        childrenCount: parseInt(drawer.querySelector('#v_children').value,10)||0,
+        members: (drawer.querySelector('#v_members').value || '').split(',').map(s => s.trim()).filter(Boolean),
+        totalClasses: parseInt(drawer.querySelector('#v_total').value, 10) || 0,
+        classesVisited: parseInt(drawer.querySelector('#v_visited').value, 10) || 0,
+        childrenCount: parseInt(drawer.querySelector('#v_children').value, 10) || 0,
         status: 'scheduled'
       };
 
@@ -478,32 +500,32 @@ async function openVisitModal(visit=null){
   }
 }
 
-function closeDrawer(){
+function closeDrawer() {
   const drawer = document.getElementById('visits_drawer');
   const backdrop = document.getElementById('drawer_backdrop');
-  if(drawer) drawer.classList.remove('open');
-  if(backdrop) backdrop.classList.remove('open');
+  if (drawer) drawer.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('open');
   document.body.classList.remove('page-raised');
 }
 
 // Add Visit flow removed from this page: creation must be done via admin tools or scheduling workflow.
 
 // Media deletion helper (global)
-async function deleteMedia(visitId, url){
+async function deleteMedia(visitId, url) {
   notify.confirm('Delete this media? This action cannot be undone.', async () => {
-    try{
+    try {
       loading.showFullPage('Deleting media...');
       const result = await api.deleteVisitMedia(visitId, url);
       loading.hideFullPage();
-      if(result.success){ notify.success('Media successfully removed!'); aSYNC_loadVisits(); }
+      if (result.success) { notify.success('Media successfully removed!'); aSYNC_loadVisits(); }
       else { notify.error(result.message || 'Failed to delete media'); }
-    }catch(err){ loading.hideFullPage(); handleAPIError(err); }
+    } catch (err) { loading.hideFullPage(); handleAPIError(err); }
   });
 }
 window.deleteMedia = deleteMedia;
 
 // =============== Centered Visit Info Modal (for scheduled visits) ===============
-(function ensureVisitInfoModal(){
+(function ensureVisitInfoModal() {
   if (document.getElementById('visit_info_overlay')) return;
   const overlay = document.createElement('div');
   overlay.id = 'visit_info_overlay';
@@ -524,12 +546,12 @@ window.deleteMedia = deleteMedia;
   document.body.appendChild(overlay);
 
   const close = () => overlay.classList.remove('open');
-  overlay.addEventListener('click', (e)=>{ if (e.target === overlay) close(); });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
   modal.querySelector('#visit_info_close').addEventListener('click', close);
-  document.addEventListener('keydown', (e)=>{ if (overlay.classList.contains('open') && e.key === 'Escape') close(); });
+  document.addEventListener('keydown', (e) => { if (overlay.classList.contains('open') && e.key === 'Escape') close(); });
 })();
 
-function openVisitInfoModal(visit){
+function openVisitInfoModal(visit) {
   const overlay = document.getElementById('visit_info_overlay');
   const body = document.getElementById('visit_info_body');
   if (!overlay || !body) return;

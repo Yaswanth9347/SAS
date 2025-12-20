@@ -8,57 +8,57 @@ const mongoose = require('mongoose');
 // ============================================
 
 const fileMetadataSchema = new mongoose.Schema({
-    filename: { 
-        type: String, 
-        required: true 
+    filename: {
+        type: String,
+        required: true
     },
-    originalName: { 
-        type: String, 
-        required: true 
+    originalName: {
+        type: String,
+        required: true
     },
-    path: { 
-        type: String, 
-        required: true 
+    path: {
+        type: String,
+        required: true
     },
-    size: { 
-        type: Number, 
-        required: true 
+    size: {
+        type: Number,
+        required: true
     },
-    mimetype: { 
-        type: String, 
-        required: true 
+    mimetype: {
+        type: String,
+        required: true
     },
-    uploadedAt: { 
-        type: Date, 
-        default: Date.now 
+    uploadedAt: {
+        type: Date,
+        default: Date.now
     },
-    storageType: { 
-        type: String, 
-        enum: ['local', 'cloud'], 
-        default: 'local' 
+    storageType: {
+        type: String,
+        enum: ['local', 'cloud'],
+        default: 'local'
     },
-    cloudUrl: { 
-        type: String 
+    cloudUrl: {
+        type: String
     }, // For future S3/Cloudinary
-    
+
     // Photo-specific metadata
     width: { type: Number },
     height: { type: Number },
-    
+
     // Video-specific metadata
     duration: { type: Number }, // in seconds
     thumbnail: { type: String }, // thumbnail path
-    
+
     // Document-specific metadata
     pageCount: { type: Number },
-    
+
     // Processing status for thumbnails/optimization
-    processed: { 
-        type: Boolean, 
-        default: false 
+    processed: {
+        type: Boolean,
+        default: false
     },
-    processingError: { 
-        type: String 
+    processingError: {
+        type: String
     }
 }, { _id: true });
 
@@ -103,19 +103,49 @@ const visitSchema = new mongoose.Schema({
     },
     challengesFaced: String,
     suggestions: String,
-    
+
     // Enhanced file storage with full metadata (Hybrid Approach)
+    // Supports both legacy string URLs and new metadata objects
     photos: {
-        type: [fileMetadataSchema],
-        default: []
+        type: mongoose.Schema.Types.Mixed,
+        default: [],
+        get: function (value) {
+            if (!value) return [];
+            // Ensure array
+            if (!Array.isArray(value)) return [];
+            // Normalize to always return accessible URLs
+            return value.map(item => {
+                if (typeof item === 'string') return item;
+                if (item && typeof item === 'object') return item.path || item.url || item;
+                return item;
+            });
+        }
     },
     videos: {
-        type: [fileMetadataSchema],
-        default: []
+        type: mongoose.Schema.Types.Mixed,
+        default: [],
+        get: function (value) {
+            if (!value) return [];
+            if (!Array.isArray(value)) return [];
+            return value.map(item => {
+                if (typeof item === 'string') return item;
+                if (item && typeof item === 'object') return item.path || item.url || item;
+                return item;
+            });
+        }
     },
     docs: {
-        type: [fileMetadataSchema],
-        default: []
+        type: mongoose.Schema.Types.Mixed,
+        default: [],
+        get: function (value) {
+            if (!value) return [];
+            if (!Array.isArray(value)) return [];
+            return value.map(item => {
+                if (typeof item === 'string') return item;
+                if (item && typeof item === 'object') return item.path || item.url || item;
+                return item;
+            });
+        }
     },
     // total classes planned for the visit and how many were actually visited
     totalClasses: {
@@ -152,10 +182,12 @@ const visitSchema = new mongoose.Schema({
             email: String
         }
     }
-}, 
-{
-    timestamps: true
-});
+},
+    {
+        timestamps: true,
+        toJSON: { getters: true },
+        toObject: { getters: true }
+    });
 
 // Index for better query performance
 visitSchema.index({ date: 1, team: 1 });

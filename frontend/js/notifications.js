@@ -22,7 +22,7 @@ class NotificationManager {
         position: fixed;
         top: 90px;
         right: 20px;
-        z-index: 9999;
+        z-index: 99999;
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -40,7 +40,7 @@ class NotificationManager {
   show(message, type = 'info', duration = this.defaultDuration) {
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
-    
+
     // Notification styles
     const styles = {
       padding: '15px 20px',
@@ -50,8 +50,8 @@ class NotificationManager {
       alignItems: 'center',
       gap: '12px',
       minWidth: '300px',
-  fontSize: '0.95rem',
-  fontFamily: 'inherit',
+      fontSize: '0.95rem',
+      fontFamily: 'inherit',
       animation: 'slideInRight 0.3s ease',
       cursor: 'pointer',
       transition: 'all 0.3s ease'
@@ -59,27 +59,27 @@ class NotificationManager {
 
     // Type-specific colors and icons
     const typeConfig = {
-      success: { 
-        bg: '#e8f5e9', 
-        color: '#2e7d32', 
+      success: {
+        bg: '#e8f5e9',
+        color: '#2e7d32',
         icon: '✓',
         border: '2px solid #4caf50'
       },
-      error: { 
-        bg: '#ffebee', 
-        color: '#c62828', 
+      error: {
+        bg: '#ffebee',
+        color: '#c62828',
         icon: '✕',
         border: '2px solid #f44336'
       },
-      warning: { 
-        bg: '#fff3e0', 
-        color: '#ef6c00', 
+      warning: {
+        bg: '#fff3e0',
+        color: '#ef6c00',
         icon: '⚠',
         border: '2px solid #ff9800'
       },
-      info: { 
-        bg: '#e3f2fd', 
-        color: '#1565c0', 
+      info: {
+        bg: '#e3f2fd',
+        color: '#1565c0',
         icon: 'ℹ',
         border: '2px solid #2196f3'
       }
@@ -219,7 +219,7 @@ class NotificationManager {
    */
   loading(message = 'Loading...') {
     const notification = this.show(message, 'info', 0);
-    
+
     // Add spinner
     const spinner = document.createElement('div');
     spinner.style.cssText = `

@@ -10,7 +10,7 @@ exports.getVisits = async (req, res, next) => {
     try {
         let query;
         const { status, month, year, team } = req.query;
-        
+
         // All users can see all visits (removed role-based restrictions)
         query = Visit.find();
 
@@ -109,7 +109,7 @@ exports.createVisit = async (req, res, next) => {
         if (!teamExists) {
             return res.status(404).json({ success: false, message: 'Team not found' });
         }
-        
+
         const schoolExists = await School.findById(req.body.school).select('_id name');
         if (!schoolExists) {
             return res.status(404).json({ success: false, message: 'School not found' });
@@ -121,7 +121,7 @@ exports.createVisit = async (req, res, next) => {
         const visitDate = new Date(req.body.date);
         const startOfDay = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate());
         const endOfDay = new Date(visitDate.getFullYear(), visitDate.getMonth(), visitDate.getDate(), 23, 59, 59);
-        
+
         const existingVisit = await Visit.findOne({
             team: req.body.team,
             date: { $gte: startOfDay, $lte: endOfDay },
@@ -144,8 +144,8 @@ exports.createVisit = async (req, res, next) => {
             totalClasses: req.body.totalClasses || 1, // Default total classes
             classesVisited: req.body.classesVisited || 0 // Default classes visited
         };
-        
-    const visit = await Visit.create(visitData);
+
+        const visit = await Visit.create(visitData);
 
         // Populate the created visit for response
         const populatedVisit = await Visit.findById(visit._id)
@@ -208,13 +208,13 @@ exports.submitVisitReport = async (req, res, next) => {
         };
 
         const updatedVisit = await Visit.findByIdAndUpdate(
-            req.params.id, 
-            reportData, 
+            req.params.id,
+            reportData,
             { new: true, runValidators: true }
         )
-        .populate('school')
-        .populate('team')
-        .populate('submittedBy', 'name');
+            .populate('school')
+            .populate('team')
+            .populate('submittedBy', 'name');
 
         res.status(200).json({
             success: true,
@@ -234,7 +234,7 @@ exports.submitVisitReport = async (req, res, next) => {
 exports.getVisitStats = async (req, res, next) => {
     try {
         let matchQuery = {};
-        
+
         // All users can see all statistics (removed role-based restrictions)
 
         const stats = await Visit.aggregate([
@@ -243,14 +243,14 @@ exports.getVisitStats = async (req, res, next) => {
                 $group: {
                     _id: null,
                     totalVisits: { $sum: 1 },
-                    completedVisits: { 
-                        $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } 
+                    completedVisits: {
+                        $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
                     },
-                    scheduledVisits: { 
-                        $sum: { $cond: [{ $eq: ['$status', 'scheduled'] }, 1, 0] } 
+                    scheduledVisits: {
+                        $sum: { $cond: [{ $eq: ['$status', 'scheduled'] }, 1, 0] }
                     },
-                    cancelledVisits: { 
-                        $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] } 
+                    cancelledVisits: {
+                        $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] }
                     },
                     totalChildren: { $sum: '$childrenCount' },
                     averageChildren: { $avg: '$childrenCount' }
@@ -269,8 +269,8 @@ exports.getVisitStats = async (req, res, next) => {
                     },
                     visits: { $sum: 1 },
                     children: { $sum: '$childrenCount' },
-                    completedVisits: { 
-                        $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } 
+                    completedVisits: {
+                        $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
                     }
                 }
             },
@@ -347,7 +347,7 @@ exports.handleFileUpload = async (req, res, next) => {
     try {
         console.log('HandleFileUpload received files:', req.files);
         console.log('HandleFileUpload received body:', req.body);
-        
+
         const visit = await Visit.findById(req.params.id);
 
         if (!visit) {
@@ -388,19 +388,19 @@ exports.handleFileUpload = async (req, res, next) => {
                 const photoFiles = req.files.filter(file => file.fieldname === 'photos');
                 const videoFiles = req.files.filter(file => file.fieldname === 'videos');
                 const docFiles = req.files.filter(file => file.fieldname === 'docs');
-                
+
                 if (photoFiles.length > 0) {
                     const processedPhotos = await processUploadedFiles(photoFiles, 'photos');
                     fileData.photos = processedPhotos;
                     visit.photos = (visit.photos || []).concat(processedPhotos);
                 }
-                
+
                 if (videoFiles.length > 0) {
                     const processedVideos = await processUploadedFiles(videoFiles, 'videos');
                     fileData.videos = processedVideos;
                     visit.videos = (visit.videos || []).concat(processedVideos);
                 }
-                
+
                 if (docFiles.length > 0) {
                     const processedDocs = await processUploadedFiles(docFiles, 'docs');
                     fileData.docs = processedDocs;
@@ -487,13 +487,13 @@ exports.submitCompleteReport = async (req, res, next) => {
         };
 
         const updatedVisit = await Visit.findByIdAndUpdate(
-            req.params.id, 
-            reportData, 
+            req.params.id,
+            reportData,
             { new: true, runValidators: true }
         )
-        .populate('school')
-        .populate('team')
-        .populate('submittedBy', 'name');
+            .populate('school')
+            .populate('team')
+            .populate('submittedBy', 'name');
 
         res.status(200).json({
             success: true,
@@ -546,10 +546,10 @@ exports.getVisitGallery = async (req, res, next) => {
 exports.getAllGalleryMedia = async (req, res, next) => {
     try {
         const { team, school, startDate, endDate, limit = 500 } = req.query;
-        
-        // Build filter query
-        const filter = { status: 'completed' };
-        
+
+        // Build filter query - REMOVED status filter to show all media regardless of visit status
+        const filter = {};
+
         if (team) filter.team = team;
         if (school) filter.school = school;
         if (startDate && endDate) {
@@ -558,69 +558,92 @@ exports.getAllGalleryMedia = async (req, res, next) => {
                 $lte: new Date(endDate)
             };
         }
-        
-        // Get visits with media
+
+        console.log('📊 Gallery filter:', filter);
+
+        // Get visits with media - select all visits that might have media
         const visits = await Visit.find(filter)
-            .select('photos videos documents school team date')
+            .select('photos videos docs documents school team date status')
             .populate('school', 'name')
             .populate('team', 'name')
             .sort('-date')
             .limit(parseInt(limit));
-        
+
+        console.log(`📸 Found ${visits.length} visits total`);
+
         // Flatten all media into a single array
         const allMedia = [];
-        
+
         visits.forEach(visit => {
+            console.log(`🔍 Visit ${visit._id} (${visit.status}): ${visit.photos?.length || 0} photos, ${visit.videos?.length || 0} videos, ${visit.docs?.length || 0} docs`);
+
             // Add photos
             if (visit.photos && visit.photos.length > 0) {
                 visit.photos.forEach(photo => {
-                    allMedia.push({
-                        type: 'photo',
-                        url: photo,
-                        visitId: visit._id,
-                        visitDate: visit.date,
-                        school: visit.school,
-                        team: visit.team
-                    });
+                    // Handle both string URLs and object formats
+                    const photoUrl = typeof photo === 'string' ? photo : (photo.path || photo.url || photo);
+                    if (photoUrl) {
+                        allMedia.push({
+                            type: 'photo',
+                            url: photoUrl,
+                            visitId: visit._id,
+                            visitDate: visit.date,
+                            school: visit.school,
+                            team: visit.team
+                        });
+                        console.log('  ✅ Added photo:', photoUrl);
+                    }
                 });
             }
-            
+
             // Add videos
             if (visit.videos && visit.videos.length > 0) {
                 visit.videos.forEach(video => {
-                    allMedia.push({
-                        type: 'video',
-                        url: video,
-                        visitId: visit._id,
-                        visitDate: visit.date,
-                        school: visit.school,
-                        team: visit.team
-                    });
+                    const videoUrl = typeof video === 'string' ? video : (video.path || video.url || video);
+                    if (videoUrl) {
+                        allMedia.push({
+                            type: 'video',
+                            url: videoUrl,
+                            visitId: visit._id,
+                            visitDate: visit.date,
+                            school: visit.school,
+                            team: visit.team
+                        });
+                        console.log('  ✅ Added video:', videoUrl);
+                    }
                 });
             }
-            
-            // Add documents
-            if (visit.documents && visit.documents.length > 0) {
-                visit.documents.forEach(doc => {
-                    allMedia.push({
-                        type: 'doc',
-                        url: doc,
-                        name: doc.split('/').pop(), // Extract filename
-                        visitId: visit._id,
-                        visitDate: visit.date,
-                        school: visit.school,
-                        team: visit.team
-                    });
+
+            // Add documents (check both 'docs' and 'documents' fields)
+            const docsList = visit.docs || visit.documents || [];
+            if (docsList.length > 0) {
+                docsList.forEach(doc => {
+                    const docUrl = typeof doc === 'string' ? doc : (doc.path || doc.url || doc);
+                    if (docUrl) {
+                        allMedia.push({
+                            type: 'doc',
+                            url: docUrl,
+                            name: docUrl.split('/').pop(), // Extract filename
+                            visitId: visit._id,
+                            visitDate: visit.date,
+                            school: visit.school,
+                            team: visit.team
+                        });
+                        console.log('  ✅ Added doc:', docUrl);
+                    }
                 });
             }
         });
-        
+
+        console.log(`✨ Total media items: ${allMedia.length}`);
+
         res.status(200).json({
             success: true,
             count: allMedia.length,
             data: allMedia
         });
     } catch (error) {
+        console.error('❌ Gallery error:', error);
         res.status(400).json({
             success: false,
             message: error.message
@@ -699,7 +722,13 @@ exports.deleteMedia = async (req, res, next) => {
         const visit = await Visit.findById(req.params.id);
         if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
 
-        // All users can delete media (removed role-based restrictions)
+        // Only SUPER_ADMIN and TENANT_ADMIN can delete media
+        if (!['SUPER_ADMIN', 'TENANT_ADMIN'].includes(req.user.role)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Only administrators can delete media files'
+            });
+        }
 
         const removeFrom = (arr) => {
             if (!arr) return false;

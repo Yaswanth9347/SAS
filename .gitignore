@@ -28,3 +28,13 @@ Thumbs.db
 .idea
 .vscode/
 *.swp
+
+# Backup files
+*.bak
+*.backup
+.legacy-backup/
+
+# Uploads (keep structure only)
+backend/uploads/*
+!backend/uploads/.gitkeep
+!backend/uploads/*/.gitkeep
