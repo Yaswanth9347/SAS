@@ -9,6 +9,10 @@ require('dotenv').config();
 
 const app = express();
 
+// Trust proxy - Required for Render.com and other reverse proxies
+// This allows express-rate-limit to correctly identify users via X-Forwarded-For
+app.set('trust proxy', 1);
+
 // Fix Mongoose deprecation warning
 mongoose.set('strictQuery', false);
 
@@ -40,7 +44,7 @@ app.use(helmet({
 }));
 
 // CORS Configuration with environment variables
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
     : ['http://localhost:5001', 'http://localhost:3000'];
 
@@ -48,7 +52,7 @@ app.use(cors({
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        
+
         if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
             callback(null, true);
         } else {
@@ -96,11 +100,11 @@ if (process.env.NODE_ENV !== 'test') {
         useNewUrlParser: true,
         useUnifiedTopology: true,
     })
-    .then(() => console.log('✅ MongoDB Atlas Connected Successfully!'))
-    .catch(err => {
-        console.error('❌ MongoDB connection error:', err.message);
-        process.exit(1);
-    });
+        .then(() => console.log('✅ MongoDB Atlas Connected Successfully!'))
+        .catch(err => {
+            console.error('❌ MongoDB connection error:', err.message);
+            process.exit(1);
+        });
 }
 
 // Routes
@@ -126,7 +130,7 @@ app.use('/api/contact', require('./routes/contact'));
 
 // Test route
 app.get('/api/test', (req, res) => {
-    res.json({ 
+    res.json({
         message: 'Backend is working!',
         timestamp: new Date().toISOString()
     });
@@ -134,7 +138,7 @@ app.get('/api/test', (req, res) => {
 
 // API health check
 app.get('/api/health', (req, res) => {
-    res.json({ 
+    res.json({
         status: 'OK',
         database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
         timestamp: new Date().toISOString()
