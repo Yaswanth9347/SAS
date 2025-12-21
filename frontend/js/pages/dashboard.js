@@ -7,6 +7,7 @@ class DashboardManager {
   constructor() {
     this.user = null;
     this.galleryInterval = null;
+    this.galleryRefreshInterval = null;
     this.currentSlide = 0;
     this.galleryMedia = [];
     this.init();
@@ -19,17 +20,21 @@ class DashboardManager {
     // Check authentication
     authManager.requireAuth();
     this.user = authManager.getUser();
-    
+
     // Setup user interface
     this.setupUserInterface();
-    
+
     // Load dashboard data
     this.loadDashboardData();
-    
+
     // Setup cleanup on page unload
     window.addEventListener('beforeunload', () => {
       this.stopAutoScroll();
+      this.stopGalleryRefresh();
     });
+
+    // Start auto-refresh for gallery (every 30 seconds)
+    this.startGalleryRefresh();
   }
 
   /**
@@ -39,7 +44,7 @@ class DashboardManager {
     // Update the username display
     document.getElementById('userName').textContent = this.user.name || 'User';
     document.getElementById('userInfo').textContent = `Welcome back! Manage volunteers, teams, and school visits`;
-    
+
     // Setup navbar with admin menu items
     navbarManager.setupNavbar();
   }
@@ -51,13 +56,13 @@ class DashboardManager {
     try {
       // Show loading state
       loading.showSkeleton('upcomingVisits', 3, 'card');
-      
+
       // Load all stats for all users
       await this.loadAdminStats();
 
       // Load upcoming visits
       await this.loadUpcomingVisits();
-      
+
       // Load latest visit gallery
       await this.loadLatestVisitGallery();
     } catch (error) {
@@ -71,13 +76,13 @@ class DashboardManager {
   async loadAdminStats() {
     try {
       const data = await api.get('/admin/stats');
-      
+
       if (data.success) {
         document.getElementById('totalVolunteers').textContent = data.data.totalVolunteers;
         document.getElementById('activeVolunteers').textContent = data.data.activeVolunteers;
         document.getElementById('totalTeams').textContent = data.data.totalTeams;
         document.getElementById('unassignedVolunteers').textContent = data.data.volunteersWithoutTeam;
-        
+
         // Show admin stats section
         const adminStatsEl = document.getElementById('adminStats');
         if (adminStatsEl) adminStatsEl.style.display = 'grid';
@@ -94,54 +99,77 @@ class DashboardManager {
     try {
       console.log('📊 [Dashboard] Loading visits...');
       const data = await api.getVisits();
-      
+
       console.log('📊 [Dashboard] Visits response:', data);
-      
+
       if (data.success) {
         const allVisits = data.data || [];
         console.log('📊 [Dashboard] Total visits:', allVisits.length);
-        
+
         const upcoming = allVisits.filter(visit => visit.status === 'scheduled');
         const visited = allVisits.filter(visit => visit.status === 'visited');
         const completed = allVisits.filter(visit => visit.status === 'completed');
-        
+
         console.log('📊 [Dashboard] Upcoming:', upcoming.length, 'Visited:', visited.length, 'Completed:', completed.length);
-        
+
         // Update activity summary stats
         const statsElements = document.querySelectorAll('#quickStats .stat-item');
         console.log('📊 [Dashboard] Found stat elements:', statsElements.length);
-        
+
         if (statsElements.length >= 3) {
           statsElements[0].querySelector('.stat-number').textContent = allVisits.length;
           statsElements[1].querySelector('.stat-number').textContent = upcoming.length;
           statsElements[2].querySelector('.stat-number').textContent = completed.length;
           console.log('📊 [Dashboard] Updated stats display');
         }
-        
+
         // Update upcoming visits list
         const visitsContainer = document.getElementById('upcomingVisits');
-        
+
         // Show both scheduled and visited visits as "upcoming activities"
         const upcomingActivities = [...upcoming, ...visited].sort((a, b) => new Date(a.date) - new Date(b.date));
-        
+
         if (upcomingActivities.length > 0) {
           console.log('📊 [Dashboard] Displaying', upcomingActivities.length, 'upcoming activities');
-          visitsContainer.innerHTML = upcomingActivities.map(visit => `
-            <div class="visit-item">
-              <h4>📅 ${utils.formatDate(visit.date)}</h4>
-              <p>🏫 ${visit.school?.name || 'School'}</p>
-              <p>👥 Class: ${visit.assignedClass || 'Not assigned'}</p>
-              <span class="status-badge ${visit.status}">${visit.status === 'scheduled' ? 'Scheduled' : 'Visited - Upload Media'}</span>
+
+          // Show max 3 visits
+          const displayVisits = upcomingActivities.slice(0, 3);
+          const hasMore = upcomingActivities.length > 3;
+
+          const visitsHTML = displayVisits.map(visit => `
+            <div class="visit-card">
+              <div class="visit-card-header">
+                <h4>📅 ${utils.formatDate(visit.date)}</h4>
+                <span class="status-badge ${visit.status}">${visit.status === 'scheduled' ? 'Scheduled' : 'Visited'}</span>
+              </div>
+              <div class="visit-card-body">
+                <p class="visit-school">🏫 ${visit.school?.name || 'School'}</p>
+                <p class="visit-class">👥 Class: ${visit.assignedClass || 'Not assigned'}</p>
+              </div>
             </div>
           `).join('');
+
+          const moreButton = hasMore ? `
+            <div class="more-visits-btn" onclick="window.location.href='visits.html'">
+              <span>More Visits</span>
+              <span class="more-count">+${upcomingActivities.length - 3}</span>
+            </div>
+          ` : '';
+
+          visitsContainer.innerHTML = `
+            <div class="visits-grid">
+              ${visitsHTML}
+              ${moreButton}
+            </div>
+          `;
         } else {
           console.log('📊 [Dashboard] No upcoming activities found');
-          visitsContainer.innerHTML = '<p>No upcoming visits or activities.</p>';
+          visitsContainer.innerHTML = '<p class="no-visits">No upcoming visits or activities.</p>';
         }
       } else {
         console.warn('📊 [Dashboard] API returned success=false:', data);
         const visitsContainer = document.getElementById('upcomingVisits');
-        visitsContainer.innerHTML = '<p>Unable to load visits.</p>';
+        visitsContainer.innerHTML = '<p class="error-text">Unable to load visits.</p>';
       }
     } catch (error) {
       console.error('📊 [Dashboard] Error loading visits:', error);
@@ -150,120 +178,102 @@ class DashboardManager {
   }
 
   /**
-   * Load latest completed visit with gallery
+   * Load latest uploaded media from all visits
    */
   async loadLatestVisitGallery() {
     try {
-      console.log('🖼️ [Dashboard] Loading latest visit gallery...');
-      
-      // Get all visits (not just completed ones with filter, to avoid backend filtering issues)
-      const data = await api.getVisits();
-      
+      console.log('🖼️ [Dashboard] Loading latest uploaded media...');
+
+      // Get all media from all visits
+      const data = await api.getAllGalleryMedia({ limit: 20 });
+
       console.log('🖼️ [Dashboard] Gallery API response:', data);
-      
+
       if (data.success && data.data && data.data.length > 0) {
-        // Filter and sort by date descending to get the most recent completed visit
-        const completedVisits = data.data
-          .filter(visit => visit.status === 'completed')
-          .sort((a, b) => new Date(b.date) - new Date(a.date));
+        const allMedia = data.data;
+        console.log('🖼️ [Dashboard] Found', allMedia.length, 'media items');
 
-        console.log('🖼️ [Dashboard] Found', completedVisits.length, 'completed visits');
+        // Helper to ensure absolute URLs
+        const toAbsoluteUrl = (url) => {
+          if (!url) return url;
+          if (url.startsWith('http://') || url.startsWith('https://')) return url;
+          const base = window.location.origin || 'http://localhost:5001';
+          const path = url.startsWith('/') ? url : '/' + url;
+          return base + path;
+        };
 
-        if (completedVisits.length === 0) {
-          console.log('🖼️ [Dashboard] No completed visits found');
-          this.showNoGallery();
-          return;
-        }
+        // Process and format media items
+        this.galleryMedia = allMedia
+          .filter(item => item.type === 'photo' || item.type === 'video')
+          .map(item => ({
+            type: item.type,
+            url: toAbsoluteUrl(item.url),
+            visitId: item.visitId,
+            visitDate: item.visitDate,
+            school: item.school,
+            team: item.team
+          }));
 
-        // Get the latest completed visit
-        const latestVisit = completedVisits[0];
-        console.log('🖼️ [Dashboard] Latest visit:', latestVisit.school?.name, 'on', latestVisit.date);
-        
-        // Fetch gallery for this visit
-        const galleryData = await api.getVisitGallery(latestVisit._id);
-        console.log('🖼️ [Dashboard] Gallery data response:', galleryData);
-        
-        if (galleryData.success && galleryData.data) {
-          const { photos = [], videos = [] } = galleryData.data;
-          console.log('🖼️ [Dashboard] Photos:', photos.length, 'Videos:', videos.length);
-          
-          // Helper to ensure absolute URLs
-          const toAbsoluteUrl = (url) => {
-            if (!url) return url;
-            if (url.startsWith('http://') || url.startsWith('https://')) return url;
-            const base = window.location.origin || 'http://localhost:5001';
-            const path = url.startsWith('/') ? url : '/' + url;
-            return base + path;
-          };
-
-          // Combine photos and videos
-          this.galleryMedia = [
-            ...photos.map(photo => ({ 
-              type: 'photo', 
-              url: toAbsoluteUrl(typeof photo === 'string' ? photo : photo.path),
-              metadata: typeof photo === 'object' ? photo : null
-            })),
-            ...videos.map(video => ({ 
-              type: 'video', 
-              url: toAbsoluteUrl(typeof video === 'string' ? video : video.path),
-              metadata: typeof video === 'object' ? video : null
-            }))
-          ];
-
-          if (this.galleryMedia.length > 0) {
-            console.log('🖼️ [Dashboard] Displaying gallery with', this.galleryMedia.length, 'items');
-            this.displayGallery(latestVisit);
-            this.startAutoScroll();
-          } else {
-            console.log('🖼️ [Dashboard] No media in gallery');
-            this.showNoGallery();
-          }
+        if (this.galleryMedia.length > 0) {
+          console.log('🖼️ [Dashboard] Displaying gallery with', this.galleryMedia.length, 'items');
+          this.displayLatestGallery();
+          this.startAutoScroll();
         } else {
-          console.warn('🖼️ [Dashboard] Gallery API returned no data or failed');
+          console.log('🖼️ [Dashboard] No photos or videos found');
           this.showNoGallery();
         }
       } else {
-        console.log('🖼️ [Dashboard] No visits data or empty array');
+        console.log('🖼️ [Dashboard] No media data available');
         this.showNoGallery();
       }
     } catch (error) {
-      console.error('🖼️ [Dashboard] Error loading latest visit gallery:', error);
+      console.error('🖼️ [Dashboard] Error loading latest media:', error);
       this.showNoGallery();
     }
   }
 
   /**
-   * Display gallery
+   * Display latest gallery from all visits
    */
-  displayGallery(visit) {
+  displayLatestGallery() {
     const galleryInfo = document.getElementById('galleryInfo');
     const galleryContainer = document.getElementById('galleryContainer');
-    
+
     // Update header
     galleryInfo.innerHTML = `
-      <strong>${visit.school?.name || 'School Visit'}</strong> - 
-      ${utils.formatDate(visit.date)} - 
-      ${this.galleryMedia.length} ${this.galleryMedia.length === 1 ? 'item' : 'items'}
+      <strong>Latest Uploads</strong> - 
+      ${this.galleryMedia.length} ${this.galleryMedia.length === 1 ? 'item' : 'items'} from recent visits
     `;
 
-    // Create gallery HTML
+    // Create gallery HTML with metadata
     const slidesHTML = this.galleryMedia.map((media, index) => {
+      const schoolName = media.school?.name || 'Unknown School';
+      const visitDate = media.visitDate ? utils.formatDate(media.visitDate) : 'Date unknown';
+
       if (media.type === 'photo') {
         return `
           <div class="gallery-slide ${index === 0 ? 'active' : ''}" data-index="${index}">
             <img src="${media.url}" alt="Visit photo ${index + 1}" loading="lazy">
+            <div class="gallery-caption">
+              <span>🏫 ${schoolName}</span>
+              <span>📅 ${visitDate}</span>
+            </div>
           </div>
         `;
       } else {
         return `
           <div class="gallery-slide ${index === 0 ? 'active' : ''}" data-index="${index}">
             <video src="${media.url}" controls autoplay muted loop></video>
+            <div class="gallery-caption">
+              <span>🏫 ${schoolName}</span>
+              <span>📅 ${visitDate}</span>
+            </div>
           </div>
         `;
       }
     }).join('');
 
-    const indicatorsHTML = this.galleryMedia.map((_, index) => 
+    const indicatorsHTML = this.galleryMedia.map((_, index) =>
       `<span class="indicator ${index === 0 ? 'active' : ''}" onclick="dashboardManager.goToSlide(${index})"></span>`
     ).join('');
 
@@ -285,7 +295,7 @@ class DashboardManager {
   showNoGallery() {
     const galleryInfo = document.getElementById('galleryInfo');
     const galleryContainer = document.getElementById('galleryContainer');
-    
+
     galleryInfo.textContent = 'No recent visits with media';
     galleryContainer.innerHTML = `
       <div class="no-gallery">
@@ -331,19 +341,39 @@ class DashboardManager {
   }
 
   /**
+   * Start gallery refresh - check for new uploads every 30 seconds
+   */
+  startGalleryRefresh() {
+    if (this.galleryRefreshInterval) clearInterval(this.galleryRefreshInterval);
+    this.galleryRefreshInterval = setInterval(() => {
+      this.loadLatestVisitGallery();
+    }, 30000); // Refresh every 30 seconds
+  }
+
+  /**
+   * Stop gallery refresh
+   */
+  stopGalleryRefresh() {
+    if (this.galleryRefreshInterval) {
+      clearInterval(this.galleryRefreshInterval);
+      this.galleryRefreshInterval = null;
+    }
+  }
+
+  /**
    * Next slide
    */
   nextSlide() {
     if (this.galleryMedia.length === 0) return;
-    
+
     const slides = document.querySelectorAll('.gallery-slide');
     const indicators = document.querySelectorAll('.indicator');
-    
+
     slides[this.currentSlide].classList.remove('active');
     indicators[this.currentSlide].classList.remove('active');
-    
+
     this.currentSlide = (this.currentSlide + 1) % this.galleryMedia.length;
-    
+
     slides[this.currentSlide].classList.add('active');
     indicators[this.currentSlide].classList.add('active');
 
@@ -356,15 +386,15 @@ class DashboardManager {
    */
   prevSlide() {
     if (this.galleryMedia.length === 0) return;
-    
+
     const slides = document.querySelectorAll('.gallery-slide');
     const indicators = document.querySelectorAll('.indicator');
-    
+
     slides[this.currentSlide].classList.remove('active');
     indicators[this.currentSlide].classList.remove('active');
-    
+
     this.currentSlide = (this.currentSlide - 1 + this.galleryMedia.length) % this.galleryMedia.length;
-    
+
     slides[this.currentSlide].classList.add('active');
     indicators[this.currentSlide].classList.add('active');
 
@@ -376,15 +406,15 @@ class DashboardManager {
    */
   goToSlide(index) {
     if (this.galleryMedia.length === 0) return;
-    
+
     const slides = document.querySelectorAll('.gallery-slide');
     const indicators = document.querySelectorAll('.indicator');
-    
+
     slides[this.currentSlide].classList.remove('active');
     indicators[this.currentSlide].classList.remove('active');
-    
+
     this.currentSlide = index;
-    
+
     slides[this.currentSlide].classList.add('active');
     indicators[this.currentSlide].classList.add('active');
 
@@ -424,11 +454,11 @@ class DashboardManager {
       async () => {
         try {
           loading.showFullPage('Creating teams...');
-          
+
           const data = await api.createBulkTeams({ teamSize: 4 });
-          
+
           loading.hideFullPage();
-          
+
           if (data.success) {
             notify.success(data.message);
             this.loadAdminStats();
@@ -447,11 +477,11 @@ class DashboardManager {
   async viewTeams() {
     try {
       loading.show('teamsList', 'Loading teams...');
-      
+
       const data = await api.getTeams();
-      
+
       loading.hide('teamsList');
-      
+
       if (data.success) {
         this.displayTeams(data.data);
       }
@@ -467,9 +497,9 @@ class DashboardManager {
   displayTeams(teams) {
     const teamsList = document.getElementById('teamsList');
     const teamsSection = document.getElementById('teamsSection');
-    
+
     teamsSection.style.display = 'block';
-    
+
     if (teams.length === 0) {
       teamsList.innerHTML = '<p>No teams created yet.</p>';
       return;
@@ -482,13 +512,13 @@ class DashboardManager {
         <p><strong>Members:</strong> ${team.members.length}</p>
         <p><strong>Assigned School:</strong> ${team.assignedSchool?.name || 'Not assigned'}</p>
         <div class="team-members">
-          ${team.members.map(member => 
-              `<span class="member-tag">${member.name} (${member.department} Y${member.year})</span>`
-          ).join('')}
+          ${team.members.map(member =>
+      `<span class="member-tag">${member.name} (${member.department} Y${member.year})</span>`
+    ).join('')}
         </div>
       </div>
     `).join('');
-    
+
     // Scroll to teams section
     teamsSection.scrollIntoView({ behavior: 'smooth' });
   }

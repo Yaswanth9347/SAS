@@ -32,7 +32,7 @@ class NavbarManager {
       return;
     }
 
-  // Setup mobile hamburger menu
+    // Setup mobile hamburger menu
     this.setupHamburgerMenu();
 
     // Update user display
@@ -85,12 +85,12 @@ class NavbarManager {
         link.removeAttribute('aria-current');
         if (href === current) link.setAttribute('aria-current', 'page');
       });
-    } catch(e){}
+    } catch (e) { }
 
     // Setup logout button
     authManager.setupLogoutButton('navLogout');
-  // Replace logout text with icon (door exit), keeping accessibility
-  this.ensureLogoutIcon();
+    // Replace logout text with icon (door exit), keeping accessibility
+    this.ensureLogoutIcon();
 
     // Ensure nav link clicks behave correctly (workaround for any unexpected handlers)
     // This makes sure clicking the Contact link always navigates to the correct page
@@ -102,10 +102,10 @@ class NavbarManager {
           if (link.classList.contains('logout-btn')) return;
           const href = link.getAttribute('href');
           if (!href || href === '#') return;
-          
+
           // Close mobile menu on navigation
           this.closeMobileMenu();
-          
+
           ev.preventDefault();
           ev.stopPropagation();
           window.location.href = href;
@@ -178,7 +178,7 @@ class NavbarManager {
   setupHamburgerMenu() {
     // Check if hamburger already exists
     this.hamburger = document.querySelector('.hamburger');
-    
+
     if (!this.hamburger) {
       // Create hamburger menu element
       const navContainer = document.querySelector('.nav-container');
@@ -186,7 +186,7 @@ class NavbarManager {
         console.warn('Nav container not found');
         return;
       }
-      
+
       this.hamburger = document.createElement('div');
       this.hamburger.className = 'hamburger';
       this.hamburger.innerHTML = `
@@ -198,34 +198,34 @@ class NavbarManager {
       this.hamburger.setAttribute('tabindex', '0');
       this.hamburger.setAttribute('aria-label', 'Toggle navigation menu');
       this.hamburger.setAttribute('aria-expanded', 'false');
-      
+
       // Insert hamburger at the end of nav container (after nav-menu)
       navContainer.appendChild(this.hamburger);
-      
+
       console.log('✅ Hamburger menu created and added to navbar');
     } else {
       console.log('✅ Hamburger already exists in HTML');
     }
-    
+
     // Remove any existing event listeners to prevent duplicates
     const newHamburger = this.hamburger.cloneNode(true);
     this.hamburger.parentNode.replaceChild(newHamburger, this.hamburger);
     this.hamburger = newHamburger;
-    
+
     // Single unified event handler for all interaction types
     const handleToggle = (e) => {
       console.log('🍔 Hamburger interaction detected:', e.type);
       e.preventDefault();
       e.stopPropagation();
-      
+
       // Small delay to ensure event is fully processed
       setTimeout(() => {
         this.toggleMobileMenu();
       }, 10);
-      
+
       return false;
     };
-    
+
     // Add all event types
     this.hamburger.addEventListener('click', handleToggle, { capture: true });
     this.hamburger.addEventListener('touchend', handleToggle, { passive: false, capture: true });
@@ -236,9 +236,9 @@ class NavbarManager {
         this.toggleMobileMenu();
       }
     });
-    
+
     console.log('✅ Event listeners attached to hamburger');
-    
+
     // Close menu when clicking/touching outside
     const closeHandler = (e) => {
       if (this.navMenu && this.navMenu.classList.contains('active')) {
@@ -248,7 +248,7 @@ class NavbarManager {
         }
       }
     };
-    
+
     // Use a slight delay to avoid conflicts with hamburger click
     setTimeout(() => {
       document.addEventListener('click', closeHandler);
@@ -264,12 +264,12 @@ class NavbarManager {
       console.warn('Hamburger or nav menu not found');
       return;
     }
-    
+
     this.hamburger.classList.toggle('active');
     this.navMenu.classList.toggle('active');
     const expanded = this.navMenu.classList.contains('active');
     this.hamburger.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-    
+
     // Prevent body scroll when menu is open
     if (this.navMenu.classList.contains('active')) {
       document.body.style.overflow = 'hidden';
@@ -296,10 +296,10 @@ class NavbarManager {
     if (this.navUser) {
       const user = authManager.getUser();
       const userName = user?.name || user?.username || 'User';
-      
+
       // Create avatar element
       const avatarHTML = this.createAvatarHTML(user);
-      
+
       // Update navbar user display with avatar + name
       this.navUser.innerHTML = `
         ${avatarHTML}
@@ -339,10 +339,10 @@ class NavbarManager {
    */
   getInitials(user) {
     if (!user) return '?';
-    
+
     const name = user.name || user.username || '?';
     const parts = name.trim().split(/\s+/);
-    
+
     if (parts.length >= 2) {
       // First name + Last name initials
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -362,7 +362,7 @@ class NavbarManager {
     if (!userNameLi) return;
 
     // Check if admin menu items already exist
-  const existingAdminLink = this.navMenu.querySelector('a[href="analytics.html"]');
+    const existingAdminLink = this.navMenu.querySelector('a[href="analytics.html"]');
     if (existingAdminLink) {
       console.log('Admin menu items already added');
       return;
@@ -463,7 +463,7 @@ class NavbarManager {
     existing._moreHandler = clickHandler;
 
     existing._keyHandler && existing.removeEventListener('keydown', existing._keyHandler);
-    const keyHandler = (e) => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); toggle(); } if (e.key==='Escape') toggle(false); };
+    const keyHandler = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } if (e.key === 'Escape') toggle(false); };
     existing.addEventListener('keydown', keyHandler);
     existing._keyHandler = keyHandler;
 
@@ -539,10 +539,10 @@ class NavbarManager {
     };
 
     btn.addEventListener('click', () => toggle());
-    btn.addEventListener('keydown', (e) => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); toggle(); } });
-    document.addEventListener('click', (e) => { if (!li.contains(e.target)) dropdown.style.display='none'; });
+    btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+    document.addEventListener('click', (e) => { if (!li.contains(e.target)) dropdown.style.display = 'none'; });
     markAllBtn.addEventListener('click', async () => {
-      try { await api.markAllNotificationsRead(); this.loadNotifications(listEl, countEl); } catch(e){ handleAPIError(e); }
+      try { await api.markAllNotificationsRead(); this.loadNotifications(listEl, countEl); } catch (e) { handleAPIError(e); }
     });
   }
 
@@ -559,22 +559,22 @@ class NavbarManager {
         if (btn) {
           if (unread) btn.classList.add('has-unread'); else btn.classList.remove('has-unread');
         }
-      } catch(_) {}
+      } catch (_) { }
       if (!items.length) {
         listEl.innerHTML = '<div style="padding:12px;color:#666;">No notifications</div>';
         return;
       }
       listEl.innerHTML = items.map(n => `
-        <div class="notif-item" style="display:flex;gap:8px;padding:10px 12px;border-bottom:1px solid #eee;${n.read?'opacity:.7':''}">
-          <div style="font-size:18px">${n.type==='visit'?'📅':(n.type==='team'?'👥':'🔔')}</div>
+        <div class="notif-item" style="display:flex;gap:8px;padding:10px 12px;border-bottom:1px solid #eee;${n.read ? 'opacity:.7' : ''}">
+          <div style="font-size:18px">${n.type === 'visit' ? '📅' : (n.type === 'team' ? '👥' : '🔔')}</div>
           <div style="flex:1">
             <div style="font-weight:600">${escapeHtml(n.title)}</div>
             <div style="font-size:13px;color:#555">${escapeHtml(n.message)}</div>
             <div style="font-size:12px;color:#999">${new Date(n.createdAt).toLocaleString()}</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
-            ${n.link?`<a href="${n.link}" class="nav-link" style="color:#3f51b5">Open</a>`:''}
-            <button class="btn" data-id="${n._id}" data-action="${n.read?'unread':'read'}" style="padding:4px 8px;font-size:12px;">Mark ${n.read?'unread':'read'}</button>
+            ${n.link ? `<a href="${n.link}" class="nav-link" style="color:#3f51b5">Open</a>` : ''}
+            <button class="btn" data-id="${n._id}" data-action="${n.read ? 'unread' : 'read'}" style="padding:4px 8px;font-size:12px;">Mark ${n.read ? 'unread' : 'read'}</button>
           </div>
         </div>
       `).join('');
@@ -584,9 +584,9 @@ class NavbarManager {
           const id = btn.getAttribute('data-id');
           const action = btn.getAttribute('data-action');
           try {
-            if (action==='read') await api.markNotificationRead(id); else await api.markNotificationUnread(id);
+            if (action === 'read') await api.markNotificationRead(id); else await api.markNotificationUnread(id);
             await this.loadNotifications(listEl, countEl);
-          } catch(e){ handleAPIError(e); }
+          } catch (e) { handleAPIError(e); }
         });
       });
     } catch (e) {
@@ -604,7 +604,7 @@ class NavbarManager {
     const links = this.navMenu.querySelectorAll('.nav-link');
     links.forEach(link => {
       link.classList.remove('active');
-      
+
       const href = link.getAttribute('href');
       if (href === this.currentPage) {
         link.classList.add('active');
