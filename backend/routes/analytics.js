@@ -4,12 +4,16 @@ const {
     getVolunteerAnalytics,
     getSchoolAnalytics
 } = require('../controllers/analyticsController');
-const { protect } = require('../middleware/auth');
+const { protect, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/overview', protect, getOverviewAnalytics);
-router.get('/volunteers', protect, getVolunteerAnalytics);
-router.get('/schools', protect, getSchoolAnalytics);
+// All analytics routes require admin privileges
+router.use(protect);
+router.use(adminOnly);
+
+router.get('/overview', getOverviewAnalytics);
+router.get('/volunteers', getVolunteerAnalytics);
+router.get('/schools', getSchoolAnalytics);
 
 module.exports = router;

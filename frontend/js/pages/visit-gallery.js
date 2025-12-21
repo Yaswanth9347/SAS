@@ -81,10 +81,10 @@ async function loadAllMedia(params = {}) {
 
 function renderAllMedia(mediaItems) {
   const gallery = document.getElementById('galleryContent');
-  
+
   console.log('🎨 renderAllMedia called with:', mediaItems.length, 'items');
   console.log('📸 First photo sample:', mediaItems.find(m => m.type === 'photo'));
-  
+
   if (!Array.isArray(mediaItems) || mediaItems.length === 0) {
     gallery.innerHTML = `
       <div class="empty-gallery">
@@ -122,15 +122,13 @@ function renderAllMedia(mediaItems) {
       <h3>📸 Photos (${photos.length})</h3>
       <div class="photo-grid">
         ${photos.map((p, idx) => {
-          const imageUrl = toAbsoluteMediaUrl(p.url);
-          console.log(`🖼️ Rendering photo ${idx + 1}: ${imageUrl}`);
-          return `
-          <div class="gallery-item" onclick="openLightboxByIndex(${idx})">
-            <img src="${imageUrl}" alt="Photo" loading="lazy" 
-                 onerror="console.error('❌ FAILED TO LOAD IMAGE:', this.src); this.style.border='3px solid red';"
-                 onload="console.log('✅ Image loaded successfully:', this.src)">
+      const imageUrl = toAbsoluteMediaUrl(p.url);
+      console.log(`🖼️ Rendering photo ${idx + 1}: ${imageUrl}`);
+      return `
+          <div class="gallery-item" data-index="${idx}" data-type="photo">
+            <img src="${imageUrl}" alt="Photo" loading="lazy">
           </div>`;
-        }).join('')}
+    }).join('')}
       </div>
     </div>`;
   }
@@ -141,7 +139,7 @@ function renderAllMedia(mediaItems) {
       <h3>🎥 Videos (${videos.length})</h3>
       <div class="video-grid">
         ${videos.map((v, i) => `
-          <div class="gallery-item" onclick="openLightboxByIndex(${videoStartIdx + i})">
+          <div class="gallery-item" data-index="${videoStartIdx + i}" data-type="video">
             <div class="video-thumbnail">
               <div class="play-icon">▶</div>
               <span>Watch Video</span>
@@ -170,6 +168,15 @@ function renderAllMedia(mediaItems) {
   }
 
   gallery.innerHTML = html || '<div class="empty-gallery"><p>No media to display.</p></div>';
+
+  // Add event listeners after rendering (fixes CSP inline onclick issue)
+  gallery.querySelectorAll('.gallery-item[data-index]').forEach(item => {
+    item.addEventListener('click', function () {
+      const index = parseInt(this.dataset.index);
+      console.log('🖱️ Gallery item clicked, index:', index);
+      openLightboxByIndex(index);
+    });
+  });
 }
 
 /**
@@ -177,11 +184,11 @@ function renderAllMedia(mediaItems) {
  */
 function openLightboxByIndex(index) {
   if (index < 0 || index >= currentMediaList.length) return;
-  
+
   currentMediaIndex = index;
   const media = currentMediaList[index];
   openLightbox(media.src, media.type);
-  
+
   // Update navigation buttons
   updateLightboxNavButtons();
 }
@@ -194,7 +201,7 @@ function openLightbox(src, type) {
   const img = document.getElementById('lightbox-image');
   const vid = document.getElementById('lightbox-video');
   const caption = document.getElementById('lightbox-caption');
-  
+
   if (type === 'image') {
     img.src = src;
     img.style.display = 'block';
@@ -207,7 +214,7 @@ function openLightbox(src, type) {
     img.style.display = 'none';
     caption.textContent = 'Video from visit';
   }
-  
+
   lightbox.style.display = 'flex';
 }
 
@@ -217,7 +224,7 @@ function openLightbox(src, type) {
 function closeLightbox() {
   const lightbox = document.getElementById('lightbox');
   const vid = document.getElementById('lightbox-video');
-  
+
   lightbox.style.display = 'none';
   vid.pause();
   vid.currentTime = 0;
@@ -248,11 +255,11 @@ function showNextMedia() {
 function updateLightboxNavButtons() {
   const prevBtn = document.getElementById('lightbox-prev');
   const nextBtn = document.getElementById('lightbox-next');
-  
+
   if (prevBtn) {
     prevBtn.disabled = currentMediaIndex <= 0;
   }
-  
+
   if (nextBtn) {
     nextBtn.disabled = currentMediaIndex >= currentMediaList.length - 1;
   }
@@ -264,8 +271,8 @@ function updateLightboxNavButtons() {
 function handleLightboxKeyboard(e) {
   const lightbox = document.getElementById('lightbox');
   if (lightbox.style.display !== 'flex') return;
-  
-  switch(e.key) {
+
+  switch (e.key) {
     case 'Escape':
       closeLightbox();
       break;
@@ -299,12 +306,12 @@ function handleTouchEnd(e) {
 
 function handleSwipeGesture() {
   const swipeDistance = touchEndX - touchStartX;
-  
+
   // Swipe left (next)
   if (swipeDistance < -minSwipeDistance) {
     showNextMedia();
   }
-  
+
   // Swipe right (previous)
   if (swipeDistance > minSwipeDistance) {
     showPreviousMedia();
@@ -318,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (closeBtn) {
     closeBtn.addEventListener('click', closeLightbox);
   }
-  
+
   // Click outside to close
   const lightbox = document.getElementById('lightbox');
   if (lightbox) {
@@ -327,15 +334,15 @@ document.addEventListener('DOMContentLoaded', () => {
         closeLightbox();
       }
     });
-    
+
     // Add touch swipe support
     lightbox.addEventListener('touchstart', handleTouchStart, { passive: true });
     lightbox.addEventListener('touchend', handleTouchEnd, { passive: true });
   }
-  
+
   // Keyboard navigation
   document.addEventListener('keydown', handleLightboxKeyboard);
-  
+
   // Initialize filters and load all media by default
   loadFilters().then(() => loadAllMedia());
 

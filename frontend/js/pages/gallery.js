@@ -263,9 +263,8 @@ async function loadGalleryPhotos() {
 
       // Show results bar
       resultsBar.style.display = "flex";
-      document.getElementById("resultsCount").textContent = `${
-        filteredPhotos.length
-      } ${filteredPhotos.length === 1 ? "photo" : "photos"}`;
+      document.getElementById("resultsCount").textContent = `${filteredPhotos.length
+        } ${filteredPhotos.length === 1 ? "photo" : "photos"}`;
 
       let filterText = "";
       if (currentFilter === "recent") filterText = "from last 30 days";
@@ -273,8 +272,8 @@ async function loadGalleryPhotos() {
         const schoolSelect = document.getElementById("schoolFilter");
         const schoolName =
           schoolSelect &&
-          schoolSelect.selectedOptions &&
-          schoolSelect.selectedOptions[0]
+            schoolSelect.selectedOptions &&
+            schoolSelect.selectedOptions[0]
             ? schoolSelect.selectedOptions[0].text
             : "Selected School";
         filterText = `from ${schoolName}`;
@@ -282,8 +281,8 @@ async function loadGalleryPhotos() {
         const teamSelect = document.getElementById("teamFilter");
         const teamName =
           teamSelect &&
-          teamSelect.selectedOptions &&
-          teamSelect.selectedOptions[0]
+            teamSelect.selectedOptions &&
+            teamSelect.selectedOptions[0]
             ? teamSelect.selectedOptions[0].text
             : "Selected Team";
         filterText = `from ${teamName}`;
@@ -367,7 +366,7 @@ function displayPhotos(photos) {
 
       // Debug log to see the actual URL
       console.log("Photo URL:", photoUrl);
-      
+
       // Ensure absolute URL
       const absoluteUrl = toAbsoluteMediaUrl(photoUrl);
 
@@ -386,11 +385,11 @@ function displayPhotos(photos) {
           <div class="photo-info">
             <div class="photo-meta">
               <span class="meta-school" title="${escapeHtml(
-                schoolName
-              )}">🏫 ${escapeHtml(schoolName)}</span>
+          schoolName
+        )}">🏫 ${escapeHtml(schoolName)}</span>
               <span class="meta-team" title="${escapeHtml(
-                teamName
-              )}">👥 ${escapeHtml(teamName)}</span>
+          teamName
+        )}">👥 ${escapeHtml(teamName)}</span>
               <span class="meta-date">📅 ${escapeHtml(date)}</span>
             </div>
             <div class="photo-actions">
@@ -495,11 +494,39 @@ function toggleFavorite(url) {
 }
 
 // Lightbox functions (enhanced with keyboard navigation)
+let currentLightboxIndex = -1;
+let lightboxPhotos = [];
+
 function openLightbox(src, type, caption = "") {
   const lightbox = document.getElementById("lightbox");
   const img = document.getElementById("lightbox-image");
   const video = document.getElementById("lightbox-video");
   const captionEl = document.getElementById("lightbox-caption");
+
+  // Build array of all photo URLs for navigation
+  lightboxPhotos = allPhotos
+    .filter(p => p.type === "photo")
+    .map(p => {
+      let url = p.url || "";
+      if (typeof url === "object") {
+        url = url.path || url.cloudUrl || "";
+      }
+      url = String(url);
+      if (url && !url.startsWith("http") && !url.startsWith("/")) {
+        url = "/" + url;
+      }
+      const baseURL = CONFIG.API_BASE_URL.replace("/api", "");
+      if (url && !url.startsWith("http")) {
+        url = `${baseURL}${url}`;
+      }
+      return {
+        url: toAbsoluteMediaUrl(url),
+        caption: `${p.school?.name || "Unknown School"} - ${formatDate(p.visitDate)}`
+      };
+    });
+
+  // Find current photo index
+  currentLightboxIndex = lightboxPhotos.findIndex(p => p.url === src);
 
   if (type === "image") {
     img.src = src;
@@ -544,13 +571,52 @@ function closeLightbox() {
 
   // Remove keyboard listener
   document.removeEventListener("keydown", handleLightboxKeypress);
+
+  // Reset lightbox state
+  currentLightboxIndex = -1;
+  lightboxPhotos = [];
 }
 
 function handleLightboxKeypress(e) {
   if (e.key === "Escape") {
     closeLightbox();
+    return;
   }
-  // TODO: Add arrow key navigation between photos
+
+  // Arrow key navigation
+  if (e.key === "ArrowLeft") {
+    e.preventDefault();
+    navigateLightbox(-1);
+  } else if (e.key === "ArrowRight") {
+    e.preventDefault();
+    navigateLightbox(1);
+  }
+}
+
+function navigateLightbox(direction) {
+  if (lightboxPhotos.length === 0) return;
+
+  // Calculate new index with wrapping
+  let newIndex = currentLightboxIndex + direction;
+
+  // Wrap around
+  if (newIndex < 0) {
+    newIndex = lightboxPhotos.length - 1;
+  } else if (newIndex >= lightboxPhotos.length) {
+    newIndex = 0;
+  }
+
+  currentLightboxIndex = newIndex;
+  const photo = lightboxPhotos[newIndex];
+
+  // Update lightbox content
+  const img = document.getElementById("lightbox-image");
+  const captionEl = document.getElementById("lightbox-caption");
+
+  if (img && photo) {
+    img.src = photo.url;
+    captionEl.textContent = photo.caption;
+  }
 }
 
 // Setup lightbox close button
@@ -594,9 +660,9 @@ function handleImageError(img) {
     "data:image/svg+xml," +
     encodeURIComponent(
       '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">' +
-        '<rect fill="#ddd" width="200" height="200"/>' +
-        '<text fill="#999" x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="Arial">Image not found</text>' +
-        "</svg>"
+      '<rect fill="#ddd" width="200" height="200"/>' +
+      '<text fill="#999" x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="Arial">Image not found</text>' +
+      "</svg>"
     );
 }
 
