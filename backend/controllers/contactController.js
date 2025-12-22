@@ -58,7 +58,7 @@ exports.submitContact = async (req, res) => {
 exports.getAllContacts = async (req, res) => {
   try {
     const { status, page = 1, limit = 20, search } = req.query;
-    
+
     // Build query
     const query = {};
     if (status) query.status = status;
@@ -70,7 +70,7 @@ exports.getAllContacts = async (req, res) => {
         { message: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     const contacts = await Contact.find(query)
       .sort({ createdAt: -1 })
       .limit(limit * 1)
@@ -189,8 +189,21 @@ exports.replyToContact = async (req, res) => {
       });
     }
 
-    // TODO: Send email notification to user with the reply
-    // This can be implemented later with nodemailer or similar
+    // Send email notification to user with the reply
+    try {
+      const { sendContactReplyEmail } = require('../utils/emailService');
+      await sendContactReplyEmail({
+        to: contact.email,
+        name: contact.name,
+        subject: contact.subject,
+        originalMessage: contact.message,
+        reply: replyMessage.trim(),
+        repliedBy: req.user.name
+      });
+    } catch (emailError) {
+      console.error('Failed to send reply email:', emailError);
+      // Don't fail the whole request if email fails
+    }
 
     res.status(200).json({
       success: true,
@@ -283,7 +296,7 @@ exports.getContactStats = async (req, res) => {
 
     // Get total count
     const total = await Contact.countDocuments();
-    
+
     // Get today's count
     const today = new Date();
     today.setHours(0, 0, 0, 0);

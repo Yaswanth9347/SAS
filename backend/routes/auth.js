@@ -1,9 +1,9 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { 
-    register, 
-    login, 
-    getMe, 
+const {
+    register,
+    login,
+    getMe,
     checkUsername,
     getUserProfile,
     updateUserProfile,
@@ -59,19 +59,23 @@ router.get('/stats', protect, getUserStats);
 router.get('/preferences', protect, getPreferences);
 router.put('/preferences', protect, updatePreferences);
 
+// Two-Factor Authentication routes
+router.use('/', require('./twoFactor'));
+
+
 // Debug route for admin credentials
 router.get('/check-admin', async (req, res) => {
     try {
         // Find admin user
         const admin = await User.findOne({ role: 'admin' });
-        
+
         if (!admin) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'No admin user found' 
+            return res.status(404).json({
+                success: false,
+                message: 'No admin user found'
             });
         }
-        
+
         return res.status(200).json({
             success: true,
             admin: {

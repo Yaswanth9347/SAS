@@ -127,6 +127,8 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/feedback', require('./routes/feedback'));
 app.use('/api/contact', require('./routes/contact'));
+app.use('/api/reports', require('./routes/reports'));
+app.use('/api/security', require('./routes/security'));
 
 // Test route
 app.get('/api/test', (req, res) => {

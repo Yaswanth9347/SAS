@@ -13,7 +13,7 @@ function requireEnv(name) {
 // Best-effort startup check (does not throw to avoid blocking server boot)
 function checkEmailConfig() {
     if (!isProdLike) return { ok: true, env: 'dev' };
-    const required = ['EMAIL_HOST','EMAIL_PORT','EMAIL_USER','EMAIL_PASSWORD','FROM_NAME','FROM_EMAIL','FRONTEND_URL'];
+    const required = ['EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASSWORD', 'FROM_NAME', 'FROM_EMAIL', 'FRONTEND_URL'];
     const missing = required.filter(k => !process.env[k] || String(process.env[k]).trim() === '');
     if (missing.length) {
         console.warn('[email] Missing required email env vars in', process.env.NODE_ENV, ':', missing.join(', '));
@@ -21,7 +21,7 @@ function checkEmailConfig() {
     }
 
     // Additional soft validations for production/staging
-    const freeDomains = new Set(['gmail.com','yahoo.com','outlook.com','hotmail.com','live.com','aol.com','proton.me','icloud.com','yandex.com']);
+    const freeDomains = new Set(['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'live.com', 'aol.com', 'proton.me', 'icloud.com', 'yandex.com']);
     const fromEmail = String(process.env.FROM_EMAIL || '').toLowerCase();
     const fromDomain = fromEmail.includes('@') ? fromEmail.split('@')[1] : '';
     if (fromDomain && freeDomains.has(fromDomain)) {
@@ -33,7 +33,7 @@ function checkEmailConfig() {
         if (u.protocol !== 'https:') {
             console.warn('[email] Warning: FRONTEND_URL is not HTTPS. Use HTTPS in production/staging.');
         }
-        if (['localhost','127.0.0.1'].includes(u.hostname)) {
+        if (['localhost', '127.0.0.1'].includes(u.hostname)) {
             console.warn('[email] Warning: FRONTEND_URL points to localhost; update this for production/staging.');
         }
     } catch {
@@ -52,16 +52,16 @@ const createTransporter = () => {
     const user = process.env.EMAIL_USER || (!isProdLike ? 'dev@example.com' : undefined);
     const pass = process.env.EMAIL_PASSWORD || (!isProdLike ? 'dev-password' : undefined);
 
-        // In development, if no real SMTP config is provided, use a no-op JSON transport that "succeeds"
-        if (!isProdLike) {
-            const hasRealSmtp = !!(process.env.EMAIL_HOST && process.env.EMAIL_PORT && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD);
-            if (!hasRealSmtp) {
-                console.warn('[email] Using development JSON transport (no real SMTP configured). Emails will be logged, not sent.');
-                return nodemailer.createTransport({ jsonTransport: true });
-            }
+    // In development, if no real SMTP config is provided, use a no-op JSON transport that "succeeds"
+    if (!isProdLike) {
+        const hasRealSmtp = !!(process.env.EMAIL_HOST && process.env.EMAIL_PORT && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD);
+        if (!hasRealSmtp) {
+            console.warn('[email] Using development JSON transport (no real SMTP configured). Emails will be logged, not sent.');
+            return nodemailer.createTransport({ jsonTransport: true });
         }
+    }
 
-        if (isProdLike) {
+    if (isProdLike) {
         // Enforce presence in prod/staging
         requireEnv('EMAIL_HOST');
         requireEnv('EMAIL_PORT');
@@ -93,7 +93,7 @@ const createTransporter = () => {
 const sendEmail = async (options) => {
     try {
         const transporter = createTransporter();
-        
+
         const fromName = process.env.FROM_NAME || 'Spread A Smile';
         const fromEmail = process.env.FROM_EMAIL || process.env.EMAIL_USER;
         if (isProdLike) {
@@ -109,9 +109,9 @@ const sendEmail = async (options) => {
             html: options.html,
             text: options.text
         };
-        
+
         const info = await transporter.sendMail(message);
-        
+
         console.log('Email sent:', info.messageId);
         return { success: true, messageId: info.messageId };
     } catch (error) {
@@ -291,14 +291,14 @@ const sendPasswordResetEmail = async (user, resetToken) => {
         throw new Error('Missing FRONTEND_URL for password reset link');
     }
     const resetUrl = `${resetBase}/reset-password.html?token=${resetToken}`;
-    
-        if (!isProdLike) {
-            console.log('[email][dev] Password reset link for', String(user.email).replace(/(.{2}).+(@.+)/, '$1***$2'), '=>', resetUrl);
-        }
+
+    if (!isProdLike) {
+        console.log('[email][dev] Password reset link for', String(user.email).replace(/(.{2}).+(@.+)/, '$1***$2'), '=>', resetUrl);
+    }
 
     const html = getPasswordResetEmailHTML(resetUrl, user.name);
     const text = getPasswordResetEmailText(resetUrl, user.name);
-    
+
     return await sendEmail({
         email: user.email,
         subject: 'Password Reset Request - Spread A Smile',
@@ -345,7 +345,7 @@ const sendPasswordResetConfirmation = async (user) => {
         </body>
         </html>
     `;
-    
+
     const text = `
 Hi ${user.name},
 
@@ -358,7 +358,7 @@ If you did not make this change, please contact our support team immediately.
 Best regards,
 The Spread A Smile Team
     `;
-    
+
     return await sendEmail({
         email: user.email,
         subject: 'Password Reset Successful - Spread A Smile',
@@ -438,6 +438,101 @@ async function sendTeamAssignmentEmail(user, meta) {
     return sendEmail({ email: user.email, subject: 'Team Assignment Update - Spread A Smile', html, text });
 }
 
+/**
+ * Send contact reply email
+ * @param {object} params - Email parameters
+ * @param {string} params.to - Recipient email
+ * @param {string} params.name - Recipient name
+ * @param {string} params.subject - Original contact subject
+ * @param {string} params.originalMessage - Original message from user
+ * @param {string} params.reply - Admin's reply
+ * @param {string} params.repliedBy - Name of admin who replied
+ */
+async function sendContactReplyEmail({ to, name, subject, originalMessage, reply, repliedBy }) {
+    const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+                .header { background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+                .content { padding: 30px; }
+                .reply-box { background: #f5f5f5; border-left: 4px solid #2e7d32; padding: 20px; margin: 20px 0; border-radius: 4px; }
+                .original-message { background: #fafafa; border-left: 4px solid #ccc; padding: 15px; margin: 20px 0; border-radius: 4px; font-size: 14px; color: #666; }
+                .signature { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-style: italic; color: #666; }
+                .footer { background: #f9f9f9; padding: 20px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #e0e0e0; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🌟 Spread A Smile</h1>
+                    <p style="margin: 0; font-size: 16px;">We've received your message!</p>
+                </div>
+                <div class="content">
+                    <h2 style="color: #2e7d32;">Hello ${name},</h2>
+                    <p>Thank you for contacting us. We've reviewed your message and here's our response:</p>
+                    
+                    <div class="reply-box">
+                        <p style="margin: 0; white-space: pre-wrap;">${reply}</p>
+                    </div>
+                    
+                    <p style="margin-top: 20px;">If you have any further questions, please don't hesitate to reach out to us.</p>
+                    
+                    <div class="original-message">
+                        <strong style="color: #333;">Your Original Message:</strong><br>
+                        <strong>Subject:</strong> ${subject}<br><br>
+                        <div style="white-space: pre-wrap;">${originalMessage}</div>
+                    </div>
+                    
+                    <div class="signature">
+                        <p>Best regards,<br>
+                        <strong>${repliedBy}</strong><br>
+                        Spread A Smile Team</p>
+                    </div>
+                </div>
+                <div class="footer">
+                    <p>This email is in response to your contact form submission.</p>
+                    <p>© ${new Date().getFullYear()} Spread A Smile. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    const text = `
+Hello ${name},
+
+Thank you for contacting us. We've reviewed your message and here's our response:
+
+${reply}
+
+If you have any further questions, please don't hesitate to reach out to us.
+
+---
+Your Original Message:
+Subject: ${subject}
+
+${originalMessage}
+
+---
+Best regards,
+${repliedBy}
+Spread A Smile Team
+
+© ${new Date().getFullYear()} Spread A Smile
+    `;
+
+    return await sendEmail({
+        email: to,
+        subject: `Re: ${subject} - Spread A Smile`,
+        html,
+        text
+    });
+}
+
 module.exports = {
     sendEmail,
     sendPasswordResetEmail,
@@ -446,5 +541,6 @@ module.exports = {
     sendVisitReminderEmail,
     sendReportDeadlineEmail,
     sendTeamAssignmentEmail,
+    sendContactReplyEmail,
     checkEmailConfig
 };

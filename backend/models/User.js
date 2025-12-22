@@ -40,14 +40,14 @@ const userSchema = new mongoose.Schema({
     },
     collegeId: {
         type: String,
-        required: function() {
+        required: function () {
             // collegeId required for years 1-4, optional for 'Others' (5)
             return this.year !== 5;
         }
     },
     department: {
         type: String,
-        required: function() {
+        required: function () {
             // department required for years 1-4, optional for 'Others' (5)
             return this.year !== 5;
         }
@@ -109,7 +109,12 @@ const userSchema = new mongoose.Schema({
             showPhone: { type: Boolean, default: false }
         },
         security: {
-            twoFactorEnabled: { type: Boolean, default: false }
+            twoFactorEnabled: { type: Boolean, default: false },
+            twoFactorSecret: { type: String, select: false }, // TOTP secret (base32)
+            twoFactorBackupCodes: [{ type: String, select: false }], // Hashed backup codes
+            sms2FAEnabled: { type: Boolean, default: false },
+            sms2FACode: { type: String, select: false }, // Temporary SMS code
+            sms2FACodeExpire: { type: Date, select: false } // SMS code expiration
         },
         // Accessibility
         fontSize: {
@@ -127,34 +132,34 @@ const userSchema = new mongoose.Schema({
 });
 
 // Encrypt password using bcrypt
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
     if (!this.isModified('password')) {
         next();
     }
-    
+
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Match user entered password to hashed password in database
-userSchema.methods.matchPassword = async function(enteredPassword) {
+userSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
 // Generate and hash password reset token
-userSchema.methods.getResetPasswordToken = function() {
+userSchema.methods.getResetPasswordToken = function () {
     // Generate token
     const resetToken = crypto.randomBytes(20).toString('hex');
-    
+
     // Hash token and set to resetPasswordToken field
     this.resetPasswordToken = crypto
         .createHash('sha256')
         .update(resetToken)
         .digest('hex');
-    
+
     // Set expire time (1 hour)
     this.resetPasswordExpire = Date.now() + 60 * 60 * 1000;
-    
+
     return resetToken;
 };
 

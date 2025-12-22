@@ -14,7 +14,7 @@ class AdminUsersManager {
     this.page = 1;
     this.limit = (typeof CONFIG !== 'undefined' && CONFIG.PAGINATION && CONFIG.PAGINATION.DEFAULT_PAGE_SIZE) ? CONFIG.PAGINATION.DEFAULT_PAGE_SIZE : 20;
     this.total = 0;
-  this.users = [];
+    this.users = [];
     this.selected = new Set();
     this.currentRejectUserId = null;
     this.isLoading = false;
@@ -32,7 +32,7 @@ class AdminUsersManager {
         document.body.appendChild(live);
       }
       this._ariaLive = live;
-    } catch (_) {}
+    } catch (_) { }
   }
 
   init() {
@@ -63,25 +63,35 @@ class AdminUsersManager {
     this.applyFiltersBtn = document.getElementById('applyFilters');
     this.resetFiltersBtn = document.getElementById('resetFilters');
 
+    // Metrics elements
+    this.metricTotalUsers = document.getElementById('metricTotalUsers');
+    this.metricActiveUsers = document.getElementById('metricActiveUsers');
+    this.metricPendingUsers = document.getElementById('metricPendingUsers');
+    this.metricVerifiedUsers = document.getElementById('metricVerifiedUsers');
+
+    // Header action buttons
+    this.addUserBtn = document.getElementById('addUserBtn');
+    this.inviteUserBtn = document.getElementById('inviteUserBtn');
+
     this.bulkApproveBtn = document.getElementById('bulkApprove');
     this.bulkRejectBtn = document.getElementById('bulkReject');
     this.bulkRoleSelect = document.getElementById('bulkRoleSelect');
     this.bulkChangeRoleBtn = document.getElementById('bulkChangeRole');
     this.selectionInfo = document.getElementById('selectionInfo');
-  this.bulkControls = document.querySelector('.bulk-controls');
-  this.bulkClear = document.getElementById('bulkClear');
-  this.bulkSummaryModal = document.getElementById('bulkSummaryModal');
-  this.bulkSummaryContent = document.getElementById('bulkSummaryContent');
-  this.closeBulkSummary = document.getElementById('closeBulkSummary');
-  this.selectAllMatchingBtn = document.getElementById('selectAllMatching');
-  this.retryBulkBtn = document.getElementById('retryBulk');
-  this.abortBulkBtn = document.getElementById('abortBulk');
+    this.bulkControls = document.querySelector('.bulk-controls');
+    this.bulkClear = document.getElementById('bulkClear');
+    this.bulkSummaryModal = document.getElementById('bulkSummaryModal');
+    this.bulkSummaryContent = document.getElementById('bulkSummaryContent');
+    this.closeBulkSummary = document.getElementById('closeBulkSummary');
+    this.selectAllMatchingBtn = document.getElementById('selectAllMatching');
+    this.retryBulkBtn = document.getElementById('retryBulk');
+    this.abortBulkBtn = document.getElementById('abortBulk');
 
     this.selectAll = document.getElementById('selectAll');
     this.tbody = document.getElementById('usersTbody');
     this.pagination = document.getElementById('pagination');
-  this.pageSizeSelect = document.getElementById('pageSize');
-  this.totalCount = document.getElementById('totalCount');
+    this.pageSizeSelect = document.getElementById('pageSize');
+    this.totalCount = document.getElementById('totalCount');
 
     this.rejectModal = document.getElementById('rejectModal');
     this.rejectReason = document.getElementById('rejectReason');
@@ -100,6 +110,10 @@ class AdminUsersManager {
     this.applyFiltersBtn && this.applyFiltersBtn.addEventListener('click', () => { this.page = 1; this.loadUsers(); });
     this.resetFiltersBtn && this.resetFiltersBtn.addEventListener('click', () => this.resetFilters());
 
+    // Header action buttons
+    if (this.addUserBtn) this.addUserBtn.addEventListener('click', () => this.showAddUserModal());
+    if (this.inviteUserBtn) this.inviteUserBtn.addEventListener('click', () => this.showInviteUserModal());
+
     // Debounced search input (300ms)
     if (this.searchInput) {
       this.searchInput.addEventListener('input', this.debounce((e) => {
@@ -108,7 +122,12 @@ class AdminUsersManager {
       }, 300));
     }
 
-  if (this.selectAll) this.selectAll.addEventListener('change', (e) => this.toggleSelectAll(e.target.checked));
+    // Filter dropdowns also trigger reload
+    if (this.filterRole) this.filterRole.addEventListener('change', () => { this.page = 1; this.loadUsers(); });
+    if (this.filterStatus) this.filterStatus.addEventListener('change', () => { this.page = 1; this.loadUsers(); });
+    if (this.filterVerified) this.filterVerified.addEventListener('change', () => { this.page = 1; this.loadUsers(); });
+
+    if (this.selectAll) this.selectAll.addEventListener('change', (e) => this.toggleSelectAll(e.target.checked));
 
     // Page size selector
     if (this.pageSizeSelect) {
@@ -123,18 +142,18 @@ class AdminUsersManager {
     }
 
     // Bulk actions removed; guard event handlers
-  this.bulkApproveBtn && this.bulkApproveBtn.addEventListener('click', () => this.bulkApprove());
+    this.bulkApproveBtn && this.bulkApproveBtn.addEventListener('click', () => this.bulkApprove());
     this.bulkRejectBtn && this.bulkRejectBtn.addEventListener('click', () => this.bulkReject());
     this.bulkRoleSelect && this.bulkRoleSelect.addEventListener('change', () => this.updateSelectionUI());
     this.bulkChangeRoleBtn && this.bulkChangeRoleBtn.addEventListener('click', () => this.bulkChangeRole());
-  if (this.bulkClear) this.bulkClear.addEventListener('click', () => { this.selected.clear(); this.updateSelectionUI(); this.tbody.querySelectorAll('input[type="checkbox"][data-id]').forEach(cb => cb.checked = false); });
-  if (this.closeBulkSummary) this.closeBulkSummary.addEventListener('click', () => this.hideBulkSummary());
+    if (this.bulkClear) this.bulkClear.addEventListener('click', () => { this.selected.clear(); this.updateSelectionUI(); this.tbody.querySelectorAll('input[type="checkbox"][data-id]').forEach(cb => cb.checked = false); });
+    if (this.closeBulkSummary) this.closeBulkSummary.addEventListener('click', () => this.hideBulkSummary());
     if (this.selectAllMatchingBtn) this.selectAllMatchingBtn.addEventListener('click', () => this.selectAllMatching());
     if (this.retryBulkBtn) this.retryBulkBtn.addEventListener('click', () => this.retryLastBulk());
     if (this.abortBulkBtn) this.abortBulkBtn.addEventListener('click', () => {
       // request cancellation and abort any in-flight fetch
       this._bulkCancelRequested = true;
-      try { if (this._bulkAbortController) this._bulkAbortController.abort(); } catch (_) {}
+      try { if (this._bulkAbortController) this._bulkAbortController.abort(); } catch (_) { }
       notify.info('Bulk operation abort requested — cancelling in-flight request');
     });
 
@@ -148,18 +167,19 @@ class AdminUsersManager {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-trash"></i>';
         btn.setAttribute('aria-label', 'Delete selected users');
+        btn.setAttribute('aria-label', 'Delete selected users');
         btn.setAttribute('title', 'Delete selected users');
         btn.addEventListener('click', () => this.bulkDelete());
         bulkControls.appendChild(btn);
         this.bulkDeleteBtn = btn;
       }
-    } catch(_){}
+    } catch (_) { }
 
-  if (this.confirmReject) this.confirmReject.addEventListener('click', () => this.confirmRejectAction());
+    if (this.confirmReject) this.confirmReject.addEventListener('click', () => this.confirmRejectAction());
     // Bulk delete button removed with the bulk section; no injection
-  if (this.cancelReject) this.cancelReject.addEventListener('click', () => this.hideRejectModal());
+    if (this.cancelReject) this.cancelReject.addEventListener('click', () => this.hideRejectModal());
 
-  if (this.closeActivity) this.closeActivity.addEventListener('click', () => this.hideActivityModal());
+    if (this.closeActivity) this.closeActivity.addEventListener('click', () => this.hideActivityModal());
     if (this.closeUserDetails) this.closeUserDetails.addEventListener('click', () => this.hideUserDetails());
 
     // Handle back/forward navigation for filters
@@ -170,7 +190,7 @@ class AdminUsersManager {
       } catch (e) { /* ignore */ }
     });
   }
-  
+
   buildParams() {
     const params = { page: this.page, limit: this.limit };
     const s = this.searchInput?.value?.trim();
@@ -233,18 +253,20 @@ class AdminUsersManager {
       this.isLoading = true;
       this.tbody.innerHTML = '<tr><td colspan="8" class="empty">Loading users…</td></tr>';
       const params = this.buildParams();
-    const res = await api.getAdminUsers(params);
+      const res = await api.getAdminUsers(params);
       // Ignore if a newer request started
       if (requestId !== this._latestRequestId) return;
-    this.total = res.total || 0;
-    this.users = res.data || [];
-    this.renderUsers(this.users);
-    this.renderPagination(res.page || 1, res.pages || 1);
-    if (this.totalCount) this.totalCount.textContent = `Total: ${this.total}`;
-    // Update URL to reflect current filters/page
-    try { this.updateUrlParams(); } catch (e) {}
-    // Render active filter chips
-    try { this.renderActiveFilters(); } catch (e) {}
+      this.total = res.total || 0;
+      this.users = res.data || [];
+      this.renderUsers(this.users);
+      this.renderPagination(res.page || 1, res.pages || 1);
+      if (this.totalCount) this.totalCount.textContent = `Total: ${this.total}`;
+      // Update metrics
+      try { this.updateMetrics(this.users); } catch (e) { console.warn('Metrics update failed', e); }
+      // Update URL to reflect current filters/page
+      try { this.updateUrlParams(); } catch (e) { }
+      // Render active filter chips
+      try { this.renderActiveFilters(); } catch (e) { }
     } catch (err) {
       console.error('Load users failed', err);
       this.tbody.innerHTML = `<tr><td colspan="8" class="empty">Failed to load users: ${escapeHtml(err.message)}</td></tr>`;
@@ -270,7 +292,7 @@ class AdminUsersManager {
       return;
     }
 
-  this.tbody.innerHTML = users.map(u => this.userRowHTML(u)).join('');
+    this.tbody.innerHTML = users.map(u => this.userRowHTML(u)).join('');
 
     // Bind row events
     this.tbody.querySelectorAll('input[type="checkbox"][data-id]').forEach(cb => {
@@ -300,7 +322,7 @@ class AdminUsersManager {
         const allChecked = visible.every(cb => cb.checked);
         if (this.selectAll) this.selectAll.checked = allChecked;
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Ensure bulk controls visibility reflects current selection
     this.updateSelectionUI();
@@ -347,10 +369,10 @@ class AdminUsersManager {
   }
 
   userRowHTML(u) {
-    const initials = (u.name || u.username || '?').split(/\s+/).map(p => p[0]).slice(0,2).join('').toUpperCase();
+    const initials = (u.name || u.username || '?').split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase();
     const statusClass = (u.verificationStatus || 'pending');
-    const verifiedIcon = u.isVerified 
-      ? '<span class="badge verified">Yes</span>' 
+    const verifiedIcon = u.isVerified
+      ? '<span class="badge verified">Yes</span>'
       : '<span class="badge pending">No</span>';
     const created = new Date(u.createdAt).toLocaleDateString();
 
@@ -394,19 +416,19 @@ class AdminUsersManager {
         <td>${created}</td>
         <td class="actions">
           <button class="btn btn-info icon-btn view-btn" aria-label="View details" title="View details" data-id="${u._id}">
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 5a7 7 0 017 7 7 7 0 11-14 0 7 7 0 017-7zm0 2a5 5 0 100 10 5 5 0 000-10z"/></svg>
+            <i class="fas fa-eye"></i>
           </button>
-          <button class="btn btn-primary icon-btn approve-btn" aria-label="Approve user" title="Approve user" data-id="${u._id}" ${u.verificationStatus === 'approved' ? 'disabled' : ''}>
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M20 6L9 17l-5-5 1.5-1.5L9 14l9.5-9.5z"/></svg>
+          <button class="btn btn-success icon-btn approve-btn" aria-label="Approve user" title="Approve user" data-id="${u._id}" ${u.verificationStatus === 'approved' ? 'disabled' : ''}>
+            <i class="fas fa-check-circle"></i>
           </button>
-          <button class="btn btn-danger icon-btn reject-btn" aria-label="Reject user" title="Reject user" data-id="${u._id}" ${u.verificationStatus === 'rejected' ? 'disabled' : ''}>
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M18 6L6 18M6 6l12 12"/></svg>
+          <button class="btn btn-warning icon-btn reject-btn" aria-label="Reject user" title="Reject user" data-id="${u._id}" ${u.verificationStatus === 'rejected' ? 'disabled' : ''}>
+            <i class="fas fa-times-circle"></i>
           </button>
-          <button class="btn btn-secondary icon-btn logs-btn" aria-label="View logs" title="View logs" data-id="${u._id}">
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M4 6h2v2H4V6zm4 0h12v2H8V6zm-4 5h2v2H4v-2zm4 0h12v2H8v-2zm-4 5h2v2H4v-2zm4 0h12v2H8v-2z"/></svg>
+          <button class="btn btn-secondary icon-btn logs-btn" aria-label="View activity logs" title="View activity logs" data-id="${u._id}">
+            <i class="fas fa-history"></i>
           </button>
           <button class="btn btn-danger icon-btn delete-btn" aria-label="Delete user" title="Delete user" data-id="${u._id}" ${isSelf ? 'disabled title=\"Cannot delete yourself\"' : ''}>
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v10h-2V9zm4 0h2v10h-2V9z"/></svg>
+            <i class="fas fa-trash-alt"></i>
           </button>
         </td>
       </tr>
@@ -489,7 +511,7 @@ class AdminUsersManager {
           this._announce('Selection cleared');
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   resetFilters() {
@@ -510,20 +532,20 @@ class AdminUsersManager {
         try {
           const btn = this.tbody.querySelector(`button.approve-btn[data-id="${id}"]`);
           if (btn) btn.disabled = true;
-        } catch(_) {}
+        } catch (_) { }
         await api.approveUser(id, null);
         notify.success('User approved');
         // refresh list and stats
-        try { document.dispatchEvent(new Event('stats:refresh')); } catch(_) {}
+        try { document.dispatchEvent(new Event('stats:refresh')); } catch (_) { }
         this.loadUsers();
       } catch (err) {
         notify.error('Approve failed: ' + escapeHtml(err.message));
       } finally {
-        try { loader && loader.remove && loader.remove(); } catch (_) {}
+        try { loader && loader.remove && loader.remove(); } catch (_) { }
         try {
           const btn = this.tbody.querySelector(`button.approve-btn[data-id="${id}"]`);
           if (btn) btn.disabled = false;
-        } catch(_) {}
+        } catch (_) { }
       }
     });
   }
@@ -540,33 +562,33 @@ class AdminUsersManager {
     if (!this.currentRejectUserId) return;
     try {
       // disable confirm button to prevent duplicate submissions
-      try { if (this.confirmReject) this.confirmReject.disabled = true; } catch(_) {}
+      try { if (this.confirmReject) this.confirmReject.disabled = true; } catch (_) { }
       await api.rejectUser(this.currentRejectUserId, this.rejectReason.value.trim());
       notify.success('User rejected');
       this.hideRejectModal();
-      try { document.dispatchEvent(new Event('stats:refresh')); } catch(_) {}
+      try { document.dispatchEvent(new Event('stats:refresh')); } catch (_) { }
       this.loadUsers();
     } catch (err) {
       notify.error('Reject failed: ' + escapeHtml(err.message));
     }
-    finally { try { if (this.confirmReject) this.confirmReject.disabled = false; } catch(_) {} }
+    finally { try { if (this.confirmReject) this.confirmReject.disabled = false; } catch (_) { } }
   }
 
   async changeRole(id, role) {
     try {
       // disable role select while updating
       let sel;
-      try { sel = this.tbody.querySelector(`select.role-select[data-id="${id}"]`); if (sel) sel.disabled = true; } catch(_) {}
+      try { sel = this.tbody.querySelector(`select.role-select[data-id="${id}"]`); if (sel) sel.disabled = true; } catch (_) { }
       await api.updateUserRole(id, role);
       notify.success('Role updated');
       // No full reload needed, but refresh to reflect logs/status
-      try { document.dispatchEvent(new Event('stats:refresh')); } catch(_) {}
+      try { document.dispatchEvent(new Event('stats:refresh')); } catch (_) { }
       this.loadUsers();
     } catch (err) {
       notify.error('Role update failed: ' + escapeHtml(err.message));
       this.loadUsers();
     }
-    finally { try { if (sel) sel.disabled = false; } catch(_) {} }
+    finally { try { if (sel) sel.disabled = false; } catch (_) { } }
   }
 
   async bulkApprove() {
@@ -597,12 +619,12 @@ class AdminUsersManager {
       try {
         await api.deleteUser(userId);
         notify.success('User deleted');
-        try { document.dispatchEvent(new Event('stats:refresh')); } catch(_) {}
+        try { document.dispatchEvent(new Event('stats:refresh')); } catch (_) { }
         this.loadUsers();
       } catch (err) {
         handleAPIError(err);
       } finally {
-        try { loader && loader.remove && loader.remove(); } catch (_) {}
+        try { loader && loader.remove && loader.remove(); } catch (_) { }
       }
     });
   }
@@ -617,11 +639,11 @@ class AdminUsersManager {
       const resultsAgg = [];
       let deletedCount = 0;
       try {
-    // Disable bulk controls while running
+        // Disable bulk controls while running
         this._bulkRunning = true;
         this._bulkCancelRequested = false;
-    // create an AbortController to allow immediate cancellation of the in-flight fetch
-    try { this._bulkAbortController = new AbortController(); } catch (_) { this._bulkAbortController = null; }
+        // create an AbortController to allow immediate cancellation of the in-flight fetch
+        try { this._bulkAbortController = new AbortController(); } catch (_) { this._bulkAbortController = null; }
         if (this.bulkApproveBtn) this.bulkApproveBtn.disabled = true;
         if (this.bulkRejectBtn) this.bulkRejectBtn.disabled = true;
         if (this.bulkChangeRoleBtn) this.bulkChangeRoleBtn.disabled = true;
@@ -631,8 +653,8 @@ class AdminUsersManager {
         if (this.bulkSummaryModal && this.bulkSummaryContent) {
           this.bulkSummaryContent.innerHTML = `<div>Deleting ${escapeHtml(String(total))} user(s)...</div><div id="bulkProgress">0 / ${escapeHtml(String(total))}</div>`;
           // show abort button while running
-          try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'inline-block'; } catch(_) {}
-          try { if (this.retryBulkBtn) this.retryBulkBtn.style.display = 'none'; } catch(_) {}
+          try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'inline-block'; } catch (_) { }
+          try { if (this.retryBulkBtn) this.retryBulkBtn.style.display = 'none'; } catch (_) { }
           this.bulkSummaryModal.style.display = 'flex';
         }
 
@@ -664,7 +686,7 @@ class AdminUsersManager {
           try {
             const prog = document.getElementById('bulkProgress');
             if (prog) prog.innerHTML = `${escapeHtml(String(Math.min(i + chunk.length, total)))} / ${escapeHtml(String(total))}`;
-          } catch (_) {}
+          } catch (_) { }
         }
 
         // Aggregated summary
@@ -674,17 +696,17 @@ class AdminUsersManager {
         resultsAgg.filter(r => r.ok).forEach(r => this.selected.delete(String(r.id)));
         if (this.selectAll) this.selectAll.checked = false;
         this.updateSelectionUI();
-        try { document.dispatchEvent(new Event('stats:refresh')); } catch(_) {}
+        try { document.dispatchEvent(new Event('stats:refresh')); } catch (_) { }
         this.loadUsers();
       } catch (err) {
         handleAPIError(err);
       } finally {
         this._bulkRunning = false;
         // clear abort controller
-        try { this._bulkAbortController = null; } catch(_) {}
+        try { this._bulkAbortController = null; } catch (_) { }
         // re-enable controls (updateSelectionUI will re-disable if no selection)
         this.updateSelectionUI();
-        try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'none'; } catch(_) {}
+        try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'none'; } catch (_) { }
       }
     });
   }
@@ -694,10 +716,10 @@ class AdminUsersManager {
     if (!ids.length) return notify.error('No users selected for bulk operation');
     const chunkSize = 200; // safe chunk size for large operations
     const total = ids.length;
-  let matched = 0;
-  let modified = 0;
-  const errors = [];
-  const perIdResults = [];
+    let matched = 0;
+    let modified = 0;
+    const errors = [];
+    const perIdResults = [];
     try {
       this._bulkRunning = true;
       this._bulkCancelRequested = false;
@@ -711,15 +733,15 @@ class AdminUsersManager {
 
       if (this.bulkSummaryModal && this.bulkSummaryContent) {
         this.bulkSummaryContent.innerHTML = `<div>Running bulk ${escapeHtml(String(payload.action))} on ${escapeHtml(String(total))} user(s)...</div><div id="bulkProgress">0 / ${escapeHtml(String(total))}</div>`;
-        try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'inline-block'; } catch(_) {}
-        try { if (this.retryBulkBtn) this.retryBulkBtn.style.display = 'none'; } catch(_) {}
+        try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'inline-block'; } catch (_) { }
+        try { if (this.retryBulkBtn) this.retryBulkBtn.style.display = 'none'; } catch (_) { }
         this.bulkSummaryModal.style.display = 'flex';
       }
 
       // Idempotency key for the overall bulk operation
       const idempotencyKey = `bulk-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-        for (let i = 0; i < ids.length; i += chunkSize) {
+      for (let i = 0; i < ids.length; i += chunkSize) {
         if (this._bulkCancelRequested) {
           errors.push({ chunk: 'aborted', message: 'Operation aborted by user' });
           break;
@@ -742,26 +764,26 @@ class AdminUsersManager {
         try {
           const prog = document.getElementById('bulkProgress');
           if (prog) prog.innerHTML = `${escapeHtml(String(Math.min(i + chunk.length, total)))} / ${escapeHtml(String(total))}`;
-        } catch (_) {}
+        } catch (_) { }
       }
 
       // Show final summary
-  const result = { matched, modified, errors };
-  const summary = { action: payload.action, requested: total, result };
-  if (perIdResults.length) summary.results = perIdResults;
-  this.showBulkSummary(summary);
+      const result = { matched, modified, errors };
+      const summary = { action: payload.action, requested: total, result };
+      if (perIdResults.length) summary.results = perIdResults;
+      this.showBulkSummary(summary);
 
       // For safety, clear selection of processed ids
       ids.forEach(id => this.selected.delete(String(id)));
       if (this.selectAll) this.selectAll.checked = false;
       this.updateSelectionUI();
-      try { document.dispatchEvent(new Event('stats:refresh')); } catch(_) {}
+      try { document.dispatchEvent(new Event('stats:refresh')); } catch (_) { }
       this.loadUsers();
     } catch (err) {
       notify.error('Bulk operation failed: ' + escapeHtml(err.message));
     } finally {
       this._bulkRunning = false;
-      try { this._bulkAbortController = null; } catch(_) {}
+      try { this._bulkAbortController = null; } catch (_) { }
       this.updateSelectionUI();
       this._announce('Bulk operation completed');
     }
@@ -790,13 +812,13 @@ class AdminUsersManager {
       }
       this.bulkSummaryContent.innerHTML = html;
       // set aria and show
-      try { this.bulkSummaryModal.setAttribute('aria-hidden', 'false'); } catch(_) {}
+      try { this.bulkSummaryModal.setAttribute('aria-hidden', 'false'); } catch (_) { }
       this.bulkSummaryModal.style.display = 'flex';
       // focus management: prefer retry button then close
       try {
         if (this.retryBulkBtn && this.retryBulkBtn.style.display !== 'none') { this.retryBulkBtn.focus(); }
         else if (this.closeBulkSummary) { this.closeBulkSummary.focus(); }
-      } catch(_) {}
+      } catch (_) { }
       // keyboard: Esc closes modal or aborts if running
       this._bulkModalKeyHandler = (e) => {
         if (e.key === 'Escape') {
@@ -813,26 +835,27 @@ class AdminUsersManager {
       try {
         const failures = Array.isArray(summary.results) ? summary.results.filter(r => !r.ok) : [];
         if (this.retryBulkBtn) this.retryBulkBtn.style.display = failures.length ? 'inline-block' : 'none';
-      } catch (_) {}
-      try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'none'; } catch(_) {}
+      } catch (_) { }
+      try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'none'; } catch (_) { }
     } catch (e) {
       // fallback to toast
       notify.info('Bulk operation completed');
     }
   }
 
-  hideBulkSummary() { if (this.bulkSummaryModal) {
-      try { this.bulkSummaryModal.setAttribute('aria-hidden', 'true'); } catch(_) {}
+  hideBulkSummary() {
+    if (this.bulkSummaryModal) {
+      try { this.bulkSummaryModal.setAttribute('aria-hidden', 'true'); } catch (_) { }
       this.bulkSummaryModal.style.display = 'none';
     }
     this._clearBulkModalButtons();
-    try { document.removeEventListener('keydown', this._bulkModalKeyHandler); } catch(_) {}
+    try { document.removeEventListener('keydown', this._bulkModalKeyHandler); } catch (_) { }
   }
-  
+
   // ensure modal buttons hidden when closed
   _clearBulkModalButtons() {
-    try { if (this.retryBulkBtn) this.retryBulkBtn.style.display = 'none'; } catch(_) {}
-    try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'none'; } catch(_) {}
+    try { if (this.retryBulkBtn) this.retryBulkBtn.style.display = 'none'; } catch (_) { }
+    try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'none'; } catch (_) { }
   }
 
   // Select all users matching current filters across all pages
@@ -866,7 +889,7 @@ class AdminUsersManager {
   }
 
   _announce(text) {
-    try { if (this._ariaLive) this._ariaLive.textContent = String(text || ''); } catch(_) {}
+    try { if (this._ariaLive) this._ariaLive.textContent = String(text || ''); } catch (_) { }
   }
 
   // Retry last bulk operation failures (currently supports delete retries where per-id failures are returned)
@@ -901,7 +924,7 @@ class AdminUsersManager {
       try { this._bulkAbortController = new AbortController(); } catch (_) { this._bulkAbortController = null; }
       if (this.bulkSummaryModal && this.bulkSummaryContent) {
         this.bulkSummaryContent.innerHTML = `<div>Retrying delete for ${escapeHtml(String(total))} user(s)...</div><div id="bulkProgress">0 / ${escapeHtml(String(total))}</div>`;
-        try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'inline-block'; } catch(_) {}
+        try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'inline-block'; } catch (_) { }
         this.bulkSummaryModal.style.display = 'flex';
       }
       for (let i = 0; i < ids.length; i += chunkSize) {
@@ -920,19 +943,19 @@ class AdminUsersManager {
         try {
           const prog = document.getElementById('bulkProgress');
           if (prog) prog.innerHTML = `${escapeHtml(String(Math.min(i + chunk.length, total)))} / ${escapeHtml(String(total))}`;
-        } catch (_) {}
+        } catch (_) { }
       }
       this.showBulkSummary({ action: 'delete', requested: total, deleted: deletedCount, results: resultsAgg });
       resultsAgg.filter(r => r.ok).forEach(r => this.selected.delete(String(r.id)));
       this.updateSelectionUI();
-  try { document.dispatchEvent(new Event('stats:refresh')); } catch(_) {}
-  this.loadUsers();
+      try { document.dispatchEvent(new Event('stats:refresh')); } catch (_) { }
+      this.loadUsers();
     } catch (err) {
       handleAPIError(err);
     } finally {
       this._bulkRunning = false;
-      try { this._bulkAbortController = null; } catch(_) {}
-      try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'none'; } catch(_) {}
+      try { this._bulkAbortController = null; } catch (_) { }
+      try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'none'; } catch (_) { }
     }
   }
 
@@ -947,10 +970,10 @@ class AdminUsersManager {
     try {
       this._bulkRunning = true;
       this._bulkCancelRequested = false;
-      try { this._bulkAbortController = new AbortController(); } catch(_) { this._bulkAbortController = null; }
+      try { this._bulkAbortController = new AbortController(); } catch (_) { this._bulkAbortController = null; }
       if (this.bulkSummaryModal && this.bulkSummaryContent) {
         this.bulkSummaryContent.innerHTML = `<div>Retrying ${escapeHtml(action)} for ${escapeHtml(String(total))} user(s)...</div><div id="bulkProgress">0 / ${escapeHtml(String(total))}</div>`;
-        try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'inline-block'; } catch(_) {}
+        try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'inline-block'; } catch (_) { }
         this.bulkSummaryModal.style.display = 'flex';
       }
       const idempotencyKey = `bulk-retry-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -967,26 +990,26 @@ class AdminUsersManager {
           if (err && err.name === 'AbortError') { notify.info('Bulk retry aborted'); break; }
           resultsAgg.push({ chunk: Math.floor(i / chunkSize) + 1, error: err && err.message ? String(err.message) : String(err) });
         }
-        try { const prog = document.getElementById('bulkProgress'); if (prog) prog.innerHTML = `${escapeHtml(String(Math.min(i + chunk.length, total)))} / ${escapeHtml(String(total))}`; } catch(_) {}
+        try { const prog = document.getElementById('bulkProgress'); if (prog) prog.innerHTML = `${escapeHtml(String(Math.min(i + chunk.length, total)))} / ${escapeHtml(String(total))}`; } catch (_) { }
       }
       const summary = { action, requested: total, result: { matched, modified }, results: resultsAgg };
       this.showBulkSummary(summary);
       resultsAgg.filter(r => r.ok).forEach(r => this.selected.delete(String(r.id)));
       this.updateSelectionUI();
-      try { document.dispatchEvent(new Event('stats:refresh')); } catch(_) {}
+      try { document.dispatchEvent(new Event('stats:refresh')); } catch (_) { }
       this.loadUsers();
     } catch (err) {
       handleAPIError(err);
     } finally {
       this._bulkRunning = false;
-      try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'none'; } catch(_) {}
-      try { this._bulkAbortController = null; } catch(_) {}
+      try { if (this.abortBulkBtn) this.abortBulkBtn.style.display = 'none'; } catch (_) { }
+      try { this._bulkAbortController = null; } catch (_) { }
     }
   }
 
   // Focus trap helpers for modals
   _trapFocus(modalEl) {
-    if (!modalEl) return () => {};
+    if (!modalEl) return () => { };
     const focusable = modalEl.querySelectorAll('a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])');
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
@@ -999,7 +1022,7 @@ class AdminUsersManager {
       }
     };
     modalEl.addEventListener('keydown', handler);
-    try { first && first.focus(); } catch(_) {}
+    try { first && first.focus(); } catch (_) { }
     return () => { modalEl.removeEventListener('keydown', handler); };
   }
 
@@ -1022,14 +1045,14 @@ class AdminUsersManager {
       `;
       if (this.userDetailsContent) this.userDetailsContent.innerHTML = html;
       if (this.userDetailsModal) {
-        try { this.userDetailsModal.setAttribute('aria-hidden', 'false'); } catch(_) {}
+        try { this.userDetailsModal.setAttribute('aria-hidden', 'false'); } catch (_) { }
         this.userDetailsModal.style.display = 'flex';
         this._cleanupTrapUser = this._trapFocus(this.userDetailsModal);
       }
     } catch (err) { notify.error('Failed to show user details'); }
   }
 
-  hideUserDetails() { if (this.userDetailsModal) { try { this.userDetailsModal.setAttribute('aria-hidden', 'true'); } catch(_) {} this.userDetailsModal.style.display = 'none'; try { this._cleanupTrapUser && this._cleanupTrapUser(); } catch(_) {} } }
+  hideUserDetails() { if (this.userDetailsModal) { try { this.userDetailsModal.setAttribute('aria-hidden', 'true'); } catch (_) { } this.userDetailsModal.style.display = 'none'; try { this._cleanupTrapUser && this._cleanupTrapUser(); } catch (_) { } } }
 
   showRejectModal(id) {
     this.currentRejectUserId = id;
@@ -1038,7 +1061,7 @@ class AdminUsersManager {
     this._cleanupTrapReject = this._trapFocus(this.rejectModal);
   }
 
-  hideRejectModal() { this.rejectModal.style.display = 'none'; this.currentRejectUserId = null; try { this._cleanupTrapReject && this._cleanupTrapReject(); } catch(_) {} }
+  hideRejectModal() { this.rejectModal.style.display = 'none'; this.currentRejectUserId = null; try { this._cleanupTrapReject && this._cleanupTrapReject(); } catch (_) { } }
 
   async openLogs(userId) {
     try {
@@ -1046,9 +1069,9 @@ class AdminUsersManager {
       const logs = res.data || [];
       this.activityList.innerHTML = logs.length ? logs.map(l => this.logItemHTML(l)).join('') : '<div class="activity-item">No activities found</div>';
       if (this.activityModal) {
-        try { this.activityModal.setAttribute('aria-hidden', 'false'); } catch(_) {}
+        try { this.activityModal.setAttribute('aria-hidden', 'false'); } catch (_) { }
         this.activityModal.style.display = 'flex';
-        try { if (this.closeActivity) this.closeActivity.focus(); } catch(_) {}
+        try { if (this.closeActivity) this.closeActivity.focus(); } catch (_) { }
       }
     } catch (err) {
       notify.error('Failed to load activity logs: ' + escapeHtml(err.message));
@@ -1077,18 +1100,18 @@ class AdminUsersManager {
       `;
       if (this.userDetailsContent) this.userDetailsContent.innerHTML = html;
       if (this.userDetailsModal) {
-        try { this.userDetailsModal.setAttribute('aria-hidden', 'false'); } catch(_) {}
+        try { this.userDetailsModal.setAttribute('aria-hidden', 'false'); } catch (_) { }
         this.userDetailsModal.style.display = 'flex';
-        try { if (this.closeUserDetails) this.closeUserDetails.focus(); } catch(_) {}
+        try { if (this.closeUserDetails) this.closeUserDetails.focus(); } catch (_) { }
       }
     } catch (err) {
       notify.error('Failed to show user details');
     }
   }
 
-  hideUserDetails() { if (this.userDetailsModal) { try { this.userDetailsModal.setAttribute('aria-hidden', 'true'); } catch(_) {} this.userDetailsModal.style.display = 'none'; } }
+  hideUserDetails() { if (this.userDetailsModal) { try { this.userDetailsModal.setAttribute('aria-hidden', 'true'); } catch (_) { } this.userDetailsModal.style.display = 'none'; } }
 
-  hideActivityModal() { if (this.activityModal) { try { this.activityModal.setAttribute('aria-hidden', 'true'); } catch(_) {} this.activityModal.style.display = 'none'; } }
+  hideActivityModal() { if (this.activityModal) { try { this.activityModal.setAttribute('aria-hidden', 'true'); } catch (_) { } this.activityModal.style.display = 'none'; } }
 
   logItemHTML(l) {
     const when = new Date(l.createdAt).toLocaleString();
@@ -1097,6 +1120,43 @@ class AdminUsersManager {
       <div><strong>${escapeHtml(l.action)}</strong> — ${escapeHtml(JSON.stringify(l.metadata || {}))}</div>
       <div class="meta">by ${escapeHtml(actor)} on ${when}</div>
     </div>`;
+  }
+
+  // Update metrics cards with user data
+  updateMetrics(users) {
+    try {
+      const totalUsers = users.length > 0 ? this.total : 0;
+      const activeUsers = users.filter(u => u.verificationStatus === 'approved').length;
+      const pendingUsers = users.filter(u => u.verificationStatus === 'pending').length;
+      const verifiedUsers = users.filter(u => u.isVerified === true).length;
+
+      if (this.metricTotalUsers) {
+        this.metricTotalUsers.textContent = totalUsers.toLocaleString();
+      }
+      if (this.metricActiveUsers) {
+        this.metricActiveUsers.textContent = activeUsers.toLocaleString();
+      }
+      if (this.metricPendingUsers) {
+        this.metricPendingUsers.textContent = pendingUsers.toLocaleString();
+      }
+      if (this.metricVerifiedUsers) {
+        this.metricVerifiedUsers.textContent = verifiedUsers.toLocaleString();
+      }
+    } catch (e) {
+      console.warn('Failed to update metrics', e);
+    }
+  }
+
+  // Show add user modal (placeholder implementation)
+  showAddUserModal() {
+    notify.info('Add User functionality - Coming soon!');
+    // TODO: Implement add user modal with form
+  }
+
+  // Show invite user modal (placeholder implementation)
+  showInviteUserModal() {
+    notify.info('Invite User functionality - Coming soon!');
+    // TODO: Implement invite user modal with email input
   }
 }
 
@@ -1108,4 +1168,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Expose for tests (no effect in browser)
-try { if (typeof module !== 'undefined') module.exports = { AdminUsersManager }; } catch (_) {}
+try { if (typeof module !== 'undefined') module.exports = { AdminUsersManager }; } catch (_) { }

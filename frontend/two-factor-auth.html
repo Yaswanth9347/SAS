@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Two-Factor Authentication - Spread A Smile</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/modals.css">
+  <style>
+    .twofa-container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    .twofa-card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .twofa-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+
+    .twofa-status.enabled {
+      background: #e8f5e9;
+      border-left: 4px solid #4caf50;
+    }
+
+    .twofa-status.disabled {
+      background: #fff3e0;
+      border-left: 4px solid #ff9800;
+    }
+
+    .qr-code-section {
+      text-align: center;
+      padding: 30px;
+      background: #fafafa;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .qr-code-img {
+      max-width: 250px;
+      margin: 20px auto;
+      padding: 15px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .secret-key {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 4px;
+      font-family: monospace;
+      word-break: break-all;
+      margin: 15px 0;
+      border: 1px dashed #ccc;
+    }
+
+    .backup-codes {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .backup-code {
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      text-align: center;
+      font-family: monospace;
+      font-weight: bold;
+    }
+
+    .verification-input {
+      width: 200px;
+      text-align: center;
+      font-size: 24px;
+      letter-spacing: 10px;
+      padding: 15px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      margin: 20px auto;
+      display: block;
+    }
+
+    .verification-input:focus {
+      border-color: #4caf50;
+      outline: none;
+    }
+
+    .step-indicator {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+
+    .step {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      position: relative;
+    }
+
+    .step::after {
+      content: '';
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      width: 100%;
+      height: 2px;
+      background: #ddd;
+      z-index: -1;
+    }
+
+    .step:last-child::after {
+      display: none;
+    }
+
+    .step.active .step-number {
+      background: #4caf50;
+      color: white;
+    }
+
+    .step.completed .step-number {
+      background: #4caf50;
+      color: white;
+    }
+
+    .step-number {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #ddd;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .warning-box {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+
+    .success-box {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation placeholder -->
+  <nav class="navbar" id="navbar"></nav>
+
+  <section class="twofa-container">
+    <h1>Two-Factor Authentication (2FA)</h1>
+    <p>Add an extra layer of security to your account</p>
+
+    <!-- Status Card -->
+    <div id="statusCard" class="twofa-status disabled">
+      <div>
+        <h3 id="statusTitle">2FA Not Enabled</h3>
+        <p id="statusDescription">Two-factor authentication is currently disabled</p>
+      </div>
+      <button id="toggleButton" class="btn btn-primary">Enable 2FA</button>
+    </div>
+
+    <!-- Setup Flow -->
+    <div id="setupFlow" class="twofa-card hidden">
+      <div class="step-indicator">
+        <div class="step active" id="step1">
+          <div class="step-number">1</div>
+          <div>Download App</div>
+        </div>
+        <div class="step" id="step2">
+          <div class="step-number">2</div>
+          <div>Scan QR Code</div>
+        </div>
+        <div class="step" id="step3">
+          <div class="step-number">3</div>
+          <div>Verify Code</div>
+        </div>
+      </div>
+
+      <!-- Step 1: Download App -->
+      <div id="stepDownload" class="setup-step">
+        <h2>Step 1: Download Authenticator App</h2>
+        <p>Install one of these authenticator apps on your phone:</p>
+        <ul>
+          <li><strong>Google Authenticator</strong> (iOS/Android)</li>
+          <li><strong>Microsoft Authenticator</strong> (iOS/Android)</li>
+          <li><strong>Authy</strong> (iOS/Android/Desktop)</li>
+        </ul>
+        <button id="nextToScan" class="btn btn-primary">Next: Scan QR Code</button>
+      </div>
+
+      <!-- Step 2: Scan QR Code -->
+      <div id="stepScan" class="setup-step hidden">
+        <h2>Step 2: Scan QR Code</h2>
+        <p>Open your authenticator app and scan this QR code:</p>
+        
+        <div class="qr-code-section">
+          <img id="qrCodeImage" src="" alt="QR Code" class="qr-code-img hidden">
+          <p id="qrLoading">Loading QR code...</p>
+        </div>
+
+        <div class="warning-box">
+          <strong>⚠️ Can't scan the QR code?</strong><br>
+          Manually enter this secret key in your authenticator app:
+          <div class="secret-key" id="secretKey"></div>
+        </div>
+
+        <button id="nextToVerify" class="btn btn-primary">Next: Enter Code</button>
+        <button id="backToDownload" class="btn btn-secondary">Back</button>
+      </div>
+
+      <!-- Step 3: Verify Code -->
+      <div id="stepVerify" class="setup-step hidden">
+        <h2>Step 3: Verify Setup</h2>
+        <p>Enter the 6-digit code from your authenticator app:</p>
+        
+        <input 
+          type="text" 
+          id="verificationCode" 
+          class="verification-input" 
+          maxlength="6" 
+          placeholder="000000"
+          autocomplete="off"
+        >
+
+        <div id="verifyError" class="error hidden"></div>
+
+        <button id="verifyButton" class="btn btn-primary">Verify & Enable 2FA</button>
+        <button id="backToScan" class="btn btn-secondary">Back</button>
+      </div>
+
+      <!-- Success: Backup Codes -->
+      <div id="stepBackupCodes" class="setup-step hidden">
+        <div class="success-box">
+          <h2>✅ 2FA Enabled Successfully!</h2>
+          <p>Your account is now protected with two-factor authentication.</p>
+        </div>
+
+        <div class="warning-box">
+          <strong>⚠️ Important: Save These Backup Codes</strong><br>
+          You can use these codes to access your account if you lose your phone.
+          Each code can only be used once.
+        </div>
+
+        <div id="backupCodesList" class="backup-codes"></div>
+
+        <button id="downloadBackupCodes" class="btn btn-secondary">Download Codes</button>
+        <button id="finishSetup" class="btn btn-primary">Done</button>
+      </div>
+    </div>
+
+    <!-- Disable 2FA Section -->
+    <div id="disableSection" class="twofa-card hidden">
+      <h2>Disable Two-Factor Authentication</h2>
+      <p>To disable 2FA, please verify your identity:</p>
+
+      <div class="form-group">
+        <label for="disablePassword">Password</label>
+        <input type="password" id="disablePassword" placeholder="Enter your password">
+      </div>
+
+      <div class="form-group">
+        <label for="disableCode">2FA Code</label>
+        <input type="text" id="disableCode" maxlength="6" placeholder="000000">
+      </div>
+
+      <div id="disableError" class="error hidden"></div>
+
+      <button id="confirmDisable" class="btn btn-danger">Disable 2FA</button>
+      <button id="cancelDisable" class="btn btn-secondary">Cancel</button>
+    </div>
+  </section>
+
+  <!-- Shared JavaScript -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/navbar.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    // Two-Factor Authentication Page
+    authManager.requireAuth();
+
+    let currentStep = 1;
+    let setupData = null;
+
+    // DOM Elements
+    const statusCard = document.getElementById('statusCard');
+    const statusTitle = document.getElementById('statusTitle');
+    const statusDescription = document.getElementById('statusDescription');
+    const toggleButton = document.getElementById('toggleButton');
+    const setupFlow = document.getElementById('setupFlow');
+    const disableSection = document.getElementById('disableSection');
+
+    // Steps
+    const stepDownload = document.getElementById('stepDownload');
+    const stepScan = document.getElementById('stepScan');
+    const stepVerify = document.getElementById('stepVerify');
+    const stepBackupCodes = document.getElementById('stepBackupCodes');
+
+    // Check current 2FA status
+    async function check2FAStatus() {
+      try {
+        const response = await apiManager.get('/auth/me');
+        const is2FAEnabled = response.data.userPreferences?.security?.twoFactorEnabled || false;
+
+        if (is2FAEnabled) {
+          statusCard.classList.remove('disabled');
+          statusCard.classList.add('enabled');
+          statusTitle.textContent = '2FA Enabled';
+          statusDescription.textContent = 'Your account is protected with two-factor authentication';
+          toggleButton.textContent = 'Disable 2FA';
+          toggleButton.classList.remove('btn-primary');
+          toggleButton.classList.add('btn-danger');
+        } else {
+          statusCard.classList.remove('enabled');
+          statusCard.classList.add('disabled');
+          statusTitle.textContent = '2FA Not Enabled';
+          statusDescription.textContent = 'Two-factor authentication is currently disabled';
+          toggleButton.textContent = 'Enable 2FA';
+          toggleButton.classList.remove('btn-danger');
+          toggleButton.classList.add('btn-primary');
+        }
+      } catch (error) {
+        console.error('Error checking 2FA status:', error);
+        utils.showMessage('Error checking 2FA status', 'error');
+      }
+    }
+
+    // Toggle 2FA
+    toggleButton.addEventListener('click', () => {
+      const isEnabled = statusCard.classList.contains('enabled');
+      if (isEnabled) {
+        showDisableSection();
+      } else {
+        startSetup();
+      }
+    });
+
+    // Start setup flow
+    async function startSetup() {
+      setupFlow.classList.remove('hidden');
+      statusCard.classList.add('hidden');
+      showStep(1);
+    }
+
+    // Show disable section
+    function showDisableSection() {
+      disableSection.classList.remove('hidden');
+      statusCard.classList.add('hidden');
+    }
+
+    // Navigate steps
+    function showStep(step) {
+      currentStep = step;
+      
+      // Hide all steps
+      [stepDownload, stepScan, stepVerify, stepBackupCodes].forEach(el => el.classList.add('hidden'));
+      
+      // Update step indicators
+      for (let i = 1; i <= 3; i++) {
+        const stepEl = document.getElementById(`step${i}`);
+        stepEl.classList.remove('active', 'completed');
+        if (i < step) stepEl.classList.add('completed');
+        if (i === step) stepEl.classList.add('active');
+      }
+
+      // Show current step
+      if (step === 1) {
+        stepDownload.classList.remove('hidden');
+      } else if (step === 2) {
+        stepScan.classList.remove('hidden');
+        if (!setupData) generateQRCode();
+      } else if (step === 3) {
+        stepVerify.classList.remove('hidden');
+      } else if (step === 4) {
+        stepBackupCodes.classList.remove('hidden');
+      }
+    }
+
+    // Generate QR code
+    async function generateQRCode() {
+      try {
+        document.getElementById('qrLoading').classList.remove('hidden');
+        const response = await apiManager.post('/auth/2fa/setup');
+        setupData = response.data;
+
+        // Display QR code
+        const qrImg = document.getElementById('qrCodeImage');
+        qrImg.src = setupData.qrCode;
+        qrImg.classList.remove('hidden');
+        document.getElementById('qrLoading').classList.add('hidden');
+
+        // Display secret key
+        document.getElementById('secretKey').textContent = setupData.secret;
+      } catch (error) {
+        console.error('Error generating QR code:', error);
+        utils.showMessage('Failed to generate QR code', 'error');
+      }
+    }
+
+    // Verify code and enable 2FA
+    async function verify2FA() {
+      const code = document.getElementById('verificationCode').value;
+      const errorEl = document.getElementById('verifyError');
+
+      if (code.length !== 6) {
+        errorEl.textContent = 'Please enter a 6-digit code';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const response = await apiManager.post('/auth/2fa/verify-setup', { token: code });
+        
+        // Show backup codes
+        const backupCodes = response.data.backupCodes;
+        displayBackupCodes(backupCodes);
+        showStep(4);
+        
+        utils.showMessage('2FA enabled successfully!', 'success');
+      } catch (error) {
+        console.error('Verification error:', error);
+        errorEl.textContent = error.response?.data?.message || 'Invalid code. Please try again.';
+        errorEl.classList.remove('hidden');
+      }
+    }
+
+    // Display backup codes
+    function displayBackupCodes(codes) {
+      const container = document.getElementById('backupCodesList');
+      container.innerHTML = codes.map(code => 
+        `<div class="backup-code">${code}</div>`
+      ).join('');
+    }
+
+    // Download backup codes
+    document.getElementById('downloadBackupCodes').addEventListener('click', () => {
+      const codes = Array.from(document.querySelectorAll('.backup-code'))
+        .map(el => el.textContent)
+        .join('\n');
+      
+      const blob = new Blob([`Spread A Smile - 2FA Backup Codes\n\n${codes}\n\nKeep these codes in a safe place!`], 
+        { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'sas-2fa-backup-codes.txt';
+      a.click();
+    });
+
+    // Disable 2FA
+    document.getElementById('confirmDisable').addEventListener('click', async () => {
+      const password = document.getElementById('disablePassword').value;
+      const code = document.getElementById('disableCode').value;
+      const errorEl = document.getElementById('disableError');
+
+      try {
+        await apiManager.post('/auth/2fa/disable', { password, token: code });
+        utils.showMessage('2FA disabled successfully', 'success');
+        location.reload();
+      } catch (error) {
+        errorEl.textContent = error.response?.data?.message || 'Failed to disable 2FA';
+        errorEl.classList.remove('hidden');
+      }
+    });
+
+    // Event listeners
+    document.getElementById('nextToScan').addEventListener('click', () => showStep(2));
+    document.getElementById('nextToVerify').addEventListener('click', () => showStep(3));
+    document.getElementById('backToDownload').addEventListener('click', () => showStep(1));
+    document.getElementById('backToScan').addEventListener('click', () => showStep(2));
+    document.getElementById('verifyButton').addEventListener('click', verify2FA);
+    document.getElementById('finishSetup').addEventListener('click', () => location.reload());
+    document.getElementById('cancelDisable').addEventListener('click', () => location.reload());
+
+    // Auto-submit on 6 digits
+    document.getElementById('verificationCode').addEventListener('input', (e) => {
+      if (e.target.value.length === 6) {
+        verify2FA();
+      }
+    });
+
+    // Initialize
+    check2FAStatus();
+  </script>
+</body>
+</html>
