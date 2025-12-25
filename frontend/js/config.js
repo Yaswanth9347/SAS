@@ -12,7 +12,7 @@ const metaApiBase = typeof document !== 'undefined'
 const originApiBase = typeof window !== 'undefined' && window.location && window.location.origin;
 const CONFIG = {
   // API Configuration
-  API_BASE_URL: (runtimeApiBase || metaApiBase || originApiBase || 'http://localhost:5002') + '/api',
+  API_BASE_URL: (runtimeApiBase || metaApiBase || originApiBase || 'http://localhost:5001') + '/api',
   
   // Storage Keys
   STORAGE_KEYS: {

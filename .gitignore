@@ -1,6 +1,7 @@
 # Dependencies
 /node_modules
 /backend/node_modules
+/functions/node_modules
 .turbo/
 .cache/
 
@@ -10,6 +11,8 @@
 .env.local
 .env.*.local
 /backend/.env
+/functions/.env
+/functions/.env.*
 .env.*
 
 # Build outputs (static/frontend bundles)
