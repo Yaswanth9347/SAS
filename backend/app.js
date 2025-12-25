@@ -49,7 +49,22 @@ if (process.env.FRONTEND_URL) {
     derivedOrigins.push(process.env.FRONTEND_URL.trim());
 }
 
-const defaultOrigins = ['http://localhost:5001', 'http://localhost:3000'];
+// Automatically add Vercel URLs when deployed there
+if (process.env.VERCEL_URL) {
+    derivedOrigins.push(`https://${process.env.VERCEL_URL}`);
+}
+if (process.env.VERCEL) {
+    // Also allow all vercel.app preview/production domains
+    derivedOrigins.push('https://spread-a-smile.vercel.app');
+}
+
+const defaultOrigins = [
+    'http://localhost:5001', 
+    'http://localhost:3000',
+    'http://localhost:5002',
+    'http://127.0.0.1:5001',
+    'http://127.0.0.1:5002'
+];
 const allowedOrigins = [...new Set([...envOrigins, ...derivedOrigins, ...defaultOrigins])];
 
 app.use(cors({
@@ -168,7 +183,19 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/feedback', require('./routes/feedback'));
 app.use('/api/contact', require('./routes/contact'));
-app.use('/api/reports', require('./routes/reports'));
+
+// Temporarily disable PDF reports on Vercel (puppeteer not serverless-compatible)
+if (process.env.VERCEL) {
+    app.use('/api/reports', (req, res) => {
+        res.status(503).json({ 
+            error: 'PDF report generation is temporarily unavailable on serverless deployment.',
+            message: 'Use local backend or upgrade to puppeteer-core + @sparticuz/chromium for serverless support.'
+        });
+    });
+} else {
+    app.use('/api/reports', require('./routes/reports'));
+}
+
 app.use('/api/security', require('./routes/security'));
 
 // Test & health
