@@ -1,0 +1,7 @@
+[phases.install]
+cmds = ["npm ci --omit=dev --legacy-peer-deps"]
+working_directory = "backend"
+
+[start]
+cmd = "npm start"
+working_directory = "backend"
