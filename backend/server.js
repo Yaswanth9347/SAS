@@ -1,8 +1,11 @@
 const app = require('./app');
 
-const PORT = process.env.PORT || 5001;
+// Export the app for Vercel serverless functions
+module.exports = app;
 
-if (process.env.NODE_ENV !== 'test') {
+// Only listen when running locally (not on Vercel)
+if (require.main === module && process.env.NODE_ENV !== 'test') {
+    const PORT = process.env.PORT || 5001;
     app.listen(PORT, () => {
         console.log(`🚀 Server is running on port ${PORT}`);
         console.log(`📱 Access your site: http://localhost:${PORT}`);
@@ -10,5 +13,3 @@ if (process.env.NODE_ENV !== 'test') {
         console.log(`❤️  Health check: http://localhost:${PORT}/api/health`);
     });
 }
-
-module.exports = app;

@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = rateLimit;
 require('dotenv').config();
 
 const app = express();
