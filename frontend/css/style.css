@@ -746,63 +746,87 @@ h6,
   padding-bottom: 12px;
 }
 
-/* Upcoming Visits Grid */
+/* Upcoming Visits Grid - matches quick-stats layout */
 .visits-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   max-width: 100%;
+  text-align: center;
+}
+
+@media (max-width: 992px) {
+  .visits-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .visits-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .visit-card {
-  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  padding: 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 12px;
+  padding: 30px 20px;
+  border: 2px solid #e0e0e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.visit-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #4caf50, #2e7d32);
 }
 
 .visit-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(76, 175, 80, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(76, 175, 80, 0.2);
   border-color: #4caf50;
 }
 
-.visit-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #f0f0f0;
+.visit-primary {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2e7d32;
+  margin-bottom: 10px;
+  display: block;
 }
 
-.visit-card-header h4 {
-  margin: 0;
-  font-size: 1rem;
-  color: #333;
-  font-weight: 600;
+.visit-secondary {
+  font-size: 0.95rem;
+  color: #666;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.visit-tertiary {
+  font-size: 0.85rem;
+  color: #999;
+  display: block;
+}
+
+.visit-card-header {
+  display: none;
 }
 
 .visit-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.visit-school {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #4caf50;
-  margin: 0;
-}
-
-.visit-class {
-  font-size: 0.9rem;
-  color: #666;
-  margin: 0;
+  display: none;
 }
 
 .more-visits-btn {

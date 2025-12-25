@@ -199,8 +199,13 @@ class APIManager {
     return this.uploadVisitFiles(visitId, formData);
   }
 
-  async deleteVisitMedia(visitId, url) {
-    return this.delete(`/visits/${visitId}/media`, { url });
+  async deleteVisitMedia(visitId, data) {
+    return this.delete(`/visits/${visitId}/media`, data);
+  }
+
+  // Alias for consistency
+  async deleteMedia(visitId, data) {
+    return this.deleteVisitMedia(visitId, data);
   }
 
   // ==================== REPORT (ADMIN) ====================

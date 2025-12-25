@@ -714,42 +714,129 @@ exports.deleteVisit = async (req, res, next) => {
 
 // @desc    Delete a media URL from visit (photos/videos/docs)
 // @route   DELETE /api/visits/:id/media
-// @access  Private
+// @access  Private (Admin only)
 exports.deleteMedia = async (req, res, next) => {
     try {
-        const { url } = req.body;
+        const { url, type } = req.body;
+        console.log('🗑️  Delete request received:', { visitId: req.params.id, url, type, userRole: req.user?.role });
+        
         if (!url) return res.status(400).json({ success: false, message: 'Media url required' });
         const visit = await Visit.findById(req.params.id);
         if (!visit) return res.status(404).json({ success: false, message: 'Visit not found' });
 
-        // Only SUPER_ADMIN and TENANT_ADMIN can delete media
-        if (!['SUPER_ADMIN', 'TENANT_ADMIN'].includes(req.user.role)) {
+        console.log('📊 Visit found:', { 
+            photos: visit.photos?.length || 0, 
+            videos: visit.videos?.length || 0, 
+            docs: visit.docs?.length || 0 
+        });
+
+        // Only admin role can delete media
+        if (req.user.role !== 'admin') {
+            console.log('❌ Access denied: User role is', req.user.role);
             return res.status(403).json({
                 success: false,
                 message: 'Only administrators can delete media files'
             });
         }
 
-        const removeFrom = (arr) => {
-            if (!arr) return false;
-            const idx = arr.indexOf(url);
-            if (idx === -1) return false;
+        // Remove from array (handles both string URLs and metadata objects)
+        const removeFrom = (arr, arrayName) => {
+            if (!arr || !Array.isArray(arr)) {
+                console.log(`⚠️  ${arrayName} is not an array or is empty`);
+                return { removed: false, fileToDelete: null };
+            }
+            
+            console.log(`🔍 Searching in ${arrayName} (${arr.length} items)`);
+            
+            // Find index - handle both string and object formats
+            const idx = arr.findIndex(item => {
+                if (typeof item === 'string') {
+                    const match = item === url;
+                    console.log(`  - String item: "${item}" ${match ? '✅ MATCH' : '❌'}`);
+                    return match;
+                }
+                if (typeof item === 'object' && item.path) {
+                    const match = item.path === url;
+                    console.log(`  - Object item path: "${item.path}" ${match ? '✅ MATCH' : '❌'}`);
+                    return match;
+                }
+                console.log(`  - Unknown format:`, item);
+                return false;
+            });
+            
+            if (idx === -1) {
+                console.log(`❌ Not found in ${arrayName}`);
+                return { removed: false, fileToDelete: null };
+            }
+            
+            const item = arr[idx];
             arr.splice(idx, 1);
-            return true;
+            console.log(`✅ Removed from ${arrayName} at index ${idx}`);
+            return { removed: true, fileToDelete: item };
         };
 
-        let removed = removeFrom(visit.photos) || removeFrom(visit.videos) || removeFrom(visit.docs);
-        if (!removed) return res.status(404).json({ success: false, message: 'Media not found on visit' });
+        // Try to remove from each array type
+        let result = removeFrom(visit.photos, 'photos');
+        if (!result.removed) {
+            result = removeFrom(visit.videos, 'videos');
+        }
+        if (!result.removed) {
+            result = removeFrom(visit.docs, 'docs');
+        }
+        
+        if (!result || !result.removed) {
+            console.log('❌ Media not found in any array');
+            return res.status(404).json({ success: false, message: 'Media not found on visit' });
+        }
 
-        // delete file on disk
-        const filename = path.basename(url);
-        const filePath = path.join(__dirname, '../uploads', String(visit._id), filename);
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        console.log('✅ Media removed from database array');
+        console.log('✅ Media removed from database array');
 
+        // Delete file from disk using correct path structure
+        try {
+            const filename = path.basename(url);
+            // Determine file type from URL or type parameter
+            let fileType = type;
+            if (!fileType) {
+                if (url.includes('/photos/')) fileType = 'photos';
+                else if (url.includes('/videos/')) fileType = 'videos';
+                else if (url.includes('/docs/')) fileType = 'docs';
+            }
+            
+            console.log(`🗂️  File deletion - Type: ${fileType}, Filename: ${filename}`);
+            
+            // Try new structure first: uploads/{type}/{visitId}/{filename}
+            let filePath = path.join(__dirname, '../uploads', fileType, String(visit._id), filename);
+            console.log(`🔍 Checking new structure: ${filePath}`);
+            
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                console.log(`✅ Deleted file: ${filePath}`);
+            } else {
+                console.log(`⚠️  File not found in new structure, trying old structure...`);
+                // Fallback to old structure: uploads/{visitId}/{filename}
+                filePath = path.join(__dirname, '../uploads', String(visit._id), filename);
+                console.log(`🔍 Checking old structure: ${filePath}`);
+                
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                    console.log(`✅ Deleted file (old structure): ${filePath}`);
+                } else {
+                    console.warn(`⚠️  File not found on disk: ${filename}`);
+                }
+            }
+        } catch (fileError) {
+            console.error('❌ Error deleting file from disk:', fileError);
+            // Continue anyway - we still want to remove from DB
+        }
+
+        console.log('💾 Saving visit to database...');
         await visit.save();
+        console.log('✅ Visit saved successfully');
 
-        res.status(200).json({ success: true, message: 'Media removed' });
+        res.status(200).json({ success: true, message: 'Media deleted successfully' });
     } catch (error) {
+        console.error('❌ Delete media error:', error);
         res.status(400).json({ success: false, message: error.message });
     }
 };

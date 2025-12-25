@@ -132,34 +132,20 @@ class DashboardManager {
         if (upcomingActivities.length > 0) {
           console.log('📊 [Dashboard] Displaying', upcomingActivities.length, 'upcoming activities');
 
-          // Show max 3 visits
+          // Show exactly 3 visits to match Activity Summary layout
           const displayVisits = upcomingActivities.slice(0, 3);
-          const hasMore = upcomingActivities.length > 3;
 
           const visitsHTML = displayVisits.map(visit => `
             <div class="visit-card">
-              <div class="visit-card-header">
-                <h4>📅 ${utils.formatDate(visit.date)}</h4>
-                <span class="status-badge ${visit.status}">${visit.status === 'scheduled' ? 'Scheduled' : 'Visited'}</span>
-              </div>
-              <div class="visit-card-body">
-                <p class="visit-school">🏫 ${visit.school?.name || 'School'}</p>
-                <p class="visit-class">👥 Class: ${visit.assignedClass || 'Not assigned'}</p>
-              </div>
+              <span class="visit-primary">📅 ${utils.formatDate(visit.date)}</span>
+              <span class="visit-secondary">🏫 ${visit.school?.name || 'School'}</span>
+              <span class="visit-tertiary">Class: ${visit.assignedClass || 'Not assigned'}</span>
             </div>
           `).join('');
-
-          const moreButton = hasMore ? `
-            <div class="more-visits-btn" onclick="window.location.href='visits.html'">
-              <span>More Visits</span>
-              <span class="more-count">+${upcomingActivities.length - 3}</span>
-            </div>
-          ` : '';
 
           visitsContainer.innerHTML = `
             <div class="visits-grid">
               ${visitsHTML}
-              ${moreButton}
             </div>
           `;
         } else {

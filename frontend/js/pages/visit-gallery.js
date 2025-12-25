@@ -109,10 +109,12 @@ function renderAllMedia(mediaItems) {
     console.log('  Absolute:', absoluteUrl);
   }
 
+  const isAdmin = user && user.role === 'admin';
+
   currentMediaList = [];
-  photos.forEach(p => currentMediaList.push({ src: toAbsoluteMediaUrl(p.url), type: 'image' }));
+  photos.forEach(p => currentMediaList.push({ src: toAbsoluteMediaUrl(p.url), type: 'image', url: p.url, visitId: p.visitId }));
   const videoStartIdx = currentMediaList.length;
-  videos.forEach(v => currentMediaList.push({ src: toAbsoluteMediaUrl(v.url), type: 'video' }));
+  videos.forEach(v => currentMediaList.push({ src: toAbsoluteMediaUrl(v.url), type: 'video', url: v.url, visitId: v.visitId }));
 
   let html = '';
 
@@ -127,6 +129,7 @@ function renderAllMedia(mediaItems) {
       return `
           <div class="gallery-item" data-index="${idx}" data-type="photo">
             <img src="${imageUrl}" alt="Photo" loading="lazy">
+            ${isAdmin ? `<button class="delete-media-btn" data-url="${p.url}" data-visit-id="${p.visitId}" data-type="photos" title="Delete photo"><i class="fas fa-trash"></i></button>` : ''}
           </div>`;
     }).join('')}
       </div>
@@ -144,6 +147,7 @@ function renderAllMedia(mediaItems) {
               <div class="play-icon">▶</div>
               <span>Watch Video</span>
             </div>
+            ${isAdmin ? `<button class="delete-media-btn" data-url="${v.url}" data-visit-id="${v.visitId}" data-type="videos" title="Delete video"><i class="fas fa-trash"></i></button>` : ''}
           </div>`).join('')}
       </div>
     </div>`;
@@ -161,7 +165,10 @@ function renderAllMedia(mediaItems) {
               <div class="doc-name" title="${escapeHtml(d.name || 'Document')}">${escapeHtml(d.name || 'Document')}</div>
               <div class="doc-meta">${d.school?.name ? escapeHtml(d.school.name) + ' • ' : ''}${d.team?.name ? escapeHtml(d.team.name) + ' • ' : ''}${new Date(d.visitDate).toLocaleDateString()}</div>
             </div>
-            <div class="doc-actions"><a href="${toAbsoluteMediaUrl(d.url)}" target="_blank" rel="noopener">Open</a></div>
+            <div class="doc-actions">
+              <a href="${toAbsoluteMediaUrl(d.url)}" target="_blank" rel="noopener">Open</a>
+              ${isAdmin ? `<button class="delete-media-btn" data-url="${d.url}" data-visit-id="${d.visitId}" data-type="docs" title="Delete document"><i class="fas fa-trash"></i></button>` : ''}
+            </div>
           </div>`).join('')}
       </div>
     </div>`;
@@ -171,12 +178,31 @@ function renderAllMedia(mediaItems) {
 
   // Add event listeners after rendering (fixes CSP inline onclick issue)
   gallery.querySelectorAll('.gallery-item[data-index]').forEach(item => {
-    item.addEventListener('click', function () {
+    item.addEventListener('click', function (e) {
+      // Don't open lightbox if clicking delete button
+      if (e.target.closest('.delete-media-btn')) return;
+      
       const index = parseInt(this.dataset.index);
       console.log('🖱️ Gallery item clicked, index:', index);
       openLightboxByIndex(index);
     });
   });
+
+  // Add delete button event listeners (admin only)
+  if (isAdmin) {
+    gallery.querySelectorAll('.delete-media-btn').forEach(btn => {
+      btn.addEventListener('click', async function (e) {
+        e.stopPropagation();
+        const url = this.dataset.url;
+        const visitId = this.dataset.visitId;
+        const type = this.dataset.type;
+        
+        if (confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
+          await deleteMediaFile(visitId, url, type);
+        }
+      });
+    });
+  }
 }
 
 /**
@@ -370,3 +396,50 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAllMedia();
   });
 });
+
+/**
+ * Delete a media file (admin only)
+ */
+async function deleteMediaFile(visitId, url, type) {
+  console.log('🗑️  Delete initiated:', { visitId, url, type });
+  
+  try {
+    loading.show('galleryContent', 'Deleting file...');
+    
+    console.log('📤 Calling API deleteMedia...');
+    const response = await api.deleteMedia(visitId, { url, type });
+    console.log('📥 API response:', response);
+    
+    loading.hide('galleryContent');
+    
+    if (response && response.success) {
+      console.log('✅ Delete successful');
+      if (typeof notify !== 'undefined') {
+        notify.success('File deleted successfully');
+      } else {
+        alert('File deleted successfully');
+      }
+      // Reload the gallery
+      console.log('🔄 Reloading gallery...');
+      const filters = getSelectedFilters();
+      await loadAllMedia(filters);
+    } else {
+      const errorMsg = response?.message || 'Failed to delete file';
+      console.error('❌ Delete failed:', errorMsg);
+      if (typeof notify !== 'undefined') {
+        notify.error(errorMsg);
+      } else {
+        alert(errorMsg);
+      }
+    }
+  } catch (error) {
+    loading.hide('galleryContent');
+    console.error('❌ Delete error:', error);
+    const errorMsg = error.message || 'An error occurred while deleting the file';
+    if (typeof notify !== 'undefined') {
+      notify.error(errorMsg);
+    } else {
+      alert(errorMsg);
+    }
+  }
+}

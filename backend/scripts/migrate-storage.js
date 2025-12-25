@@ -136,10 +136,21 @@ async function migrateFileArray(filePaths, fileType, visitId) {
 async function createMetadataFromPath(filePath, fileType, visitId) {
     // Handle both absolute and relative paths
     let absolutePath = filePath;
+    let webPath = filePath;
     
     // If path starts with /uploads, it's relative to backend directory
     if (filePath.startsWith('/uploads')) {
         absolutePath = path.join(__dirname, filePath.replace(/^\/uploads\//, 'uploads/'));
+        webPath = filePath; // Keep web path as-is
+    } else {
+        // Extract web path from absolute path
+        const idx = filePath.indexOf('/uploads/');
+        if (idx !== -1) {
+            webPath = filePath.substring(idx);
+        } else if (filePath.includes('uploads/')) {
+            const idx2 = filePath.indexOf('uploads/');
+            webPath = '/' + filePath.substring(idx2);
+        }
     }
     
     try {
@@ -149,7 +160,7 @@ async function createMetadataFromPath(filePath, fileType, visitId) {
         const metadata = {
             filename: path.basename(absolutePath),
             originalName: path.basename(absolutePath),
-            path: absolutePath,
+            path: webPath,
             size: stats.size,
             mimetype: guessMimeType(absolutePath, fileType),
             uploadedAt: stats.birthtime || stats.mtime || new Date(),

@@ -487,3 +487,70 @@ select:focus {
     opacity: 0.9;
   }
 }
+/* ========= DELETE BUTTON STYLES ========= */
+.delete-media-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(244, 67, 54, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 10;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.gallery-item:hover .delete-media-btn,
+.doc-card:hover .delete-media-btn {
+  opacity: 1;
+}
+
+.delete-media-btn:hover {
+  background: rgba(211, 47, 47, 1);
+  transform: scale(1.1);
+}
+
+.delete-media-btn:active {
+  transform: scale(0.95);
+}
+
+/* For document cards */
+.doc-card {
+  position: relative;
+}
+
+.doc-card .delete-media-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.doc-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Mobile adjustments for delete button */
+@media (max-width: 768px) {
+  .delete-media-btn {
+    opacity: 0.7;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+  
+  .gallery-item:hover .delete-media-btn,
+  .doc-card:hover .delete-media-btn {
+    opacity: 1;
+  }
+}
