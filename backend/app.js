@@ -69,13 +69,31 @@ app.use(cors({
 // Rate limiting
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: process.env.RATE_LIMIT_MAX || 100,
+    max: Number(process.env.RATE_LIMIT_MAX || 100),
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
+
+    // Keep ip validation off because Firebase emulator/proxy chains can be odd
+    validate: { ip: false },
+
+    // Correct IPv6-safe key generator (recommended by express-rate-limit)
+    keyGenerator: (req, res) => {
+        try {
+            return ipKeyGenerator(req, res);
+        } catch {
+            // very defensive fallback (should rarely be needed)
+            const xff = req.headers['x-forwarded-for'];
+            const xffValue = Array.isArray(xff) ? xff[0] : xff;
+            const forwardedIp =
+                typeof xffValue === 'string' ? xffValue.split(',')[0].trim() : '';
+            return forwardedIp || req.socket?.remoteAddress || 'unknown';
+        }
+    },
 });
 
 app.use('/api/', globalLimiter);
+// ...existing code...
 
 // Request parsing & static
 app.use(express.json({ limit: '10mb' }));
@@ -87,16 +105,45 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 // Database connection (skip in tests)
-if (process.env.NODE_ENV !== 'test') {
-    mongoose.connect(process.env.MONGODB_URI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-    })
-        .then(() => console.log('✅ MongoDB Atlas Connected Successfully!'))
-        .catch(err => {
-            console.error('❌ MongoDB connection error:', err.message);
-            process.exit(1);
+const getMongoUri = () => (process.env.MONGODB_URI || process.env.MONGO_URI || '').trim();
+
+let mongoConnectPromise;
+async function ensureMongoConnected() {
+    if (mongoose.connection.readyState === 1) return;
+    if (mongoConnectPromise) return mongoConnectPromise;
+
+    const mongoUri = getMongoUri();
+    if (!mongoUri) {
+        throw new Error('Missing MongoDB connection string. Set MONGODB_URI (recommended) or MONGO_URI.');
+    }
+
+    mongoConnectPromise = mongoose
+        .connect(mongoUri, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        })
+        .then(() => {
+            console.log('✅ MongoDB Atlas Connected Successfully!');
+        })
+        .catch((err) => {
+            mongoConnectPromise = undefined;
+            throw err;
         });
+
+    return mongoConnectPromise;
+}
+
+if (process.env.NODE_ENV !== 'test') {
+    // In Cloud Functions, the process must never exit on startup errors.
+    // We attempt to connect at startup if a URI exists; otherwise we log and continue.
+    const mongoUri = getMongoUri();
+    if (mongoUri) {
+        ensureMongoConnected().catch((err) => {
+            console.error('❌ MongoDB connection error:', err.message);
+        });
+    } else {
+        console.warn('⚠️  MONGODB_URI not set. API will start, but database features will fail until it is configured.');
+    }
 }
 
 // Routes
@@ -135,6 +182,7 @@ app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
         database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
+        mongoUriPresent: Boolean(getMongoUri()),
         timestamp: new Date().toISOString()
     });
 });
