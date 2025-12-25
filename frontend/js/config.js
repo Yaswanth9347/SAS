@@ -3,12 +3,16 @@
  * Central configuration for the SAS application
  */
 
+// Resolve API base for split frontend/backend hosting.
+// Priority: runtime override (window.__API_BASE_URL__/window.API_BASE_URL), then meta tag, then window origin, then localhost fallback.
+const runtimeApiBase = typeof window !== 'undefined' && (window.__API_BASE_URL__ || window.API_BASE_URL);
+const metaApiBase = typeof document !== 'undefined'
+  ? (document.querySelector('meta[name="api-base-url"]')?.content || null)
+  : null;
+const originApiBase = typeof window !== 'undefined' && window.location && window.location.origin;
 const CONFIG = {
   // API Configuration
-  // Prefer current origin at runtime; fallback to 5002 for local dev
-  API_BASE_URL: (typeof window !== 'undefined' && window.location && window.location.origin
-    ? window.location.origin
-    : 'http://localhost:5002') + '/api',
+  API_BASE_URL: (runtimeApiBase || metaApiBase || originApiBase || 'http://localhost:5002') + '/api',
   
   // Storage Keys
   STORAGE_KEYS: {

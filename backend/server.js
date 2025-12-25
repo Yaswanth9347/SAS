@@ -44,9 +44,18 @@ app.use(helmet({
 }));
 
 // CORS Configuration with environment variables
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
-    : ['http://localhost:5001', 'http://localhost:3000'];
+// Accept ALLOWED_ORIGINS and a single FRONTEND_URL for split hosting (frontend on static host).
+const envOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean)
+    : [];
+
+const derivedOrigins = [];
+if (process.env.FRONTEND_URL) {
+    derivedOrigins.push(process.env.FRONTEND_URL.trim());
+}
+
+const defaultOrigins = ['http://localhost:5001', 'http://localhost:3000'];
+const allowedOrigins = [...new Set([...envOrigins, ...derivedOrigins, ...defaultOrigins])];
 
 app.use(cors({
     origin: function (origin, callback) {
