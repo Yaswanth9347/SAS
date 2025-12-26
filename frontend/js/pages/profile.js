@@ -218,13 +218,23 @@ async function saveProfile(){
   const phone = document.getElementById('p_phone').value.trim();
   const department = document.getElementById('p_department').value.trim();
   const yearValue = document.getElementById('p_year').value;
-  const year = yearValue ? parseInt(yearValue) : null;
   const skillsInput = document.getElementById('p_skills').value.trim();
   const skills = skillsInput ? skillsInput.split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
 
+  // Validate required fields
   if(!name){ notify.error('Please enter your name'); return; }
   if(phone && !utils.isValidPhone(phone)){ notify.error('Please enter a valid phone number'); return; }
-  if(!year || isNaN(year) || year < 1 || year > 5){ notify.error('Please select a valid year'); return; }
+  
+  // Validate year - must be selected and valid
+  if(!yearValue || yearValue === ''){ 
+    notify.error('Please select a valid year'); 
+    return; 
+  }
+  const year = parseInt(yearValue, 10);
+  if(isNaN(year) || year < 1 || year > 5){ 
+    notify.error('Please select a valid year'); 
+    return; 
+  }
   
   // Department is optional for year 5 (Others)
   if(year !== 5 && !department){ 
