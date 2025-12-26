@@ -222,7 +222,13 @@ async function saveProfile(){
 
   if(!name){ notify.error('Please enter your name'); return; }
   if(phone && !utils.isValidPhone(phone)){ notify.error('Please enter a valid phone number'); return; }
-  if(!department){ notify.error('Please enter your department'); return; }
+  
+  // Department is optional for year 5 (Others)
+  if(year !== 5 && !department){ 
+    notify.error('Please enter your department'); 
+    return; 
+  }
+  
   if(!year || year < 1 || year > 5){ notify.error('Please select a valid year'); return; }
 
   try{
