@@ -62,6 +62,7 @@ async function loadProfile(){
       <div class="form-group">
         <label for="p_year">Year</label>
         <select id="p_year">
+          <option value="" ${!user.year ? 'selected' : ''} disabled>Select Year</option>
           <option value="1" ${user.year === 1 ? 'selected' : ''}>1st Year</option>
           <option value="2" ${user.year === 2 ? 'selected' : ''}>2nd Year</option>
           <option value="3" ${user.year === 3 ? 'selected' : ''}>3rd Year</option>
@@ -216,20 +217,20 @@ async function saveProfile(){
   const name = document.getElementById('p_name').value.trim();
   const phone = document.getElementById('p_phone').value.trim();
   const department = document.getElementById('p_department').value.trim();
-  const year = parseInt(document.getElementById('p_year').value);
+  const yearValue = document.getElementById('p_year').value;
+  const year = yearValue ? parseInt(yearValue) : null;
   const skillsInput = document.getElementById('p_skills').value.trim();
   const skills = skillsInput ? skillsInput.split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
 
   if(!name){ notify.error('Please enter your name'); return; }
   if(phone && !utils.isValidPhone(phone)){ notify.error('Please enter a valid phone number'); return; }
+  if(!year || isNaN(year) || year < 1 || year > 5){ notify.error('Please select a valid year'); return; }
   
   // Department is optional for year 5 (Others)
   if(year !== 5 && !department){ 
     notify.error('Please enter your department'); 
     return; 
   }
-  
-  if(!year || year < 1 || year > 5){ notify.error('Please select a valid year'); return; }
 
   try{
     loading.showFullPage('Updating profile...');
