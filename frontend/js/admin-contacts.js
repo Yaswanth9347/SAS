@@ -491,40 +491,64 @@ class AdminContactsManager {
   }
 
   async sendReply() {
-    const message = document.getElementById('replyMessage').value.trim();
+    const notifyUser = {
+      error: (msg) => {
+        if (typeof globalThis.showNotification === 'function') {
+          globalThis.showNotification(msg, 'error');
+          return;
+        }
+        try { notify && notify.error && notify.error(msg); } catch (_) {}
+      },
+      success: (msg) => {
+        if (typeof globalThis.showNotification === 'function') {
+          globalThis.showNotification(msg, 'success');
+          return;
+        }
+        try { notify && notify.success && notify.success(msg); } catch (_) {}
+      }
+    };
+
+    const messageEl = document.getElementById('replyMessage');
+    const message = (messageEl?.value || '').trim();
 
     if (message.length < 10) {
-      notify.error('Reply must be at least 10 characters');
+      notifyUser.error('Reply must be at least 10 characters');
       return;
     }
 
-    if (!this.currentContact) {
-      notify.error('No contact selected');
+    if (!this.currentContact?._id) {
+      notifyUser.error('No contact selected');
       return;
     }
 
     try {
       const sendBtn = document.getElementById('sendReply');
-      try { if (sendBtn) sendBtn.disabled = true; } catch(_) {}
+      try { if (sendBtn) sendBtn.disabled = true; } catch (_) {}
+
       loading.showFullPage('Sending reply...');
       const response = await api.replyToContact(this.currentContact._id, message);
-      
-      if (response.success) {
-        notify.success('Reply sent successfully!');
+
+      if (response?.success) {
+        notifyUser.success('Reply sent successfully!');
         this.closeModal('replyModal');
-        
-        // Reload data
+
         await this.loadStatistics();
         await this.loadContacts(this.currentPage);
+      } else {
+        notifyUser.error('Failed to send reply');
       }
     } catch (error) {
       console.error('Failed to send reply:', error);
-      notify.error('Failed to send reply');
+      notifyUser.error('Failed to send reply');
     } finally {
       loading.hideFullPage();
-      try { const sendBtn = document.getElementById('sendReply'); if (sendBtn) sendBtn.disabled = false; } catch(_) {}
+      try {
+        const sendBtn = document.getElementById('sendReply');
+        if (sendBtn) sendBtn.disabled = false;
+      } catch (_) {}
     }
   }
+// ...existing code...
 
   async archiveContact(contactId) {
     if (!confirm('Are you sure you want to archive this contact?')) {

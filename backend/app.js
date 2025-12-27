@@ -208,7 +208,7 @@ app.get('/api/test', (req, res) => {
 
 app.get('/api/health', (req, res) => {
     res.json({
-        status: 'OK',
+        status: 'ok',
         database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
         mongoUriPresent: Boolean(getMongoUri()),
         timestamp: new Date().toISOString()
