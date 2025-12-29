@@ -8,7 +8,8 @@
     // Apply theme early to prevent flash
     function applyThemeEarly() {
         try {
-            const prefsStr = localStorage.getItem(CONFIG?.STORAGE_KEYS?.PREFERENCES || 'sas_preferences');
+            // Use hardcoded key since CONFIG may not be loaded yet
+            const prefsStr = localStorage.getItem('preferences');
             const prefs = prefsStr ? JSON.parse(prefsStr) : null;
             const theme = prefs?.theme || 'system';
 
