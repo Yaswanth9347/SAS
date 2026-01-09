@@ -15,7 +15,7 @@ const {
     updatePreferences
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
-const { uploadAnyFiles, validateMimeType } = require('../middleware/upload');
+const { hybridUploadAny } = require('../middleware/hybridUpload');
 const User = require('../models/User');
 
 const router = express.Router();
@@ -23,20 +23,34 @@ const router = express.Router();
 // Rate limiter for authentication endpoints (stricter limits)
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.AUTH_RATE_LIMIT_MAX || 5, // 5 attempts per 15 minutes
-    message: 'Too many authentication attempts from this IP, please try again after 15 minutes.',
+    max: process.env.AUTH_RATE_LIMIT_MAX || 50, // 50 attempts per 15 minutes (increased for production)
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: false,
+
+    // Return JSON response instead of plain text
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            message: 'Too many authentication attempts from this IP, please try again after 15 minutes.'
+        });
+    }
 });
 
 // Rate limiter for password reset (prevent abuse)
 const passwordResetLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: process.env.PASSWORD_RESET_LIMIT_MAX || 3, // 3 reset requests per hour
-    message: 'Too many password reset requests, please try again after an hour.',
     standardHeaders: true,
     legacyHeaders: false,
+
+    // Return JSON response instead of plain text
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            message: 'Too many password reset requests, please try again after an hour.'
+        });
+    }
 });
 
 router.post('/register', authLimiter, register);
@@ -51,7 +65,7 @@ router.put('/reset-password/:resettoken', passwordResetLimiter, resetPassword);
 // Profile management routes
 router.get('/profile', protect, getUserProfile);
 router.put('/profile', protect, updateUserProfile);
-router.post('/profile/avatar', protect, uploadAnyFiles, validateMimeType, require('../controllers/authController').uploadAvatar);
+router.post('/profile/avatar', protect, hybridUploadAny, require('../controllers/authController').uploadAvatar);
 router.put('/change-password', protect, changePassword);
 router.get('/stats', protect, getUserStats);
 

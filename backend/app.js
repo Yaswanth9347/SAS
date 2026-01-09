@@ -86,7 +86,6 @@ app.use(cors({
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: Number(process.env.RATE_LIMIT_MAX || 100),
-    message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
 
@@ -106,6 +105,14 @@ const globalLimiter = rateLimit({
             return forwardedIp || req.socket?.remoteAddress || 'unknown';
         }
     },
+
+    // Return JSON response instead of plain text
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            message: 'Too many requests from this IP, please try again later.'
+        });
+    }
 });
 
 app.use('/api/', globalLimiter);

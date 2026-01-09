@@ -44,7 +44,21 @@ document.getElementById("loginForm").addEventListener("submit", async function (
       body: JSON.stringify({ username, password }),
     });
 
-    const data = await response.json();
+    // Check content type before parsing JSON
+    const contentType = response.headers.get("content-type");
+    let data;
+    
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      // Handle non-JSON response (rate limit HTML or other errors)
+      const text = await response.text();
+      console.error('Non-JSON response:', text.substring(0, 200));
+      throw new Error(text.includes("Too many") 
+        ? "Too many login attempts. Please try again in 15 minutes." 
+        : "Server error. Please try again later.");
+    }
+
     console.log('Login response:', data);
 
     if (data.success) {
@@ -63,12 +77,20 @@ document.getElementById("loginForm").addEventListener("submit", async function (
       window.location.href = "dashboard.html";
     } else {
       loginStatus.className = "error";
-      loginStatus.textContent = "Login failed: " + data.message;
+      loginStatus.textContent = data.message || "Login failed. Please check your credentials.";
     }
   } catch (error) {
     console.error("Login error:", error);
     loginStatus.className = "error";
-    loginStatus.textContent = "Login failed. Please try again.";
+    
+    // Show user-friendly error message
+    if (error.message.includes("Too many")) {
+      loginStatus.textContent = error.message;
+    } else if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+      loginStatus.textContent = "Unable to connect to server. Please check your internet connection.";
+    } else {
+      loginStatus.textContent = error.message || "Login failed. Please try again.";
+    }
   }
 });
 
