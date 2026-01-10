@@ -14,7 +14,14 @@ const { uploadAnyFiles: uploadAnyFilesLocal, validateMimeType } = require('./upl
 function hybridUploadAny(req, res, next) {
     const useCloudinary = isCloudinaryConfigured();
     
-    console.log(`📦 Upload Mode: ${useCloudinary ? 'CLOUDINARY (Cloud)' : 'LOCAL (File System)'}`);
+    // Detailed logging for debugging
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📦 UPLOAD MODE:', useCloudinary ? '🌥️  CLOUDINARY (Cloud Storage)' : '💾 LOCAL (File System)');
+    console.log('🔧 Environment Variables:');
+    console.log('   CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ Missing');
+    console.log('   CLOUDINARY_API_KEY:', process.env.CLOUDINARY_API_KEY ? '✅ Set' : '❌ Missing');
+    console.log('   CLOUDINARY_API_SECRET:', process.env.CLOUDINARY_API_SECRET ? '✅ Set' : '❌ Missing');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     
     if (useCloudinary) {
         // Use Cloudinary storage

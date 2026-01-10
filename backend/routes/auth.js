@@ -104,4 +104,53 @@ router.get('/check-admin', async (req, res) => {
     }
 });
 
+// Test Cloudinary connection
+router.get('/test-cloudinary', async (req, res) => {
+    try {
+        const { cloudinary, isCloudinaryConfigured } = require('../config/cloudinary');
+        
+        // Check if credentials are configured
+        const hasCredentials = isCloudinaryConfigured();
+        
+        if (!hasCredentials) {
+            return res.status(500).json({
+                success: false,
+                message: 'Cloudinary credentials not configured',
+                config: {
+                    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ Missing',
+                    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY ? '✅ Set' : '❌ Missing',
+                    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ? '✅ Set' : '❌ Missing'
+                }
+            });
+        }
+        
+        // Test API connection with ping
+        const result = await cloudinary.api.ping();
+        
+        res.json({
+            success: true,
+            message: 'Cloudinary connected successfully! 🎉',
+            cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+            status: result.status,
+            config: {
+                CLOUDINARY_CLOUD_NAME: '✅ Connected',
+                CLOUDINARY_API_KEY: '✅ Valid',
+                CLOUDINARY_API_SECRET: '✅ Valid'
+            }
+        });
+    } catch (error) {
+        console.error('❌ Cloudinary test failed:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Cloudinary connection failed',
+            error: error.message,
+            config: {
+                CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ Missing',
+                CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY ? '✅ Set' : '❌ Missing',
+                CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ? '✅ Set' : '❌ Missing'
+            }
+        });
+    }
+});
+
 module.exports = router;
