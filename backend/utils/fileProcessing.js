@@ -14,6 +14,25 @@ const { optimizePhoto, generateThumbnail } = require('./imageOptimizer');
  * @returns {Object} - File metadata object
  */
 function extractFileMetadata(file) {
+  // Check if file is from Cloudinary
+  const isCloudinary = file.public_id || file.cloudinaryPublicId || (file.path && file.path.includes('cloudinary.com'));
+  
+  if (isCloudinary) {
+    // For Cloudinary files, return the URL directly
+    return {
+      filename: file.filename || file.public_id,
+      originalName: file.originalname,
+      path: file.path, // Cloudinary URL
+      cloudUrl: file.path,
+      size: file.size,
+      mimetype: file.mimetype,
+      uploadedAt: new Date(),
+      storageType: 'cloud',
+      cloudinaryPublicId: file.public_id,
+      processed: true // Cloudinary handles optimization
+    };
+  }
+
   // Convert absolute file path to web-accessible relative path
   // file.path is like: C:/Users/.../backend/uploads/photos/...
   // We need: /uploads/photos/...
@@ -49,15 +68,28 @@ function extractFileMetadata(file) {
 /**
  * Process image file (resize, optimize, extract dimensions)
  * Now using Sharp library for image optimization
- * @param {string} filePath - Path to image file
+ * @param {string} filePath - Path to image file or Cloudinary URL
  * @param {Object} options - Processing options
  * @returns {Promise<Object>} - Processing results with metadata
  */
 async function processImage(filePath, options = {}) {
     try {
-        console.log('Processing image:', filePath);
+        // Check if this is a Cloudinary URL
+        if (filePath.includes('cloudinary.com')) {
+            console.log('Cloudinary image detected, skipping local processing:', filePath);
+            return {
+                width: null,
+                height: null,
+                format: null,
+                processed: true,
+                storageType: 'cloud',
+                note: 'Cloudinary handles optimization'
+            };
+        }
+
+        console.log('Processing local image:', filePath);
         
-        // Optimize the photo using Sharp
+        // Optimize the photo using Sharp (local files only)
         const optimizeResult = await optimizePhoto(filePath);
         
         if (!optimizeResult.success) {
@@ -118,6 +150,17 @@ async function processImage(filePath, options = {}) {
  */
 async function generateVideoThumbnail(videoPath, options = {}) {
   try {
+    // Check if this is a Cloudinary URL
+    if (videoPath.includes('cloudinary.com')) {
+        console.log('Cloudinary video detected, skipping local thumbnail generation');
+        return {
+            thumbnail: null,
+            processed: true,
+            storageType: 'cloud',
+            note: 'Cloudinary handles video thumbnails'
+        };
+    }
+
     // NOTE: Install fluent-ffmpeg to enable this feature
     // npm install fluent-ffmpeg
     // Also requires ffmpeg installed on your system
@@ -182,6 +225,11 @@ async function generateVideoThumbnail(videoPath, options = {}) {
  */
 async function getVideoDuration(videoPath) {
   try {
+    // Check if this is a Cloudinary URL
+    if (videoPath.includes('cloudinary.com')) {
+        return null; // Cloudinary metadata includes duration
+    }
+
     // NOTE: Install fluent-ffmpeg to enable this feature
     // npm install fluent-ffmpeg
 
@@ -297,6 +345,11 @@ async function processUploadedFiles(files, fileType) {
  */
 async function validateImage(filePath) {
   try {
+    // If it's a Cloudinary URL, assume it's valid
+    if (filePath.includes('cloudinary.com')) {
+      return true;
+    }
+
     // Basic validation: check if file exists and has image extension
     await fs.access(filePath);
     const ext = path.extname(filePath).toLowerCase();
@@ -314,6 +367,11 @@ async function validateImage(filePath) {
  */
 async function validateVideo(filePath) {
   try {
+    // If it's a Cloudinary URL, assume it's valid
+    if (filePath.includes('cloudinary.com')) {
+      return true;
+    }
+
     // Basic validation: check if file exists and has video extension
     await fs.access(filePath);
     const ext = path.extname(filePath).toLowerCase();
