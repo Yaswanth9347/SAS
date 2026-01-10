@@ -351,20 +351,20 @@ exports.handleFileUpload = async (req, res, next) => {
         const visit = await Visit.findById(req.params.id);
 
         if (!visit) {
-            // Clean up uploaded files if visit doesn't exist
+            // Only try to clean up local files (not Cloudinary)
             if (req.files) {
-                if (Array.isArray(req.files)) {
-                    // Handle array of files from multer.any()
-                    req.files.forEach(file => {
-                        try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
-                    });
-                } else {
-                    // Handle object of file arrays from multer.fields()
-                    Object.values(req.files).forEach(files => {
-                        files.forEach(file => {
-                            try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
-                        });
-                    });
+                const { deleteUploadedFile } = require('../middleware/hybridUpload');
+                const filesToDelete = Array.isArray(req.files) ? req.files : Object.values(req.files).flat();
+                
+                for (const file of filesToDelete) {
+                    // Check if it's a local file (not Cloudinary)
+                    if (file.path && !file.path.includes('cloudinary.com')) {
+                        try { 
+                            await deleteUploadedFile(file); 
+                        } catch (e) { 
+                            console.error('Error deleting file:', e); 
+                        }
+                    }
                 }
             }
             return res.status(404).json({
@@ -434,26 +434,25 @@ exports.handleFileUpload = async (req, res, next) => {
             message: 'Files uploaded successfully with metadata'
         });
     } catch (error) {
-        // Clean up files on error
+        console.error('File upload error:', error);
+        
+        // Only try to clean up local files on error (not Cloudinary)
         if (req.files) {
-            if (Array.isArray(req.files)) {
-                // Handle array of files from multer.any()
-                req.files.forEach(file => {
-                    if (fs.existsSync(file.path)) {
-                        try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
+            const { deleteUploadedFile } = require('../middleware/hybridUpload');
+            const filesToDelete = Array.isArray(req.files) ? req.files : Object.values(req.files).flat();
+            
+            for (const file of filesToDelete) {
+                // Check if it's a local file (not Cloudinary)
+                if (file.path && !file.path.includes('cloudinary.com')) {
+                    try { 
+                        await deleteUploadedFile(file); 
+                    } catch (e) { 
+                        console.error('Error deleting file:', e); 
                     }
-                });
-            } else {
-                // Handle object of file arrays from multer.fields()
-                Object.values(req.files).forEach(files => {
-                    files.forEach(file => {
-                        if (fs.existsSync(file.path)) {
-                            try { fs.unlinkSync(file.path); } catch (e) { console.error('Error deleting file:', e); }
-                        }
-                    });
-                });
+                }
             }
         }
+        
         res.status(400).json({
             success: false,
             message: error.message

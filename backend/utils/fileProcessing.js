@@ -222,24 +222,66 @@ async function processUploadedFiles(files, fileType) {
 
   for (const file of files) {
     try {
-      const metadata = extractFileMetadata(file);
+      // Check if file is from Cloudinary (has cloudinary-specific properties)
+      const isCloudinary = file.public_id || file.cloudinaryPublicId || (file.path && file.path.includes('cloudinary.com'));
+      
+      if (isCloudinary) {
+        // Cloudinary file - use metadata from Cloudinary
+        const metadata = {
+          filename: file.filename || file.public_id,
+          originalName: file.originalname,
+          path: file.path, // Cloudinary URL
+          cloudUrl: file.path,
+          size: file.size,
+          mimetype: file.mimetype,
+          storageType: 'cloud',
+          cloudinaryPublicId: file.public_id,
+          cloudinaryFormat: file.format,
+          uploadedAt: new Date(),
+          processed: true // Cloudinary handles optimization
+        };
+        
+        // Add Cloudinary-specific metadata
+        if (file.resource_type === 'image' || fileType === 'photos') {
+          metadata.width = file.width;
+          metadata.height = file.height;
+        } else if (file.resource_type === 'video' || fileType === 'videos') {
+          metadata.duration = file.duration;
+          // Get thumbnail URL if eager transformation was applied
+          if (file.eager && file.eager.length > 0) {
+            metadata.thumbnail = file.eager[0].secure_url;
+          }
+        }
+        
+        processedFiles.push(metadata);
+      } else {
+        // Local file - process as before
+        const metadata = extractFileMetadata(file);
 
-      // Process based on file type
-      if (fileType === "photos") {
-        const imageData = await processImage(file.path);
-        Object.assign(metadata, imageData);
-      } else if (fileType === "videos") {
-        const thumbnailData = await generateVideoThumbnail(file.path);
-        const duration = await getVideoDuration(file.path);
-        Object.assign(metadata, thumbnailData, { duration });
+        // Process based on file type
+        if (fileType === "photos") {
+          const imageData = await processImage(file.path);
+          Object.assign(metadata, imageData);
+        } else if (fileType === "videos") {
+          const thumbnailData = await generateVideoThumbnail(file.path);
+          const duration = await getVideoDuration(file.path);
+          Object.assign(metadata, thumbnailData, { duration });
+        }
+
+        processedFiles.push(metadata);
       }
-
-      processedFiles.push(metadata);
     } catch (error) {
       console.error(`Error processing ${fileType} file:`, error);
       // Still add the file with basic metadata
+      const isCloudinary = file.public_id || (file.path && file.path.includes('cloudinary.com'));
       processedFiles.push({
-        ...extractFileMetadata(file),
+        filename: file.filename || file.public_id,
+        originalName: file.originalname,
+        path: file.path,
+        size: file.size,
+        mimetype: file.mimetype,
+        storageType: isCloudinary ? 'cloud' : 'local',
+        uploadedAt: new Date(),
         processingError: error.message,
       });
     }
