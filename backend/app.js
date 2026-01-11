@@ -123,9 +123,8 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// NOTE: When deployed behind Firebase Hosting, static frontend is served by Hosting,
-// but this remains useful for local development.
-app.use(express.static(path.join(__dirname, '../frontend')));
+// NOTE: Frontend is served by Firebase Hosting, not by this backend
+// app.use(express.static(path.join(__dirname, '../frontend')));
 
 // Database connection (skip in tests)
 const getMongoUri = () => (process.env.MONGODB_URI || process.env.MONGO_URI || '').trim();
@@ -222,9 +221,18 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Local-only frontend fallback
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+// 404 handler for unknown routes
+app.use((req, res, next) => {
+    // For API routes that weren't matched, return 404
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ 
+            success: false, 
+            message: 'API endpoint not found',
+            path: req.path
+        });
+    }
+    // For non-API routes, redirect to Firebase frontend
+    res.redirect(process.env.FRONTEND_URL || 'https://spread-a-smile-18fed.web.app');
 });
 
 // Error handler
