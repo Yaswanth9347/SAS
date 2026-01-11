@@ -255,11 +255,37 @@ async function deleteFromCloudinary(publicId, resourceType = 'image') {
         const result = await cloudinary.uploader.destroy(publicId, {
             resource_type: resourceType
         });
+        console.log(`🌥️  Cloudinary deletion result for ${publicId}:`, result);
         return result;
     } catch (error) {
         console.error('Error deleting from Cloudinary:', error);
         throw error;
     }
+}
+
+/**
+ * Delete multiple files from Cloudinary in batch
+ * @param {Array} publicIds - Array of Cloudinary public IDs
+ * @param {string} resourceType - 'image', 'video', or 'raw'
+ * @returns {Promise<Array>} Results of deletion operations
+ */
+async function batchDeleteFromCloudinary(publicIds, resourceType = 'image') {
+    const results = [];
+    
+    for (const publicId of publicIds) {
+        try {
+            const result = await cloudinary.uploader.destroy(publicId, {
+                resource_type: resourceType
+            });
+            results.push({ publicId, success: true, result });
+            console.log(`✅ Deleted from Cloudinary: ${publicId}`);
+        } catch (error) {
+            console.error(`Error deleting ${publicId} from Cloudinary:`, error);
+            results.push({ publicId, success: false, error: error.message });
+        }
+    }
+    
+    return results;
 }
 
 /**
@@ -371,6 +397,7 @@ module.exports = {
     uploadAnyFilesCloudinary,
     uploadAvatarCloudinary,
     deleteFromCloudinary,
+    batchDeleteFromCloudinary,
     extractPublicId,
     getResourceType,
     isCloudinaryConfigured,

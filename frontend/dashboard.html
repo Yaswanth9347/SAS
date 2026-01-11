@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard - Spread a Smile</title>
-  
+
   <!-- Consolidated CSS -->
   <link rel="stylesheet" href="css/style.css">
   <!-- Optional: add a page-specific stylesheet later if needed -->
@@ -16,6 +17,7 @@
   <nav class="navbar">
     <div class="nav-container">
       <div class="nav-logo">
+        <img src="logo.png" alt="SAS Logo" />
         <h2>Spread A Smile</h2>
       </div>
       <ul class="nav-menu" id="navMenu">
@@ -31,89 +33,89 @@
     </div>
   </nav>
 
-    <section class="dashboard">
-      <div class="container">
-        <div class="dashboard-header">
-          <h1>Welcome back, <span id="userName">User</span>!</h1>
-          <p id="userInfo">Loading your information...</p>
+  <section class="dashboard">
+    <div class="container">
+      <div class="dashboard-header">
+        <h1>Welcome back, <span id="userName">User</span>!</h1>
+        <p id="userInfo">Loading your information...</p>
+      </div>
+
+      <!-- Admin Stats Section (visible only for admins) -->
+      <div class="admin-stats" id="adminStats" style="display: none">
+        <div class="stat-card">
+          <h3>Total Volunteers</h3>
+          <div class="stat-number" id="totalVolunteers">0</div>
         </div>
-
-        <!-- Admin Stats Section (visible only for admins) -->
-        <div class="admin-stats" id="adminStats" style="display: none">
-          <div class="stat-card">
-            <h3>Total Volunteers</h3>
-            <div class="stat-number" id="totalVolunteers">0</div>
-          </div>
-          <div class="stat-card">
-            <h3>Active Volunteers</h3>
-            <div class="stat-number" id="activeVolunteers">0</div>
-          </div>
-          <div class="stat-card">
-            <h3>Total Teams</h3>
-            <div class="stat-number" id="totalTeams">0</div>
-          </div>
-          <div class="stat-card">
-            <h3>Unassigned Volunteers</h3>
-            <div class="stat-number" id="unassignedVolunteers">0</div>
-          </div>
+        <div class="stat-card">
+          <h3>Active Volunteers</h3>
+          <div class="stat-number" id="activeVolunteers">0</div>
         </div>
-
-        <div class="dashboard-grid">
-          <!-- Quick Stats -->
-          <div class="dashboard-card stats-card">
-            <h3>Your Activity Summary</h3>
-            <div class="quick-stats" id="quickStats">
-              <div class="stat-item">
-                <span class="stat-number">0</span>
-                <span class="stat-label">Total Visits</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-number">0</span>
-                <span class="stat-label">Upcoming</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-number">0</span>
-                <span class="stat-label">Completed</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Upcoming Visits -->
-          <div class="dashboard-card">
-            <h3>Upcoming Visits</h3>
-            <div class="visit-list" id="upcomingVisits">
-              <p>Loading visits...</p>
-            </div>
-          </div>
-
-          <!-- Latest Visit Gallery - Auto-scrolling media from latest completed visit -->
-          <div class="dashboard-card gallery-card">
-            <div class="gallery-header">
-              <h3>Latest Visit Gallery</h3>
-              <p id="galleryInfo">Loading latest visit...</p>
-            </div>
-            <div id="galleryContainer">
-              <div class="no-gallery">
-                <div class="no-gallery-icon"></div>
-                <p>No completed visits with media yet</p>
-              </div>
-            </div>
-          </div>
+        <div class="stat-card">
+          <h3>Total Teams</h3>
+          <div class="stat-number" id="totalTeams">0</div>
         </div>
-
-        <!-- Teams Section - Visible only for admins -->
-        <div class="teams-section" id="teamsSection" style="display: none">
-          <h2>All Teams</h2>
-          <div id="teamsList" class="teams-list"></div>
+        <div class="stat-card">
+          <h3>Unassigned Volunteers</h3>
+          <div class="stat-number" id="unassignedVolunteers">0</div>
         </div>
       </div>
-    </section>
 
-    <footer class="footer">
-      <div class="container">
-        <p>&copy; 2025 Spread a Smile (SAS). All rights reserved.</p>
+      <div class="dashboard-grid">
+        <!-- Quick Stats -->
+        <div class="dashboard-card stats-card">
+          <h3>Your Activity Summary</h3>
+          <div class="quick-stats" id="quickStats">
+            <div class="stat-item">
+              <span class="stat-number">0</span>
+              <span class="stat-label">Total Visits</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">0</span>
+              <span class="stat-label">Upcoming</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">0</span>
+              <span class="stat-label">Completed</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming Visits -->
+        <div class="dashboard-card">
+          <h3>Upcoming Visits</h3>
+          <div class="visit-list" id="upcomingVisits">
+            <p>Loading visits...</p>
+          </div>
+        </div>
+
+        <!-- Latest Visit Gallery - Auto-scrolling media from latest completed visit -->
+        <div class="dashboard-card gallery-card">
+          <div class="gallery-header">
+            <h3>Latest Visit Gallery</h3>
+            <p id="galleryInfo">Loading latest visit...</p>
+          </div>
+          <div id="galleryContainer">
+            <div class="no-gallery">
+              <div class="no-gallery-icon"></div>
+              <p>No completed visits with media yet</p>
+            </div>
+          </div>
+        </div>
       </div>
-    </footer>
+
+      <!-- Teams Section - Visible only for admins -->
+      <div class="teams-section" id="teamsSection" style="display: none">
+        <h2>All Teams</h2>
+        <div id="teamsList" class="teams-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2025 Spread a Smile (SAS). All rights reserved.</p>
+    </div>
+  </footer>
 
   <!-- Shared JavaScript Modules -->
   <script src="js/config.js"></script>
@@ -129,4 +131,5 @@
   <!-- Page-specific JavaScript -->
   <script src="js/pages/dashboard.js"></script>
 </body>
+
 </html>

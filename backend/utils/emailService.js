@@ -122,7 +122,7 @@ const sendEmail = async (options) => {
             to: options?.email ? String(options.email).replace(/(.{2}).+(@.+)/, '$1***$2') : undefined,
             subject: options?.subject
         });
-        return { success: false, error: 'EMAIL_SEND_FAILED' };
+        return { success: false, error: error.message };
     }
 };
 
@@ -136,118 +136,116 @@ const getPasswordResetEmailHTML = (resetUrl, name) => {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
                 body {
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                     line-height: 1.6;
-                    color: #333;
-                    background-color: #f4f4f4;
+                    color: #1f2937;
+                    background-color: #f8fafc;
                     margin: 0;
                     padding: 0;
                 }
                 .container {
                     max-width: 600px;
                     margin: 20px auto;
-                    background: white;
-                    border-radius: 8px;
+                    background: #ffffff;
+                    border-radius: 16px;
                     overflow: hidden;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
                 }
                 .header {
-                    background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+                    background: linear-gradient(135deg, #3f51b5 0%, #8bc34a 100%);
                     color: white;
-                    padding: 30px;
+                    padding: 40px 30px;
                     text-align: center;
                 }
                 .header h1 {
                     margin: 0;
                     font-size: 28px;
+                    font-weight: 800;
+                    letter-spacing: -0.5px;
                 }
                 .content {
-                    padding: 40px 30px;
+                    padding: 40px 35px;
                 }
                 .content h2 {
-                    color: #2e7d32;
+                    color: #111827;
                     margin-top: 0;
+                    font-weight: 700;
+                    font-size: 22px;
                 }
                 .button {
                     display: inline-block;
-                    padding: 14px 28px;
-                    background: #2e7d32;
-                    color: white;
+                    padding: 16px 32px;
+                    background: linear-gradient(135deg, #3f51b5 0%, #303f9f 100%);
+                    color: #ffffff !important;
                     text-decoration: none;
-                            // Nodemailer jsonTransport provides message as JSON; still considered success
-                            console.log('Email sent:', info.messageId || '(dev-transport)');
-                            return { success: true, messageId: info.messageId || 'dev-transport' };
-                    font-weight: bold;
-                    margin: 20px 0;
-                }
-                .button:hover {
-                    background: #1b5e20;
+                    border-radius: 10px;
+                    font-weight: 600;
+                    margin: 25px 0;
+                    box-shadow: 0 4px 12px rgba(63, 81, 181, 0.2);
                 }
                 .link-text {
-                    background: #f5f5f5;
+                    background: #f1f5f9;
                     padding: 15px;
-                    border-radius: 5px;
+                    border-radius: 8px;
                     word-break: break-all;
-                    font-size: 12px;
-                    color: #666;
+                    font-size: 13px;
+                    color: #64748b;
                     margin: 20px 0;
+                    border: 1px solid #e2e8f0;
                 }
                 .footer {
-                    background: #f9f9f9;
-                    padding: 20px 30px;
+                    background: #f8fafc;
+                    padding: 25px 30px;
                     text-align: center;
-                    font-size: 12px;
-                    color: #666;
-                    border-top: 1px solid #e0e0e0;
+                    font-size: 13px;
+                    color: #64748b;
+                    border-top: 1px solid #f1f5f9;
                 }
                 .warning {
-                    background: #fff3cd;
-                    border-left: 4px solid #ffc107;
+                    background: #fffbeb;
+                    border-left: 4px solid #f59e0b;
                     padding: 15px;
-                    margin: 20px 0;
-                    border-radius: 4px;
+                    margin: 25px 0;
+                    border-radius: 6px;
+                    font-size: 14px;
                 }
                 .info {
-                    background: #e3f2fd;
-                    border-left: 4px solid #2196f3;
+                    background: #f0f9ff;
+                    border-left: 4px solid #0ea5e9;
                     padding: 15px;
-                    margin: 20px 0;
-                    border-radius: 4px;
+                    margin: 25px 0;
+                    border-radius: 6px;
+                    font-size: 14px;
                 }
             </style>
         </head>
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>🌟 Spread A Smile</h1>
+                    <h1>Spread A Smile</h1>
                 </div>
                 <div class="content">
                     <h2>Password Reset Request</h2>
                     <p>Hi ${name},</p>
-                    <p>We received a request to reset your password for your Spread A Smile account. Click the button below to reset your password:</p>
+                    <p>We received a request to reset your password for your Spread A Smile account. Click the button below to safely reset your password:</p>
                     
                     <div style="text-align: center;">
                         <a href="${resetUrl}" class="button">Reset Password</a>
                     </div>
                     
                     <div class="info">
-                        <strong>⏰ This link expires in 1 hour</strong>
+                        <strong>⏰ Time Sensitive:</strong> This link will expire in exactly 1 hour for your security.
                     </div>
                     
-                    <p>If the button doesn't work, copy and paste this link into your browser:</p>
+                    <p>If the button doesn't work, you can copy and paste this URL into your browser:</p>
                     <div class="link-text">${resetUrl}</div>
                     
                     <div class="warning">
-                        <strong>⚠️ Security Notice:</strong><br>
-                        If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
+                        <strong>⚠️ Security Note:</strong> If you didn't request this change, you can safely ignore this email. Your account remains secure.
                     </div>
-                    
-                    <p>If you're having trouble, please contact our support team.</p>
-                    
-                    <p>Best regards,<br>The Spread A Smile Team</p>
                 </div>
                 <div class="footer">
-                    <p>This is an automated email. Please do not reply to this message.</p>
+                    <p>Building happy communities together.</p>
                     <p>&copy; ${new Date().getFullYear()} Spread A Smile. All rights reserved.</p>
                 </div>
             </div>

@@ -351,19 +351,16 @@ exports.handleFileUpload = async (req, res, next) => {
         const visit = await Visit.findById(req.params.id);
 
         if (!visit) {
-            // Only try to clean up local files (not Cloudinary)
+            // Clean up uploaded files (both Cloudinary and local)
             if (req.files) {
                 const { deleteUploadedFile } = require('../middleware/hybridUpload');
                 const filesToDelete = Array.isArray(req.files) ? req.files : Object.values(req.files).flat();
                 
                 for (const file of filesToDelete) {
-                    // Check if it's a local file (not Cloudinary)
-                    if (file.path && !file.path.includes('cloudinary.com')) {
-                        try { 
-                            await deleteUploadedFile(file); 
-                        } catch (e) { 
-                            console.error('Error deleting file:', e); 
-                        }
+                    try { 
+                        await deleteUploadedFile(file); 
+                    } catch (e) { 
+                        console.error('Error deleting file:', e); 
                     }
                 }
             }
@@ -436,19 +433,16 @@ exports.handleFileUpload = async (req, res, next) => {
     } catch (error) {
         console.error('File upload error:', error);
         
-        // Only try to clean up local files on error (not Cloudinary)
+        // Clean up uploaded files on error (both Cloudinary and local)
         if (req.files) {
             const { deleteUploadedFile } = require('../middleware/hybridUpload');
             const filesToDelete = Array.isArray(req.files) ? req.files : Object.values(req.files).flat();
             
             for (const file of filesToDelete) {
-                // Check if it's a local file (not Cloudinary)
-                if (file.path && !file.path.includes('cloudinary.com')) {
-                    try { 
-                        await deleteUploadedFile(file); 
-                    } catch (e) { 
-                        console.error('Error deleting file:', e); 
-                    }
+                try { 
+                    await deleteUploadedFile(file); 
+                } catch (e) { 
+                    console.error('Error deleting file:', e); 
                 }
             }
         }
@@ -697,16 +691,53 @@ exports.deleteVisit = async (req, res, next) => {
 
         // All users can delete all visits (removed role-based restrictions)
 
-        // delete upload directory if exists
-        const uploadDir = path.join(__dirname, '../uploads', String(visit._id));
-        if (fs.existsSync(uploadDir)) {
-            fs.rmSync(uploadDir, { recursive: true, force: true });
+        // Delete all associated files from storage (Cloudinary or Local)
+        const { isCloudinaryConfigured, extractPublicId, getResourceType, deleteFromCloudinary } = require('../config/cloudinary');
+        
+        if (isCloudinaryConfigured()) {
+            console.log('🌥️  Deleting visit files from Cloudinary...');
+            
+            // Collect all media items
+            const allMedia = [
+                ...(visit.photos || []),
+                ...(visit.videos || []),
+                ...(visit.docs || [])
+            ];
+            
+            // Delete each file from Cloudinary
+            for (const media of allMedia) {
+                try {
+                    const url = typeof media === 'string' ? media : (media.path || media.cloudUrl);
+                    
+                    if (url && url.includes('cloudinary.com')) {
+                        const publicId = extractPublicId(url);
+                        if (publicId) {
+                            const resourceType = getResourceType(url);
+                            await deleteFromCloudinary(publicId, resourceType);
+                            console.log(`✅ Deleted from Cloudinary: ${publicId}`);
+                        }
+                    }
+                } catch (deleteError) {
+                    console.error('Error deleting file from Cloudinary:', deleteError);
+                    // Continue with other files
+                }
+            }
+        } else {
+            // Delete local upload directory if exists
+            console.log('💾 Deleting visit files from local storage...');
+            const uploadDir = path.join(__dirname, '../uploads', String(visit._id));
+            if (fs.existsSync(uploadDir)) {
+                fs.rmSync(uploadDir, { recursive: true, force: true });
+                console.log(`✅ Deleted local directory: ${uploadDir}`);
+            }
         }
 
         await Visit.findByIdAndDelete(req.params.id);
+        console.log(`✅ Visit ${req.params.id} deleted from database`);
 
         res.status(200).json({ success: true, message: 'Visit deleted' });
     } catch (error) {
+        console.error('Error deleting visit:', error);
         res.status(400).json({ success: false, message: error.message });
     }
 };
@@ -789,43 +820,62 @@ exports.deleteMedia = async (req, res, next) => {
         }
 
         console.log('✅ Media removed from database array');
-        console.log('✅ Media removed from database array');
 
-        // Delete file from disk using correct path structure
+        // Delete file from storage (Cloudinary or Local)
         try {
-            const filename = path.basename(url);
-            // Determine file type from URL or type parameter
-            let fileType = type;
-            if (!fileType) {
-                if (url.includes('/photos/')) fileType = 'photos';
-                else if (url.includes('/videos/')) fileType = 'videos';
-                else if (url.includes('/docs/')) fileType = 'docs';
-            }
-            
-            console.log(`🗂️  File deletion - Type: ${fileType}, Filename: ${filename}`);
-            
-            // Try new structure first: uploads/{type}/{visitId}/{filename}
-            let filePath = path.join(__dirname, '../uploads', fileType, String(visit._id), filename);
-            console.log(`🔍 Checking new structure: ${filePath}`);
-            
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
-                console.log(`✅ Deleted file: ${filePath}`);
+            // Check if it's a Cloudinary URL
+            if (url.includes('cloudinary.com')) {
+                console.log('🌥️  Deleting from Cloudinary...');
+                const { extractPublicId, getResourceType, deleteFromCloudinary } = require('../config/cloudinary');
+                
+                const publicId = extractPublicId(url);
+                if (publicId) {
+                    const resourceType = getResourceType(url);
+                    console.log(`📋 Cloudinary deletion: publicId="${publicId}", resourceType="${resourceType}"`);
+                    
+                    const cloudResult = await deleteFromCloudinary(publicId, resourceType);
+                    console.log('✅ Cloudinary deletion result:', cloudResult);
+                } else {
+                    console.warn('⚠️  Could not extract Cloudinary public ID from URL');
+                }
             } else {
-                console.log(`⚠️  File not found in new structure, trying old structure...`);
-                // Fallback to old structure: uploads/{visitId}/{filename}
-                filePath = path.join(__dirname, '../uploads', String(visit._id), filename);
-                console.log(`🔍 Checking old structure: ${filePath}`);
+                // Local file deletion
+                console.log('💾 Deleting from local storage...');
+                const filename = path.basename(url);
+                
+                // Determine file type from URL or type parameter
+                let fileType = type;
+                if (!fileType) {
+                    if (url.includes('/photos/')) fileType = 'photos';
+                    else if (url.includes('/videos/')) fileType = 'videos';
+                    else if (url.includes('/docs/')) fileType = 'docs';
+                }
+                
+                console.log(`🗂️  File deletion - Type: ${fileType}, Filename: ${filename}`);
+                
+                // Try new structure first: uploads/{type}/{visitId}/{filename}
+                let filePath = path.join(__dirname, '../uploads', fileType, String(visit._id), filename);
+                console.log(`🔍 Checking new structure: ${filePath}`);
                 
                 if (fs.existsSync(filePath)) {
                     fs.unlinkSync(filePath);
-                    console.log(`✅ Deleted file (old structure): ${filePath}`);
+                    console.log(`✅ Deleted file: ${filePath}`);
                 } else {
-                    console.warn(`⚠️  File not found on disk: ${filename}`);
+                    console.log(`⚠️  File not found in new structure, trying old structure...`);
+                    // Fallback to old structure: uploads/{visitId}/{filename}
+                    filePath = path.join(__dirname, '../uploads', String(visit._id), filename);
+                    console.log(`🔍 Checking old structure: ${filePath}`);
+                    
+                    if (fs.existsSync(filePath)) {
+                        fs.unlinkSync(filePath);
+                        console.log(`✅ Deleted file (old structure): ${filePath}`);
+                    } else {
+                        console.warn(`⚠️  File not found on disk: ${filename}`);
+                    }
                 }
             }
         } catch (fileError) {
-            console.error('❌ Error deleting file from disk:', fileError);
+            console.error('❌ Error deleting file from storage:', fileError);
             // Continue anyway - we still want to remove from DB
         }
 

@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Visit Gallery - Spread a Smile</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
-  
+
   <!-- Consolidated CSS -->
   <link rel="stylesheet" href="css/style.css">
-  
+
   <!-- Page-specific CSS -->
   <link rel="stylesheet" href="css/pages/visit-gallery.css">
   <link rel="stylesheet" href="css/themes.css">
@@ -17,7 +18,7 @@
 <body>
   <nav class="navbar">
     <div class="nav-container">
-      <div class="nav-logo">
+      <div class="nav-logo"><img src="logo.png" alt="SAS Logo">
         <h2>Spread A Smile</h2>
       </div>
       <ul class="nav-menu" id="navMenu">
@@ -36,8 +37,10 @@
   <!-- Main Content -->
   <section class="main-content">
     <div class="container">
-      <h1>Visit Gallery</h1>
-      <p class="page-description">Browse all photos, videos, and documents from our visits</p>
+      <div class="page-header">
+        <h1>Visit Gallery</h1>
+        <p class="page-description">Browse all photos, videos, and documents from our visits</p>
+      </div>
 
       <div class="gallery-controls" aria-label="Gallery filters">
         <div class="filters-row">
@@ -105,4 +108,5 @@
   <!-- Page-specific JavaScript -->
   <script src="js/pages/visit-gallery.js"></script>
 </body>
+
 </html>

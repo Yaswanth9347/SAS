@@ -19,7 +19,7 @@ const sendTokenResponse = (user, statusCode, res) => {
         email: user.email || 'admin@sas.org',
         role: user.role || 'admin'
     };
-    
+
     // Add optional fields if they exist
     if (user.department) userData.department = user.department;
     if (user.year) userData.year = user.year;
@@ -67,7 +67,7 @@ exports.register = async (req, res, next) => {
 exports.login = async (req, res, next) => {
     try {
         const { username, password } = req.body;
-        
+
         console.log('Login attempt with username:', username);
 
         // Validate username & password
@@ -89,7 +89,7 @@ exports.login = async (req, res, next) => {
                 message: 'User not found'
             });
         }
-        
+
         // Check password
         const isMatch = await user.matchPassword(password);
         if (!isMatch) {
@@ -114,7 +114,7 @@ exports.login = async (req, res, next) => {
 exports.getMe = async (req, res, next) => {
     try {
         const user = await User.findById(req.user.id).populate('team');
-        
+
         res.status(200).json({
             success: true,
             data: user
@@ -152,7 +152,7 @@ exports.getUserProfile = async (req, res, next) => {
         const user = await User.findById(req.user.id)
             .select('-password')
             .populate('team', 'teamName');
-        
+
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -181,11 +181,11 @@ exports.updateUserProfile = async (req, res, next) => {
 
         // Check if email is being changed and if it's already in use
         if (email) {
-            const emailExists = await User.findOne({ 
+            const emailExists = await User.findOne({
                 email: email.toLowerCase(),
                 _id: { $ne: req.user.id }
             });
-            
+
             if (emailExists) {
                 return res.status(400).json({
                     success: false,
@@ -305,7 +305,7 @@ exports.changePassword = async (req, res, next) => {
 exports.getUserStats = async (req, res, next) => {
     try {
         const Visit = require('../models/Visit');
-        
+
         // Get user's visits
         const visits = await Visit.find({
             'team.members': req.user.id,
@@ -395,7 +395,7 @@ exports.updatePreferences = async (req, res, next) => {
             }
         }
         // Accessibility
-        if (body.fontSize && ['small','medium','large','xlarge'].includes(body.fontSize)) {
+        if (body.fontSize && ['small', 'medium', 'large', 'xlarge'].includes(body.fontSize)) {
             allowed['userPreferences.fontSize'] = body.fontSize;
         }
         if (typeof body.highContrast === 'boolean') {
@@ -456,9 +456,13 @@ exports.forgotPassword = async (req, res, next) => {
             user.resetPasswordExpire = undefined;
             await user.save({ validateBeforeSave: false });
 
+            const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
             return res.status(500).json({
                 success: false,
-                message: 'Email could not be sent. Please try again later.'
+                message: isDev
+                    ? `Email failed: ${emailResult.error}`
+                    : 'Email could not be sent. Please try again later.',
+                ...(isDev && { debug: emailResult.error })
             });
         }
 
@@ -550,36 +554,76 @@ exports.uploadAvatar = async (req, res, next) => {
         }
 
         const file = files[0];
-        
-        // Optimize avatar image (resize to 320x320, compress)
-        console.log('Optimizing avatar:', file.path);
-        const optimizeResult = await optimizeAvatar(file.path);
-        
-        if (!optimizeResult.success) {
-            console.error('Avatar optimization failed:', optimizeResult.error);
-            // Continue anyway with original file
-        } else {
-            console.log('Avatar optimized:', optimizeResult);
-        }
-        
+        const { isCloudinaryConfigured } = require('../config/cloudinary');
         const path = require('path');
-        const rel = path.relative(path.join(__dirname, '../uploads'), file.path).replace(/\\/g, '/');
-        const url = `/uploads/${rel}`;
+        const fs = require('fs');
+
+        // Get current user to check for existing avatar
+        const currentUser = await User.findById(req.user.id);
+        const oldProfileImage = currentUser?.profileImage;
+
+        // Delete old avatar if exists (both Cloudinary and local)
+        if (oldProfileImage) {
+            try {
+                if (oldProfileImage.includes('cloudinary.com')) {
+                    // Delete old Cloudinary avatar
+                    const { extractPublicId, deleteFromCloudinary } = require('../config/cloudinary');
+                    const publicId = extractPublicId(oldProfileImage);
+                    if (publicId) {
+                        await deleteFromCloudinary(publicId, 'image');
+                        console.log('✅ Deleted old avatar from Cloudinary:', publicId);
+                    }
+                } else {
+                    // Delete old local avatar
+                    const oldFilePath = path.join(__dirname, '..', oldProfileImage);
+                    if (fs.existsSync(oldFilePath)) {
+                        fs.unlinkSync(oldFilePath);
+                        console.log('✅ Deleted old avatar from local storage:', oldFilePath);
+                    }
+                }
+            } catch (deleteError) {
+                console.error('⚠️  Error deleting old avatar:', deleteError);
+                // Continue with upload even if deletion fails
+            }
+        }
+
+        let url;
+        let optimizeResult = { success: false };
+
+        if (isCloudinaryConfigured() && file.path.includes('cloudinary.com')) {
+            // Cloudinary upload - use the URL directly
+            url = file.path;
+            console.log('🌥️  Avatar uploaded to Cloudinary:', url);
+        } else {
+            // Local upload - optimize and get relative path
+            console.log('Optimizing avatar:', file.path);
+            optimizeResult = await optimizeAvatar(file.path);
+
+            if (!optimizeResult.success) {
+                console.error('Avatar optimization failed:', optimizeResult.error);
+                // Continue anyway with original file
+            } else {
+                console.log('Avatar optimized:', optimizeResult);
+            }
+
+            const rel = path.relative(path.join(__dirname, '../uploads'), file.path).replace(/\\/g, '/');
+            url = `/uploads/${rel}`;
+        }
 
         const user = await User.findByIdAndUpdate(req.user.id, { profileImage: url }, { new: true }).select('-password');
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-        res.status(200).json({ 
-            success: true, 
-            message: 'Avatar uploaded and optimized', 
-            data: { 
+        res.status(200).json({
+            success: true,
+            message: 'Avatar uploaded and optimized',
+            data: {
                 profileImage: url,
                 optimization: optimizeResult.success ? {
                     originalSize: optimizeResult.originalSize,
                     optimizedSize: optimizeResult.optimizedSize,
                     reduction: optimizeResult.reduction
                 } : null
-            } 
+            }
         });
     } catch (error) {
         console.error('Avatar upload error:', error);

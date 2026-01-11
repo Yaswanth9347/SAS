@@ -152,18 +152,34 @@ async function deleteUploadedFile(fileMetadata) {
     
     const useCloudinary = isCloudinaryConfigured();
     
-    if (useCloudinary && fileMetadata.storageType === 'cloud' && fileMetadata.cloudinaryPublicId) {
+    // Check if it's a Cloudinary file (multiple ways to detect)
+    const isCloudinaryFile = 
+        (fileMetadata.storageType === 'cloud') || 
+        (fileMetadata.cloudinaryPublicId) ||
+        (fileMetadata.path && fileMetadata.path.includes('cloudinary.com')) ||
+        (fileMetadata.cloudUrl);
+    
+    if (useCloudinary && isCloudinaryFile) {
         // Delete from Cloudinary
-        const { deleteFromCloudinary, getResourceType } = require('../config/cloudinary');
-        const resourceType = getResourceType(fileMetadata.path);
+        const { deleteFromCloudinary, getResourceType, extractPublicId } = require('../config/cloudinary');
         
         try {
-            await deleteFromCloudinary(fileMetadata.cloudinaryPublicId, resourceType);
-            console.log(`✅ Deleted from Cloudinary: ${fileMetadata.cloudinaryPublicId}`);
+            // Get public ID (try multiple sources)
+            let publicId = fileMetadata.cloudinaryPublicId || 
+                          fileMetadata.public_id || 
+                          extractPublicId(fileMetadata.path || fileMetadata.cloudUrl);
+            
+            if (publicId) {
+                const resourceType = getResourceType(fileMetadata.path || fileMetadata.cloudUrl || '');
+                await deleteFromCloudinary(publicId, resourceType);
+                console.log(`✅ Deleted from Cloudinary: ${publicId}`);
+            } else {
+                console.warn('⚠️  Could not extract Cloudinary public ID for deletion');
+            }
         } catch (error) {
             console.error('Error deleting from Cloudinary:', error);
         }
-    } else if (fileMetadata.storageType === 'local' || !fileMetadata.storageType) {
+    } else {
         // Delete from local file system
         const fs = require('fs').promises;
         const path = require('path');

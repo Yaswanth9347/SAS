@@ -1,6 +1,11 @@
 const express = require('express');
 const debugUpload = require('../middleware/debugUpload');
 const { hybridUploadAny } = require('../middleware/hybridUpload');
+const { 
+    enforceFileSizeLimits, 
+    logFileStatistics, 
+    checkTotalUploadSize 
+} = require('../middleware/fileSizeEnforcement');
 const {
     getVisits,
     getVisit,
@@ -27,7 +32,16 @@ router.get('/gallery/all', protect, getAllGalleryMedia); // Must be BEFORE /:id 
 router.get('/:id', protect, getVisit);
 router.get('/:id/gallery', protect, getVisitGallery);
 router.post('/', protect, createVisit); // Both admin and volunteers can create visits
-router.post('/:id/upload', protect, debugUpload, hybridUploadAny, handleFileUpload);
+router.post(
+    '/:id/upload', 
+    protect, 
+    debugUpload, 
+    hybridUploadAny, 
+    enforceFileSizeLimits, 
+    logFileStatistics, 
+    checkTotalUploadSize(), 
+    handleFileUpload
+);
 router.put('/:id/submit', protect, submitVisitReport);
 router.put('/:id', protect, updateVisit);
 router.delete('/:id', protect, deleteVisit);

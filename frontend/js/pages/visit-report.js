@@ -15,6 +15,8 @@ class VisitReportManager {
     this.serverOffsetMs = 0; // serverTime - clientTime
     this.countdownInterval = null;
     this.currentVisitWindow = null; // { start: Date, end: Date }
+    this.photoUploader = null; // EnhancedFileUpload instance for photos
+    this.videoUploader = null; // EnhancedFileUpload instance for videos
     this.init();
   }
 
@@ -70,8 +72,80 @@ class VisitReportManager {
    * Setup file upload handlers
    */
   setupFileUploadHandlers() {
-    document.getElementById('photoUpload').addEventListener('change', (e) => this.handlePhotoUpload(e));
-    document.getElementById('videoUpload').addEventListener('change', (e) => this.handleVideoUpload(e));
+    // Initialize EnhancedFileUpload for photos
+    this.photoUploader = new EnhancedFileUpload({
+      containerId: 'photoUploadContainer',
+      uploadType: 'photos',
+      maxFiles: 8,
+      maxFileSize: 10 * 1024 * 1024, // 10MB
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+      enableCompression: true,
+      compressionQuality: 0.85,
+      enableDragDrop: true,
+      enableBulkActions: true,
+      onFilesSelected: (files) => {
+        this.uploadedFiles.photos = files;
+        console.log('Photos selected:', files.length);
+      },
+      onFilesRemoved: (files) => {
+        this.uploadedFiles.photos = files;
+        console.log('Photos updated:', files.length);
+      }
+    });
+
+    // Initialize EnhancedFileUpload for videos
+    this.videoUploader = new EnhancedFileUpload({
+      containerId: 'videoUploadContainer',
+      uploadType: 'videos',
+      maxFiles: 2,
+      maxFileSize: 100 * 1024 * 1024, // 100MB
+      allowedTypes: ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm'],
+      enableCompression: false, // Don't compress videos
+      enableDragDrop: true,
+      enableBulkActions: true,
+      onFilesSelected: (files) => {
+        this.uploadedFiles.videos = files;
+        console.log('Videos selected:', files.length);
+      },
+      onFilesRemoved: (files) => {
+        this.uploadedFiles.videos = files;
+        console.log('Videos updated:', files.length);
+      }
+    });
+
+    // Add containers to the DOM if they don't exist
+    this.setupUploadContainers();
+  }
+
+  /**
+   * Setup upload containers in the DOM
+   */
+  setupUploadContainers() {
+    // Replace photo upload section
+    const photoSection = document.querySelector('.upload-section:has(#photoUpload)');
+    if (photoSection && !document.getElementById('photoUploadContainer')) {
+      const container = document.createElement('div');
+      container.id = 'photoUploadContainer';
+      
+      // Keep the heading
+      const heading = photoSection.querySelector('h4');
+      photoSection.innerHTML = '';
+      if (heading) photoSection.appendChild(heading);
+      photoSection.appendChild(container);
+    }
+
+    // Replace video upload section
+    const videoSection = document.querySelector('.upload-section:has(#videoUpload)');
+    if (videoSection && !document.getElementById('videoUploadContainer')) {
+      const container = document.createElement('div');
+      container.id = 'videoUploadContainer';
+      
+      // Keep the heading
+      const heading = videoSection.querySelector('h4');
+      videoSection.innerHTML = '';
+      if (heading) videoSection.appendChild(heading);
+      videoSection.appendChild(container);
+    }
   }
 
   /**
@@ -746,39 +820,37 @@ class VisitReportManager {
       loadingModal.style.display = 'block';
 
       try {
-        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-        const oversizedFiles = [...this.uploadedFiles.photos, ...this.uploadedFiles.videos].filter(file => file.size > MAX_FILE_SIZE);
-        
-        if (oversizedFiles.length > 0) {
-          notify.error(`Some files exceed the maximum size of 10MB: ${oversizedFiles.map(f => f.name).join(', ')}`);
-          loadingModal.style.display = 'none';
-          return;
+        // Get compressed photos from uploader if compression is enabled
+        let photosToUpload = this.uploadedFiles.photos;
+        let videosToUpload = this.uploadedFiles.videos;
+
+        // Compress photos if needed
+        if (photosToUpload.length > 0 && this.photoUploader) {
+          uploadProgress.textContent = 'Compressing photos...';
+          try {
+            const compressed = await this.photoUploader.compressFiles(photosToUpload, (progress) => {
+              uploadProgress.textContent = `Compressing photos... ${progress}%`;
+            });
+            photosToUpload = compressed;
+            console.log('Photos compressed:', compressed.length);
+          } catch (compressError) {
+            console.warn('Photo compression failed, using originals:', compressError);
+            // Continue with original files if compression fails
+          }
         }
         
-        if (this.uploadedFiles.photos.length > 8) {
-          notify.error('You can upload a maximum of 8 photos');
-          loadingModal.style.display = 'none';
-          return;
-        }
-        
-        if (this.uploadedFiles.videos.length > 2) {
-          notify.error('You can upload a maximum of 2 videos');
-          loadingModal.style.display = 'none';
-          return;
-        }
-        
-        // Upload files
+        // Upload files with progress tracking
         uploadProgress.textContent = 'Uploading files...';
         const formData = new FormData();
         
-        console.log('Photos to upload:', this.uploadedFiles.photos.length);
-        console.log('Videos to upload:', this.uploadedFiles.videos.length);
+        console.log('Photos to upload:', photosToUpload.length);
+        console.log('Videos to upload:', videosToUpload.length);
         
-        this.uploadedFiles.photos.forEach(photo => {
+        photosToUpload.forEach(photo => {
           formData.append('photos', photo);
         });
         
-        this.uploadedFiles.videos.forEach(video => {
+        videosToUpload.forEach(video => {
           formData.append('videos', video);
         });
         
@@ -787,12 +859,21 @@ class VisitReportManager {
 
         let fileUrls = { photos: [], videos: [] };
         
-        if (this.uploadedFiles.photos.length > 0 || this.uploadedFiles.videos.length > 0) {
+        if (photosToUpload.length > 0 || videosToUpload.length > 0) {
           try {
-            const uploadData = await api.uploadVisitMedia(this.selectedVisitId, formData);
+            // Use FileManager for upload with progress
+            const fileManager = new FileManager();
+            const uploadData = await fileManager.uploadWithProgress(
+              `/api/visits/${this.selectedVisitId}/upload`,
+              formData,
+              (progress) => {
+                uploadProgress.textContent = `Uploading files... ${progress}%`;
+              }
+            );
             
             if (uploadData && uploadData.success) {
               fileUrls = uploadData.data;
+              uploadProgress.textContent = 'Files uploaded successfully!';
             } else {
               // Surface inline near upload area
               this.showInlineAlert(uploadData.message || 'File upload failed', /Uploads (open|closed)/i.test(uploadData?.message) ? 'warning' : 'error');
@@ -871,8 +952,15 @@ class VisitReportManager {
     document.getElementById('visitSelect').value = '';
     document.getElementById('visitDetails').style.display = 'none';
     document.getElementById('visitReportForm').style.display = 'none';
-    document.getElementById('photoPreview').innerHTML = '';
-    document.getElementById('videoPreview').innerHTML = '';
+    
+    // Reset uploaders
+    if (this.photoUploader) {
+      this.photoUploader.clear();
+    }
+    if (this.videoUploader) {
+      this.videoUploader.clear();
+    }
+    
     this.uploadedFiles.photos = [];
     this.uploadedFiles.videos = [];
     this.selectedVisitId = null;

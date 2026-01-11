@@ -5,6 +5,9 @@ body {
 }
 
 .page-header {
+  background: #f8f9fa;
+  padding: 120px 0 60px;
+  text-align: center;
   border-bottom-left-radius: 100px;
   border-bottom-right-radius: 100px;
 }
@@ -172,13 +175,13 @@ body {
   border-left: 5px solid #4caf50;
   border-radius: 12px;
   padding: 18px 20px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-left-color 0.2s ease;
 }
 
 .about-contact-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
   border-left-color: #2e7d32;
 }
 

@@ -16,6 +16,10 @@ const {
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const { hybridUploadAny } = require('../middleware/hybridUpload');
+const { 
+    enforceFileSizeLimits, 
+    logFileStatistics 
+} = require('../middleware/fileSizeEnforcement');
 const User = require('../models/User');
 
 const router = express.Router();
@@ -65,7 +69,14 @@ router.put('/reset-password/:resettoken', passwordResetLimiter, resetPassword);
 // Profile management routes
 router.get('/profile', protect, getUserProfile);
 router.put('/profile', protect, updateUserProfile);
-router.post('/profile/avatar', protect, hybridUploadAny, require('../controllers/authController').uploadAvatar);
+router.post(
+    '/profile/avatar', 
+    protect, 
+    hybridUploadAny, 
+    enforceFileSizeLimits, 
+    logFileStatistics, 
+    require('../controllers/authController').uploadAvatar
+);
 router.put('/change-password', protect, changePassword);
 router.get('/stats', protect, getUserStats);
 

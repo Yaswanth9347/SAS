@@ -263,3 +263,19 @@
     text-align: center;
   }
 }
+
+/* ============================================
+   FOOTER
+   ============================================ */
+.footer {
+  padding: 40px 0;
+  text-align: center;
+  background: transparent;
+  margin-top: 60px;
+}
+
+.footer p {
+  color: #666;
+  font-size: 0.95rem;
+  margin: 0;
+}

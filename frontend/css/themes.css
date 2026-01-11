@@ -37,10 +37,6 @@ body.theme-dark .feature-card,
 body.theme-dark .teams-section .dashboard-card,
 body.theme-dark .modal-content,
 body.theme-dark .terms-modal__content,
-body.theme-dark .gallery-controls,
-body.theme-dark .gallery-section,
-body.theme-dark .gallery-header,
-body.theme-dark .empty-gallery,
 body.theme-dark .settings-card,
 body.theme-dark .visit-details-content,
 body.theme-dark .school-row,
@@ -193,8 +189,8 @@ body.theme-dark .notification {
 /* Features and page sections */
 body.theme-dark .features,
 body.theme-dark .page-header {
-  background: rgba(26, 15, 56, 0.8);
-  backdrop-filter: blur(5px);
+  background: transparent;
+  backdrop-filter: none;
 }
 
 /* Lightbox */

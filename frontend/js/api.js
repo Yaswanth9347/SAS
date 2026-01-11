@@ -229,8 +229,9 @@ class APIManager {
 
   // ==================== SCHOOLS ENDPOINTS ====================
   
-  async getSchools() {
-    return this.get('/schools');
+  async getSchools(filters = {}) {
+    const params = new URLSearchParams(filters);
+    return this.get(`/schools${params.toString() ? '?' + params.toString() : ''}`);
   }
 
   async getSchool(id) {
@@ -247,6 +248,63 @@ class APIManager {
 
   async deleteSchool(id) {
     return this.delete(`/schools/${id}`);
+  }
+
+  // Contact Persons
+  async addContactPerson(schoolId, contactData) {
+    return this.post(`/schools/${schoolId}/contacts`, contactData);
+  }
+
+  async updateContactPerson(schoolId, contactId, contactData) {
+    return this.put(`/schools/${schoolId}/contacts/${contactId}`, contactData);
+  }
+
+  async deleteContactPerson(schoolId, contactId) {
+    return this.delete(`/schools/${schoolId}/contacts/${contactId}`);
+  }
+
+  // Contact History
+  async addContactHistory(schoolId, historyData) {
+    return this.post(`/schools/${schoolId}/contact-history`, historyData);
+  }
+
+  async updateContactHistory(schoolId, historyId, historyData) {
+    return this.put(`/schools/${schoolId}/contact-history/${historyId}`, historyData);
+  }
+
+  async deleteContactHistory(schoolId, historyId) {
+    return this.delete(`/schools/${schoolId}/contact-history/${historyId}`);
+  }
+
+  // Ratings
+  async addSchoolRating(schoolId, ratingData) {
+    return this.post(`/schools/${schoolId}/ratings`, ratingData);
+  }
+
+  async updateSchoolRating(schoolId, ratingId, ratingData) {
+    return this.put(`/schools/${schoolId}/ratings/${ratingId}`, ratingData);
+  }
+
+  async deleteSchoolRating(schoolId, ratingId) {
+    return this.delete(`/schools/${schoolId}/ratings/${ratingId}`);
+  }
+
+  // Availability
+  async updateSchoolAvailability(schoolId, availabilityData) {
+    return this.put(`/schools/${schoolId}/availability`, availabilityData);
+  }
+
+  async checkSchoolAvailability(schoolId, date) {
+    return this.get(`/schools/${schoolId}/check-availability?date=${date}`);
+  }
+
+  // Statistics and Follow-ups
+  async getSchoolFollowUps(schoolId) {
+    return this.get(`/schools/${schoolId}/follow-ups`);
+  }
+
+  async getSchoolStats(schoolId) {
+    return this.get(`/schools/${schoolId}/stats`);
   }
 
   // ==================== TEAMS ENDPOINTS ====================

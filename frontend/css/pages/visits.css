@@ -6,7 +6,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 120px 0 20px; /* accommodate fixed navbar */
+  padding: 100px 0 20px;
+  /* Aligned with transparent global style */
 }
 
 .page-header h1 {
@@ -86,18 +87,65 @@
 }
 
 /* Structured layout inside card */
-.visit-main { display: flex; flex-direction: column; gap: 6px; }
-.visit-header { display: flex; align-items: center; gap: 12px; }
-.visit-header .visit-title { flex: 1; min-width: 0; }
-.visit-meta { display: flex; align-items: center; gap: 14px; color: #607d8b; font-size: 0.92rem; flex-wrap: wrap; }
-.visit-meta .meta-item { display: inline-flex; align-items: center; gap: 8px; }
-.visit-meta .meta-right { margin-left: auto; white-space: nowrap; color: #555; font-size: 0.85rem; }
+.visit-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.visit-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.visit-header .visit-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.visit-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #607d8b;
+  font-size: 0.92rem;
+  flex-wrap: wrap;
+}
+
+.visit-meta .meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.visit-meta .meta-right {
+  margin-left: auto;
+  white-space: nowrap;
+  color: #555;
+  font-size: 0.85rem;
+}
 
 /* Badges */
-.status-badge.scheduled { background: #e3f2fd; color: #1565c0; }
-.status-badge.visited { background: #fff3e0; color: #ef6c00; }
-.status-badge.cancelled { background: #ffebee; color: #c62828; }
-.status-badge.completed { background: #d4edda; color: #2e7d32; }
+.status-badge.scheduled {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.status-badge.visited {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.status-badge.cancelled {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.status-badge.completed {
+  background: #d4edda;
+  color: #2e7d32;
+}
 
 /* Actions */
 .visit-actions {
@@ -120,7 +168,7 @@
   justify-content: center;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.1s ease, color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06) inset;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) inset;
 }
 
 .icon-btn:hover {
@@ -134,9 +182,17 @@
   fill: currentColor;
 }
 
-.btn-cancel-visit.icon-btn { color: #ef6c00; }
-.btn-delete.icon-btn { color: #b00020; }
-.btn-edit.icon-btn { color: #2e7d32; }
+.btn-cancel-visit.icon-btn {
+  color: #ef6c00;
+}
+
+.btn-delete.icon-btn {
+  color: #b00020;
+}
+
+.btn-edit.icon-btn {
+  color: #2e7d32;
+}
 
 /* Details panel */
 .visit-details {
@@ -144,7 +200,7 @@
   border-radius: 10px;
   margin-top: -6px;
   padding: 0 16px 12px 16px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
 }
 
 /* ============================================
@@ -234,12 +290,12 @@
     padding: 25px 20px;
     max-height: 90vh;
   }
-  
+
   #visit_info_modal h2 {
     font-size: 1.5rem;
     padding-right: 40px;
   }
-  
+
   #visit_info_modal .close-btn {
     width: 36px;
     height: 36px;
@@ -251,19 +307,24 @@
   #visit_info_overlay {
     padding: 10px;
   }
-  
+
   #visit_info_modal {
     max-width: 100%;
     padding: 20px 15px;
     border-radius: 12px;
   }
-  
+
   #visit_info_modal h2 {
     font-size: 1.35rem;
   }
 }
 
 @media (max-width: 520px) {
-  .visits-list { grid-template-columns: 1fr; }
-  .page-header h1 { font-size: 1.6rem; }
+  .visits-list {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header h1 {
+    font-size: 1.6rem;
+  }
 }

@@ -123,7 +123,18 @@ function initializeSchoolsPage() {
     return { street: parts[0] || '', city: parts[1] || '', state: parts[2] || '', pincode: parts[3] || '' };
   }
 
+  // Use the enhanced SchoolManagement module for details modal
   function openSchoolDetailsModal(school) {
+    if (window.schoolManagement) {
+      window.schoolManagement.openSchoolDetailsModal(school);
+    } else {
+      // Fallback to basic modal if module not loaded
+      openBasicSchoolDetailsModal(school);
+    }
+  }
+
+  // Basic fallback modal (original implementation)
+  function openBasicSchoolDetailsModal(school) {
     // Close any existing details modal
     const existingModal = document.querySelector('.school-details-modal');
     if (existingModal) {
@@ -263,14 +274,25 @@ function initializeSchoolsPage() {
         data.data.forEach(s => {
           const card = document.createElement('div');
           card.className = 'school-card';
+          
+          // Calculate average rating
+          const avgRating = s.averageRating || (s.ratings && s.ratings.length > 0 
+            ? (s.ratings.reduce((sum, r) => sum + (r.overall || 0), 0) / s.ratings.length).toFixed(1) 
+            : null);
+          const ratingStars = avgRating ? '★'.repeat(Math.round(avgRating)) + '☆'.repeat(5 - Math.round(avgRating)) : '';
+          const contactCount = s.contactPersons?.length || 0;
+          const primaryContact = s.contactPersons?.find(c => c.isPrimary) || s.contactPersons?.[0] || s.contactPerson;
+          
           card.innerHTML = `
             <div class="school-info">
               <div class="school-name">${escapeHtml(s.name)}</div>
-              <div class="meta-row headmaster-name">${personIcon}<span>${escapeHtml(s.contactPerson?.name || 'N/A')}</span></div>
+              <div class="meta-row headmaster-name">${personIcon}<span>${escapeHtml(primaryContact?.name || 'N/A')}${contactCount > 1 ? ` <small>(+${contactCount - 1} more)</small>` : ''}</span></div>
               <div class="meta-row school-address">${locationIcon}<span>${escapeHtml([s.address?.street, s.address?.city].filter(Boolean).join(', '))}</span></div>
               <div class="school-meta">
                 <span class="badge" title="Total Classes">Total: ${Number(s.totalClasses ?? 0)}</span>
                 <span class="badge ${Number(s.availableClasses ?? 0) === 0 ? 'warn' : ''}" title="Available Classes">Avail: ${Number(s.availableClasses ?? 0)}</span>
+                ${avgRating ? `<span class="badge rating-badge" title="Average Rating: ${avgRating}/5"><span class="stars">${ratingStars}</span> ${avgRating}</span>` : ''}
+                ${s.contactHistory?.length ? `<span class="badge history-badge" title="Contact History"><i class="fas fa-history"></i> ${s.contactHistory.length}</span>` : ''}
               </div>
             </div>
             <div class="school-actions">
@@ -337,6 +359,9 @@ function initializeSchoolsPage() {
       openSchoolModal();
     });
   }
+
+  // Expose loadSchools globally for the school management module
+  window.loadSchools = loadSchools;
 
   // Initialize list
   loadSchools();

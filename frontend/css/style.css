@@ -90,6 +90,15 @@ h6,
 
 .nav-logo {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-logo img {
+  height: 45px;
+  width: auto;
+  object-fit: contain;
 }
 
 .nav-logo h2 {
@@ -679,9 +688,9 @@ h6,
 
 /* Page Header */
 .page-header {
-  background: #f8f9fa;
-  padding: 120px 0 60px;
-  text-align: center;
+  background: transparent;
+  padding: 0;
+  margin-bottom: 25px;
 }
 
 .page-header h1 {
@@ -1092,6 +1101,29 @@ h6,
   padding: 20px;
 }
 
+/* Authentication & Home Logo Styles */
+.auth-logo {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.auth-logo img {
+  height: 85px;
+  width: auto;
+  object-fit: contain;
+}
+
+.hero-logo {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.hero-logo img {
+  height: 120px;
+  width: auto;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
 .login-card {
   background: white;
   padding: 40px;
@@ -1301,6 +1333,17 @@ h6,
   .nav-logo {
     order: 1;
     z-index: 1002;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-logo img {
+    height: 35px;
+  }
+
+  .nav-logo h2 {
+    font-size: 1.3rem;
   }
 
   .nav-menu {
@@ -1471,6 +1514,13 @@ h6,
   .nav-logo {
     order: 1;
     z-index: 1002;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-logo img {
+    height: 40px;
   }
 
   .nav-menu {
