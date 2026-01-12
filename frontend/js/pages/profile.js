@@ -40,6 +40,10 @@ async function loadProfile(){
         <input id="p_name" type="text" value="${escapeHtml(user.name || '')}">
       </div>
       <div class="form-group">
+        <label for="p_username">Username</label>
+        <input id="p_username" type="text" value="${escapeHtml(user.username || '')}" disabled>
+      </div>
+      <div class="form-group">
         <label for="p_email">Email</label>
         <input id="p_email" type="email" value="${escapeHtml(user.email || '')}" disabled>
       </div>
@@ -48,8 +52,31 @@ async function loadProfile(){
         <input id="p_phone" type="tel" value="${escapeHtml(user.phone || '')}">
       </div>
       <div class="form-group">
+        <label for="p_collegeId">College ID</label>
+        <input id="p_collegeId" type="text" value="${escapeHtml(user.collegeId || '')}" disabled>
+      </div>
+      <div class="form-group">
+        <label for="p_department">Department</label>
+        <input id="p_department" type="text" value="${escapeHtml(user.department || '')}">
+      </div>
+      <div class="form-group">
+        <label for="p_year">Year</label>
+        <select id="p_year">
+          <option value="" ${!user.year ? 'selected' : ''} disabled>Select Year</option>
+          <option value="1" ${user.year === 1 ? 'selected' : ''}>1st Year</option>
+          <option value="2" ${user.year === 2 ? 'selected' : ''}>2nd Year</option>
+          <option value="3" ${user.year === 3 ? 'selected' : ''}>3rd Year</option>
+          <option value="4" ${user.year === 4 ? 'selected' : ''}>4th Year</option>
+          <option value="5" ${user.year === 5 ? 'selected' : ''}>Others</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label for="p_role">Role</label>
         <input id="p_role" type="text" value="${escapeHtml((user.role || 'user').toUpperCase())}" disabled>
+      </div>
+      <div class="form-group form-group-full">
+        <label for="p_skills">Skills (comma-separated)</label>
+        <input id="p_skills" type="text" value="${escapeHtml((user.skills || []).join(', '))}" placeholder="e.g., Teaching, Music, Art, Sports">
       </div>
     `;
 
@@ -189,22 +216,50 @@ function openAvatarLightbox(src){
 async function saveProfile(){
   const name = document.getElementById('p_name').value.trim();
   const phone = document.getElementById('p_phone').value.trim();
+  const department = document.getElementById('p_department').value.trim();
+  const yearValue = document.getElementById('p_year').value;
+  const skillsInput = document.getElementById('p_skills').value.trim();
+  const skills = skillsInput ? skillsInput.split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
 
+  // Validate required fields
   if(!name){ notify.error('Please enter your name'); return; }
   if(phone && !utils.isValidPhone(phone)){ notify.error('Please enter a valid phone number'); return; }
+  
+  // Validate year - must be selected and valid
+  if(!yearValue || yearValue === ''){ 
+    notify.error('Please select a valid year'); 
+    return; 
+  }
+  const year = parseInt(yearValue, 10);
+  if(isNaN(year) || year < 1 || year > 5){ 
+    notify.error('Please select a valid year'); 
+    return; 
+  }
+  
+  // Department is optional for year 5 (Others)
+  if(year !== 5 && !department){ 
+    notify.error('Please enter your department'); 
+    return; 
+  }
 
   try{
     loading.showFullPage('Updating profile...');
-    const result = await api.updateUserProfile({ name, phone });
+    const result = await api.updateUserProfile({ name, phone, department, year, skills });
     loading.hideFullPage();
     if(result.success){
       notify.success('Profile updated successfully');
       // update local storage copy
       const user = authManager.getUser() || {};
-      user.name = name; user.phone = phone;
+      user.name = name; 
+      user.phone = phone;
+      user.department = department;
+      user.year = year;
+      user.skills = skills;
       authManager.setAuth(authManager.getToken(), user);
       // refresh nav
       if(typeof navbarManager !== 'undefined') navbarManager.setupNavbar();
+      // Reload profile to show updated data
+      await loadProfile();
     } else {
       notify.error(result.message || 'Failed to update profile');
     }
